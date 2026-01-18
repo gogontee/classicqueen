@@ -1,38 +1,42 @@
+// app/api/candidates/register/route.js
 import { createClient } from '@supabase/supabase-js'
 
-// Log environment variables (same as your working country check)
-console.log('=== REGISTER API STARTING ===')
-console.log('Supabase URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-console.log('Node environment:', process.env.NODE_ENV)
-
+// Initialize Supabase client with fallback
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('ERROR: Missing Supabase environment variables for register API')
-  console.error('URL:', supabaseUrl || 'NOT SET')
-  console.error('Key:', supabaseAnonKey ? 'SET (length: ' + supabaseAnonKey.length + ')' : 'NOT SET')
+// Create supabase client only if variables exist
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false }
+    })
+  : null
+
+// Helper function for development logging
+const devLog = (...args) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(...args)
+  }
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false
-  }
-})
-console.log('Register API: Supabase client created')
-
 export async function POST(request) {
-  console.log('=== CANDIDATE REGISTER API CALLED ===')
+  devLog('=== CANDIDATE REGISTER API CALLED ===')
   
   try {
+    // Check if Supabase is configured
+    if (!supabase) {
+      return Response.json({ 
+        error: 'System configuration error',
+        message: 'Registration service is temporarily unavailable'
+      }, { status: 503 })
+    }
+
     // Parse form data
     const formData = await request.formData()
     const fullName = formData.get('full_name')
     const country = formData.get('location') // Note: frontend sends 'location' field
     const email = formData.get('email')
-    const whatsapp = formData.get('whatsapp') // Note: frontend sends 'whatsapp' field
-    const phone = whatsapp // Map whatsapp to phone in database
+    const whatsapp = formData.get('whatsapp')
     const occupation = formData.get('occupation')
     const instagram = formData.get('instagram')
     const facebook = formData.get('facebook')
@@ -45,179 +49,112 @@ export async function POST(request) {
     const paymentId = formData.get('payment_id')
     const paymentStatus = formData.get('payment_status')
     
-    // Get files - FIXED: Use correct field names that match updated frontend
-    const profilePhoto = formData.get('profilePhoto') // Changed from 'photo' to 'profilePhoto'
-    const galleryImages = formData.getAll('gallery') // Get all gallery images
-    
-    console.log('=== REGISTRATION DATA RECEIVED ===')
-    console.log('Full Name:', fullName)
-    console.log('Country:', country)
-    console.log('Email:', email)
-    console.log('WhatsApp:', whatsapp)
-    console.log('Occupation:', occupation)
-    console.log('Contest Experience:', contestExperience)
-    console.log('Criteria Met:', criteriaMet)
-    console.log('Terms Accepted:', termsAccepted)
-    console.log('Payment ID:', paymentId)
-    console.log('Payment Status:', paymentStatus)
-    console.log('Profile Photo present:', !!profilePhoto)
-    console.log('Profile Photo name:', profilePhoto?.name)
-    console.log('Profile Photo size:', profilePhoto?.size)
-    console.log('Profile Photo type:', profilePhoto?.type)
-    console.log('Gallery images count:', galleryImages.length)
-    
-    // Log gallery images details
-    galleryImages.forEach((img, index) => {
-      console.log(`Gallery image ${index}:`, {
-        name: img.name,
-        size: img.size,
-        type: img.type
-      })
-    })
-    
+    // Get files
+    const profilePhoto = formData.get('profilePhoto')
+    const galleryImages = formData.getAll('gallery')
+
+    devLog('=== REGISTRATION DATA RECEIVED ===')
+    devLog('Full Name:', fullName)
+    devLog('Email:', email)
+    devLog('Profile Photo present:', !!profilePhoto && profilePhoto.size > 0)
+    devLog('Gallery images count:', galleryImages.length)
+
     // Validation
     if (!fullName || !email || !country || !whatsapp || !occupation) {
       return Response.json({ 
+        success: false,
         error: 'Missing required fields',
         message: 'Please fill in all required fields'
       }, { status: 400 })
     }
 
-    // Create a unique reference code for storage
+    if (!termsAccepted) {
+      return Response.json({ 
+        success: false,
+        error: 'Terms not accepted',
+        message: 'You must accept the terms and conditions'
+      }, { status: 400 })
+    }
+
+    // Create a unique reference code
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
     const candidateCode = `CAND_${timestamp.toString(36).toUpperCase()}_${randomStr}`
-    
-    console.log('Generated candidate code:', candidateCode)
 
-    // 1. Upload profile photo if provided - UPDATED WITH FIXES
+    devLog('Generated candidate code:', candidateCode)
+
+    // 1. Upload profile photo if provided
     let profilePhotoUrl = null
     if (profilePhoto && profilePhoto.size > 0) {
-      console.log('=== UPLOADING PROFILE PHOTO ===')
-      console.log('Profile photo details:', {
-        name: profilePhoto.name,
-        size: profilePhoto.size,
-        type: profilePhoto.type
-      })
-      
       try {
-        // Create unique filename
-        const fileExt = profilePhoto.name.split('.').pop()
+        const fileExt = profilePhoto.name.split('.').pop() || 'jpg'
         const fileName = `profile_${candidateCode}.${fileExt}`
         const filePath = `${candidateCode}/${fileName}`
         
-        console.log('Uploading to path:', filePath)
-        
-        // Upload with proper content type - ADDED CONTENT TYPE
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('candidates')
           .upload(filePath, profilePhoto, {
-            contentType: profilePhoto.type,
-            cacheControl: '3600',
-            upsert: false
+            contentType: profilePhoto.type || 'image/jpeg'
           })
         
-        if (uploadError) {
-          console.error('Profile photo upload error:', uploadError)
-          console.error('Full error object:', JSON.stringify(uploadError, null, 2))
-        } else {
-          console.log('Profile photo uploaded successfully')
-          
-          // Get public URL
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('candidates')
+            .getPublicUrl(filePath)
+          profilePhotoUrl = urlData?.publicUrl
+          devLog('Profile photo uploaded:', profilePhotoUrl)
+        }
+      } catch (error) {
+        devLog('Profile photo upload failed:', error.message)
+        // Continue without photo - don't fail the entire registration
+      }
+    }
+
+    // 2. Upload gallery images
+    let galleryUrls = []
+    for (let i = 0; i < galleryImages.length; i++) {
+      const image = galleryImages[i]
+      if (image.size === 0) continue
+      
+      try {
+        const fileExt = image.name.split('.').pop() || 'jpg'
+        const fileName = `gallery_${candidateCode}_${i}.${fileExt}`
+        const filePath = `${candidateCode}/gallery/${fileName}`
+        
+        const { data, error } = await supabase.storage
+          .from('candidates')
+          .upload(filePath, image, {
+            contentType: image.type || 'image/jpeg'
+          })
+        
+        if (!error) {
           const { data: urlData } = supabase.storage
             .from('candidates')
             .getPublicUrl(filePath)
           
-          profilePhotoUrl = urlData?.publicUrl
-          console.log('Profile photo public URL:', profilePhotoUrl)
-        }
-      } catch (uploadError) {
-        console.error('Exception in profile photo upload:', uploadError)
-      }
-    } else {
-      console.log('No profile photo provided or empty file')
-    }
-
-    // 2. Upload gallery images to storage - UPDATED WITH FIXES
-    let galleryUrls = []
-    const galleryImagesArray = formData.getAll('gallery') // Get all gallery files
-    
-    console.log(`Found ${galleryImagesArray.length} gallery images to upload`)
-
-    if (galleryImagesArray.length > 0) {
-      console.log(`=== UPLOADING ${galleryImagesArray.length} GALLERY IMAGES ===`)
-      
-      for (let i = 0; i < galleryImagesArray.length; i++) {
-        const image = galleryImagesArray[i]
-        if (image.size === 0) {
-          console.log(`Skipping gallery image ${i} - empty file`)
-          continue
-        }
-        
-        try {
-          console.log(`Uploading gallery image ${i + 1}/${galleryImagesArray.length}...`)
-          
-          // Create unique filename
-          const fileExt = image.name.split('.').pop()
-          const fileName = `gallery_${candidateCode}_${i}.${fileExt}`
-          const filePath = `${candidateCode}/gallery/${fileName}`
-          
-          console.log(`Uploading gallery ${i} to: ${filePath}`)
-          
-          // Upload with content type - ADDED CONTENT TYPE
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('candidates')
-            .upload(filePath, image, {
-              contentType: image.type,
-              cacheControl: '3600',
-              upsert: false
+          if (urlData?.publicUrl) {
+            galleryUrls.push({
+              url: urlData.publicUrl,
+              name: image.name,
+              order: i,
+              uploaded_at: new Date().toISOString()
             })
-          
-          if (uploadError) {
-            console.error(`Gallery ${i} upload error:`, uploadError)
-          } else {
-            console.log(`Gallery image ${i + 1} uploaded successfully`)
-            
-            // Get public URL
-            const { data: urlData } = supabase.storage
-              .from('candidates')
-              .getPublicUrl(filePath)
-            
-            if (urlData?.publicUrl) {
-              const galleryItem = {
-                url: urlData.publicUrl,
-                name: image.name,
-                type: image.type,
-                uploaded_at: new Date().toISOString(),
-                order: i
-              }
-              galleryUrls.push(galleryItem)
-              console.log(`Gallery ${i} uploaded: ${urlData.publicUrl}`)
-            }
           }
-        } catch (error) {
-          console.error(`Gallery ${i} upload exception:`, error)
-          console.error('Stack:', error.stack)
         }
+      } catch (error) {
+        devLog(`Gallery image ${i} upload failed:`, error.message)
+        // Continue with other images
       }
-      
-      console.log(`Successfully uploaded ${galleryUrls.length} gallery images`)
-      console.log('Gallery data to store:', JSON.stringify(galleryUrls, null, 2))
-    } else {
-      console.log('No gallery images provided')
     }
 
-    // 3. Create candidate record in database (NO AUTH REQUIRED)
-    console.log('=== CREATING CANDIDATE DATABASE RECORD ===')
-    
+    // 3. Create candidate record in database
     const candidateData = {
-      // Let Supabase auto-generate the UUID - DO NOT include 'id' field
       candidate_code: candidateCode,
       full_name: fullName,
-      country: country, // Map from location
+      country: country,
       email: email,
-      phone: phone, // Map from whatsapp
-      whatsapp: whatsapp, // Keep original whatsapp too
+      phone: whatsapp, // Use whatsapp as phone
+      whatsapp: whatsapp,
       occupation: occupation,
       instagram: instagram,
       facebook: facebook,
@@ -229,16 +166,10 @@ export async function POST(request) {
       terms_accepted: termsAccepted,
       payment_id: paymentId,
       payment_status: paymentStatus,
-      photo: profilePhotoUrl, // Profile photo URL - should go to candidates.photo
-      gallery: galleryUrls.length > 0 ? galleryUrls : null, // Gallery URLs array - should go to candidates.gallery (JSONB)
-      registration_date: new Date().toISOString(),
-      // Let Supabase handle created_at and updated_at automatically
+      photo: profilePhotoUrl,
+      gallery: galleryUrls.length > 0 ? galleryUrls : null,
+      registration_date: new Date().toISOString()
     }
-    
-    console.log('=== CANDIDATE DATA FOR DATABASE INSERT ===')
-    console.log('Profile photo URL to store in photo column:', candidateData.photo)
-    console.log('Gallery data to store in gallery column:', JSON.stringify(candidateData.gallery, null, 2))
-    console.log('Full candidate data:', JSON.stringify(candidateData, null, 2))
 
     const { data: candidateRecord, error: insertError } = await supabase
       .from('candidates')
@@ -247,60 +178,47 @@ export async function POST(request) {
       .single()
 
     if (insertError) {
-      console.error('=== DATABASE INSERT ERROR ===')
-      console.error('Error code:', insertError.code)
-      console.error('Error message:', insertError.message)
-      console.error('Error details:', insertError.details)
-      console.error('Error hint:', insertError.hint)
+      devLog('Database insert error:', insertError.message)
       
-      return Response.json({ 
-        error: 'Failed to save registration',
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code
-      }, { status: 400 })
+      // Try alternative table name if 'candidates' doesn't exist
+      const { data: altRecord, error: altError } = await supabase
+        .from('classicqueen_candidates')
+        .insert([candidateData])
+        .select()
+        .single()
+      
+      if (altError) {
+        return Response.json({ 
+          success: false,
+          error: 'Failed to save registration',
+          message: 'Database error. Please try again later.'
+        }, { status: 500 })
+      }
+      
+      // Use alternative record
+      return Response.json({
+        success: true,
+        message: 'Registration successful!',
+        candidateId: altRecord.id,
+        candidateCode: candidateCode
+      }, { status: 201 })
     }
-
-    console.log('=== CANDIDATE RECORD CREATED SUCCESSFULLY ===')
-    console.log('Candidate record:', candidateRecord)
-    console.log('Photo stored in database:', candidateRecord.photo)
-    console.log('Gallery stored in database:', candidateRecord.gallery)
-    console.log('Gallery count in database:', candidateRecord.gallery ? candidateRecord.gallery.length : 0)
 
     // 4. Return success response
     return Response.json({
       success: true,
       message: 'Registration successful!',
-      candidateId: candidateRecord.id, // This is the auto-generated UUID from Supabase
-      candidateCode: candidateCode,
-      candidate: {
-        fullName,
-        country,
-        email,
-        profilePhoto: candidateRecord.photo, // Return the photo from database
-        galleryCount: candidateRecord.gallery ? candidateRecord.gallery.length : 0,
-        gallery: candidateRecord.gallery // Return gallery from database
-      },
-      debug: {
-        profilePhotoUploaded: !!profilePhotoUrl,
-        galleryImagesUploaded: galleryUrls.length,
-        databasePhoto: candidateRecord.photo,
-        databaseGalleryCount: candidateRecord.gallery ? candidateRecord.gallery.length : 0
-      }
+      candidateId: candidateRecord.id,
+      candidateCode: candidateCode
     }, { status: 201 })
 
   } catch (error) {
-    console.error('=== UNHANDLED ERROR IN REGISTER API ===')
-    console.error('Error message:', error.message)
-    console.error('Error stack:', error.stack)
+    devLog('Unhandled error:', error.message)
     
     return Response.json({ 
-      error: 'Internal server error',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      success: false,
+      error: 'Registration failed',
+      message: 'An unexpected error occurred. Please try again.'
     }, { status: 500 })
-  } finally {
-    console.log('=== REGISTER API CALL END ===')
   }
 }

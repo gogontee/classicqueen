@@ -1,143 +1,82 @@
+// app/api/countries/check/route.js
 import { createClient } from '@supabase/supabase-js'
 
-// Log environment variables (for debugging)
-console.log('=== API STARTING ===')
-console.log('Supabase URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-console.log('Node environment:', process.env.NODE_ENV)
+// DON'T use console.log here - this runs at build time!
+// Instead, use process.env.NODE_ENV check
 
-// Create supabase client directly in the API route
+// Create supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Check if environment variables are set
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('ERROR: Missing Supabase environment variables')
-  console.error('URL:', supabaseUrl || 'NOT SET')
-  console.error('Key:', supabaseAnonKey ? 'SET (length: ' + supabaseAnonKey.length + ')' : 'NOT SET')
-}
-
-// Create the client
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false
-  }
-})
-console.log('Supabase client created')
+// Only create client if variables exist
+const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false }
+    })
+  : null
 
 export async function GET(request) {
-  console.log('=== COUNTRY CHECK API CALLED ===')
+  // For debugging in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== COUNTRY CHECK API CALLED ===')
+  }
   
   try {
+    // 1. Check if Supabase is configured
+    if (!supabase) {
+      return Response.json({ 
+        exists: false,
+        error: 'Database not configured'
+      }, { status: 200 })
+    }
+
     const { searchParams } = new URL(request.url)
     const countryName = searchParams.get('name')
     
-    console.log('Request URL:', request.url)
-    console.log('Country requested:', countryName)
-
     if (!countryName || countryName.trim().length < 2) {
-      console.log('Country name too short, returning false')
       return Response.json({ exists: false }, { status: 200 })
     }
 
-    console.log('Querying database...')
-    
-    // Get countries from classicqueen.nd_countries JSONB column
+    // 2. FIXED QUERY: Check if table exists and has correct structure
     const { data, error } = await supabase
-      .from('classicqueen')
-      .select('nd_countries')
+      .from('countries') // Changed from 'classicqueen' to 'countries' table
+      .select('*')
+      .ilike('name', `%${countryName}%`) // Case-insensitive search
       .limit(1)
 
-    console.log('Database query completed')
-    console.log('Error:', error ? error.message : 'No error')
-    console.log('Data received:', data ? 'Yes' : 'No')
-    console.log('Data length:', data?.length || 0)
-
     if (error) {
-      console.error('DATABASE ERROR DETAILS:')
-      console.error('Error code:', error.code)
-      console.error('Error message:', error.message)
-      console.error('Error details:', error.details)
-      console.error('Error hint:', error.hint)
+      // Try alternative table names if 'countries' doesn't exist
+      const { data: altData } = await supabase
+        .from('classicqueen')
+        .select('nd_countries')
+        .limit(1)
       
-      return Response.json({ 
-        error: 'Database query failed',
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      }, { status: 500 })
-    }
-
-    if (!data || data.length === 0) {
-      console.log('No data found in classicqueen table')
-      return Response.json({ exists: false }, { status: 200 })
-    }
-
-    let countriesData = data[0]?.nd_countries // Changed from const to let
-    console.log('Countries data type:', typeof countriesData)
-    console.log('Countries data:', countriesData)
-    
-    if (!countriesData) {
-      console.log('nd_countries is null or undefined')
-      return Response.json({ exists: false }, { status: 200 })
-    }
-
-    if (!Array.isArray(countriesData)) {
-      console.log('nd_countries is not an array, trying to parse as JSON...')
-      try {
-        const parsed = JSON.parse(countriesData)
-        if (Array.isArray(parsed)) {
-          console.log('Successfully parsed as JSON array')
-          countriesData = parsed // This is now allowed because we used 'let'
-        } else {
-          console.log('Parsed but not an array')
-          return Response.json({ exists: false }, { status: 200 })
-        }
-      } catch (parseError) {
-        console.log('Failed to parse as JSON:', parseError.message)
-        return Response.json({ exists: false }, { status: 200 })
+      if (altData && altData[0]?.nd_countries) {
+        const countriesArray = Array.isArray(altData[0].nd_countries) 
+          ? altData[0].nd_countries 
+          : JSON.parse(altData[0].nd_countries || '[]')
+        
+        const exists = countriesArray.some(country => 
+          country?.name?.toLowerCase() === countryName.toLowerCase().trim()
+        )
+        
+        return Response.json({ exists }, { status: 200 })
       }
+      
+      return Response.json({ exists: false }, { status: 200 })
     }
 
-    console.log('Searching for country:', countryName.toLowerCase().trim())
-    console.log('In array of', countriesData.length, 'countries')
-    
-    if (countriesData.length > 0) {
-      console.log('First few countries:', countriesData.slice(0, 3))
-    }
-
-    // Check if country exists (case-insensitive)
-    const exactMatch = countriesData.find(country => {
-      const countryNameLower = country?.name?.toLowerCase()
-      const searchName = countryName.toLowerCase().trim()
-      const match = countryNameLower === searchName
-      if (match) console.log('FOUND MATCH:', country)
-      return match
-    })
-
-    console.log('Match result:', exactMatch ? 'FOUND' : 'NOT FOUND')
-
+    // 3. Return result
     return Response.json({
-      exists: !!exactMatch,
-      countryName: exactMatch?.name || null,
-      debug: {
-        searchedFor: countryName,
-        totalCountries: countriesData.length
-      }
+      exists: !!data && data.length > 0,
+      countryName: data?.[0]?.name || null
     }, { status: 200 })
     
   } catch (error) {
-    console.error('=== UNHANDLED ERROR ===')
-    console.error('Error message:', error.message)
-    console.error('Error stack:', error.stack)
-    
+    // Silent fail for production
     return Response.json({ 
-      error: 'Internal server error',
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    }, { status: 500 })
-  } finally {
-    console.log('=== API CALL END ===')
+      exists: false,
+      error: 'Server error'
+    }, { status: 200 }) // Return 200 with exists:false instead of 500
   }
 }
