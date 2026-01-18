@@ -73,7 +73,7 @@ export default function AdminDashboard() {
       // Check if passcode exists in the classicqueen.passcode table
       // Try with schema first, then fallback to regular table
       let query = supabase
-        .from('classicqueen.passcode')
+        .from('classicqueen')
         .select('passcode')
         .eq('passcode', password.trim())
         .single()
