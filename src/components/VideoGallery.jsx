@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Play, Pause, Volume2, VolumeX, Maximize2, ChevronLeft, ChevronRight, Calendar, ExternalLink, X, Fullscreen, PictureInPicture } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize2, Minimize2, ChevronLeft, ChevronRight, Calendar, ExternalLink, X, PictureInPicture } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -772,7 +772,7 @@ export default function VideoGallery() {
                           className="hover:bg-white/20 p-2 rounded-full"
                         >
                           {isFullscreen ? (
-                            <Fullscreen className="h-5 w-5 text-white" />
+                            <Minimize2 className="h-5 w-5 text-white" />
                           ) : (
                             <Maximize2 className="h-5 w-5 text-white" />
                           )}
