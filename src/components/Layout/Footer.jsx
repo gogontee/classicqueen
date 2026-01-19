@@ -113,7 +113,7 @@ const Footer = () => {
               </div>
               <div className="pt-2">
                 <p className="text-brown-300 text-sm mb-2">Follow us on:</p>
-                <div className="flex space-x-3">
+                <div className="flex space-x-3 items-center">
                   <a 
                     href="https://instagram.com/classicqueeninternational" 
                     target="_blank" 
@@ -140,6 +140,15 @@ const Footer = () => {
                   >
                     TikTok
                   </a>
+                  {/* Admin Button placed after TikTok */}
+                  <button
+                    onClick={handleAdminClick}
+                    className="ml-2 p-1 bg-brown-800 text-brown-300 hover:bg-brown-700 hover:text-brown-100 transition-colors duration-200 rounded-sm flex-shrink-0"
+                    title="Admin Panel"
+                    aria-label="Admin Panel"
+                  >
+                    <Shield size={10} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -158,17 +167,7 @@ const Footer = () => {
               </p>
             </div>
             <div className="text-brown-300 text-sm flex items-center">
-              <div className="flex items-center">
-                <Link href="/privacy" className="hover:text-gold-300 transition-colors mx-4">Privacy Policy</Link>
-                <button
-                  onClick={handleAdminClick}
-                  className="ml-1 p-1 bg-brown-800 text-brown-300 hover:bg-brown-700 hover:text-brown-100 transition-colors duration-200 rounded-sm"
-                  title="Admin Panel"
-                  aria-label="Admin Panel"
-                >
-                  <Shield size={10} />
-                </button>
-              </div>
+              <Link href="/privacy" className="hover:text-gold-300 transition-colors mx-4">Privacy Policy</Link>
               <span className="text-brown-600">|</span>
               <Link href="/terms" className="hover:text-gold-300 transition-colors mx-4">Terms of Service</Link>
               <span className="text-brown-600">|</span>

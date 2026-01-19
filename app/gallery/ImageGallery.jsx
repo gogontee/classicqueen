@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  Image, Calendar, ChevronLeft, ChevronRight, X,
+  Image as ImageIcon, Calendar, ChevronLeft, ChevronRight, X,
   Download, Share2, Maximize2, ZoomIn, ZoomOut, RotateCw
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
@@ -46,9 +46,14 @@ export default function ImageGallery() {
         
         const parsedData = data.map(album => ({
           ...album,
-          image_url: typeof album.image_url === 'string' 
-            ? JSON.parse(album.image_url)
-            : album.image_url || []
+          image_url: Array.isArray(album.image_url) 
+            ? album.image_url.sort((a, b) => {
+                // Sort images by created_at descending (latest first)
+                const dateA = a.created_at ? new Date(a.created_at) : new Date(album.created_at)
+                const dateB = b.created_at ? new Date(b.created_at) : new Date(album.created_at)
+                return dateB - dateA
+              })
+            : []
         }))
         
         setAlbums(parsedData)
@@ -274,7 +279,7 @@ export default function ImageGallery() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center bg-brown-500">
-                              <Image className="w-3 h-3 md:w-3.5 md:h-3.5 text-white" />
+                              <ImageIcon className="w-3 h-3 md:w-3.5 md:h-3.5 text-white" />
                             </div>
                           )}
                         </div>
@@ -310,7 +315,7 @@ export default function ImageGallery() {
           <div className="container mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Image className="h-5 w-5 md:h-6 md:w-6 text-gold-400" />
+                <ImageIcon className="h-5 w-5 md:h-6 md:w-6 text-gold-400" />
                 <div>
                   <h1 className="text-sm md:text-lg font-bold truncate max-w-[200px] md:max-w-none">
                     {formatAlbumName(selectedAlbum.album)}
@@ -333,13 +338,13 @@ export default function ImageGallery() {
       <div className="container mx-auto px-4 pt-6 pb-16">
         {!selectedAlbum ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <Image className="h-12 w-12 text-brown-300 mx-auto mb-4" />
+            <ImageIcon className="h-12 w-12 text-brown-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-brown-700 mb-2">Select an Album</h3>
             <p className="text-brown-600">Choose an album from above to view photos</p>
           </div>
         ) : albumImages.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <Image className="h-12 w-12 text-brown-300 mx-auto mb-4" />
+            <ImageIcon className="h-12 w-12 text-brown-300 mx-auto mb-4" />
             <h3 className="text-lg font-bold text-brown-700 mb-2">No photos in this album</h3>
             <p className="text-brown-600">This album is currently empty.</p>
           </div>
@@ -392,15 +397,12 @@ export default function ImageGallery() {
                     </div>
                   </div>
                   
-                  {/* Caption BELOW the image */}
+                  {/* Caption BELOW the image - WITHOUT DATE */}
                   <div className="p-3 border-t border-gray-100">
-                    <p className="text-sm text-gray-700 line-clamp-2 mb-1">
+                    <p className="text-sm text-gray-700 line-clamp-2">
                       {truncateCaption(image.caption)}
                     </p>
-                    <div className="flex items-center text-gray-500 text-xs">
-                      <Calendar size={10} className="mr-1" />
-                      {new Date(image.created_at).toLocaleDateString()}
-                    </div>
+                    {/* REMOVED: Date display */}
                   </div>
                 </div>
               ))}
@@ -597,7 +599,7 @@ export default function ImageGallery() {
             </div>
           </div>
 
-          {/* Image Info Panel */}
+          {/* Image Info Panel - REMOVED DATE SECTION */}
           <div className="p-4 border-t border-white/10 bg-black/90">
             <div className="max-w-4xl mx-auto">
               <div className="text-white">
@@ -608,20 +610,7 @@ export default function ImageGallery() {
                     
                     <div className="flex items-center space-x-4 text-sm text-white/60">
                       <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        <span>
-                          {selectedImage.created_at 
-                            ? new Date(selectedImage.created_at).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })
-                            : 'Recently added'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center">
-                        <Image className="h-4 w-4 mr-2" />
+                        <ImageIcon className="h-4 w-4 mr-2" />
                         <span className="capitalize">{selectedAlbum?.album}</span>
                       </div>
                     </div>

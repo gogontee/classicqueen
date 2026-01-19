@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Trash2, Upload, X, Edit2, ChevronDown, ChevronUp, Check, Image as ImageIcon, Globe, Maximize2, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { Plus, Trash2, Upload, X, Edit2, ChevronDown, ChevronUp, Check, Image as ImageIcon, Globe, Maximize2, ChevronLeft, ChevronRight, Search, Image as FileImage } from 'lucide-react'
 
 export default function GalleriesManager({ data, onUpdate, supabase }) {
   // Default album options for suggestions
@@ -29,7 +29,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
   const [albums, setAlbums] = useState([]) // Array of album objects with images array
   const [activeAlbum, setActiveAlbum] = useState(null)
   const [newAlbumName, setNewAlbumName] = useState('')
-  const [newImage, setNewImage] = useState({ image_url: '', caption: '' })
+  const [bulkImages, setBulkImages] = useState([]) // Array of { file, preview, caption }
   const [uploading, setUploading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [editingImage, setEditingImage] = useState(null) // { albumId, imageIndex }
@@ -39,7 +39,6 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
   const [showAlbumModal, setShowAlbumModal] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef(null)
-  const [imagePreview, setImagePreview] = useState(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(null)
   const [showImageModal, setShowImageModal] = useState(false)
   const tabsContainerRef = useRef(null)
@@ -47,6 +46,9 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
   const [showRightScroll, setShowRightScroll] = useState(true)
   const [albumOptions, setAlbumOptions] = useState(defaultAlbumOptions)
   const [searchQuery, setSearchQuery] = useState('')
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [bulkUploadMode, setBulkUploadMode] = useState(false) // true = bulk upload, false = single upload
+  const [singleImage, setSingleImage] = useState({ image_url: '', caption: '' })
 
   // Initialize supabase client
   useEffect(() => {
@@ -196,7 +198,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
       const imagesArray = albumData.images.map(img => ({
         id: img.id,
         url: img.url,
-        caption: img.caption,
+        caption: img.caption || '', // Allow empty captions
         created_at: img.created_at
       }))
       
@@ -243,8 +245,50 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     }
   }
 
-  // Handle file selection with preview
-  const handleFileSelect = (event) => {
+  // Handle bulk file selection
+  const handleBulkFileSelect = (event) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length === 0) return
+    
+    // Limit to 10 files
+    if (files.length > 10) {
+      alert('Maximum 10 files allowed at once. Please select fewer files.')
+      return
+    }
+    
+    const newBulkImages = []
+    
+    files.forEach((file, index) => {
+      if (!file.type.startsWith('image/')) {
+        alert(`File "${file.name}" is not an image. Please upload image files only.`)
+        return
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File "${file.name}" exceeds 10MB limit.`)
+        return
+      }
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        newBulkImages[index] = {
+          file,
+          preview: e.target.result,
+          caption: ''
+        }
+        
+        // When all files are processed, update state
+        if (newBulkImages.length === files.length && newBulkImages.every(img => img !== undefined)) {
+          setBulkImages(newBulkImages)
+        }
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // Handle single file selection
+  const handleSingleFileSelect = (event) => {
     const file = event.target.files[0]
     if (!file) return
     
@@ -261,8 +305,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     // Create preview
     const reader = new FileReader()
     reader.onload = (e) => {
-      setImagePreview(e.target.result)
-      setNewImage(prev => ({ ...prev, image_url: e.target.result }))
+      setSingleImage(prev => ({ ...prev, image_url: e.target.result }))
     }
     reader.readAsDataURL(file)
     
@@ -277,7 +320,6 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
       return null
     }
     
-    setUploading(true)
     try {
       // Clean album name for file path
       const cleanAlbumName = albumName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()
@@ -301,10 +343,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
       return urlData.publicUrl
     } catch (error) {
       console.error('Upload error:', error)
-      alert('Upload failed: ' + error.message)
-      return null
-    } finally {
-      setUploading(false)
+      throw error
     }
   }
 
@@ -363,40 +402,52 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     }
   }
 
-  // Add new image to album (adds to JSONB array)
-  const handleAddImage = async () => {
-    if (!newImage.image_url || !newImage.caption.trim()) {
-      alert('Please add an image and provide a caption')
-      return
-    }
-    
+  // Add single image to album
+  const handleAddSingleImage = async () => {
     const album = getActiveAlbum()
     if (!album) {
       alert('Please select an album first')
       return
     }
     
+    if (!singleImage.image_url) {
+      alert('Please select an image to upload')
+      return
+    }
+    
     try {
-      let imageUrl = newImage.image_url
+      setUploading(true)
+      setUploadProgress(10)
+      
+      let imageUrl = singleImage.image_url
       
       // If it's a local preview (base64), upload the actual file
-      if (newImage.image_url.startsWith('data:')) {
+      if (singleImage.image_url.startsWith('data:')) {
         const fileInput = fileInputRef.current
         if (fileInput && fileInput.files && fileInput.files[0]) {
+          setUploadProgress(30)
           const uploadedUrl = await uploadFileToStorage(fileInput.files[0], album.name)
-          if (!uploadedUrl) return
+          if (!uploadedUrl) {
+            setUploading(false)
+            setUploadProgress(0)
+            return
+          }
           imageUrl = uploadedUrl
         } else {
           alert('Please select an image file to upload')
+          setUploading(false)
+          setUploadProgress(0)
           return
         }
       }
+      
+      setUploadProgress(70)
       
       // Create image object for JSONB array
       const newImageObj = {
         id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         url: imageUrl,
-        caption: newImage.caption,
+        caption: singleImage.caption || '', // Caption is optional
         created_at: new Date().toISOString()
       }
       
@@ -408,17 +459,20 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
       }
       
       // Update album in database with new JSONB array
+      setUploadProgress(90)
       const savedAlbum = await saveAlbumToDatabase(updatedAlbum, true)
       
       if (savedAlbum) {
+        setUploadProgress(100)
         // Update local state
         setAlbums(prev => prev.map(a => 
           a.id === album.id ? updatedAlbum : a
         ))
         
         // Reset form
-        setNewImage({ image_url: '', caption: '' })
-        setImagePreview(null)
+        setSingleImage({ image_url: '', caption: '' })
+        setUploading(false)
+        setUploadProgress(0)
         setShowUploadModal(false)
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
@@ -429,13 +483,96 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     } catch (error) {
       console.error('Error adding image:', error)
       alert('Failed to add image: ' + error.message)
+      setUploading(false)
+      setUploadProgress(0)
+    }
+  }
+
+  // Add bulk images to album
+  const handleAddBulkImages = async () => {
+    const album = getActiveAlbum()
+    if (!album) {
+      alert('Please select an album first')
+      return
+    }
+    
+    if (bulkImages.length === 0) {
+      alert('Please select images to upload')
+      return
+    }
+    
+    try {
+      setUploading(true)
+      const totalImages = bulkImages.length
+      const uploadedImages = []
+      
+      // Upload each image one by one
+      for (let i = 0; i < totalImages; i++) {
+        const bulkImage = bulkImages[i]
+        setUploadProgress(Math.round((i / totalImages) * 90))
+        
+        try {
+          // Upload to storage
+          const uploadedUrl = await uploadFileToStorage(bulkImage.file, album.name)
+          
+          if (uploadedUrl) {
+            uploadedImages.push({
+              id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${i}`,
+              url: uploadedUrl,
+              caption: bulkImage.caption || '', // Caption is optional
+              created_at: new Date().toISOString()
+            })
+          }
+        } catch (error) {
+          console.error(`Failed to upload image ${i + 1}:`, error)
+          // Continue with other images even if one fails
+        }
+      }
+      
+      setUploadProgress(95)
+      
+      if (uploadedImages.length > 0) {
+        // Add all images to album's images array
+        const updatedImages = [...album.images, ...uploadedImages]
+        const updatedAlbum = {
+          ...album,
+          images: updatedImages
+        }
+        
+        // Update album in database with new JSONB array
+        const savedAlbum = await saveAlbumToDatabase(updatedAlbum, true)
+        
+        if (savedAlbum) {
+          setUploadProgress(100)
+          // Update local state
+          setAlbums(prev => prev.map(a => 
+            a.id === album.id ? updatedAlbum : a
+          ))
+          
+          // Reset form
+          setBulkImages([])
+          setUploading(false)
+          setUploadProgress(0)
+          setShowUploadModal(false)
+          
+          alert(`Successfully uploaded ${uploadedImages.length} out of ${totalImages} images!`)
+        }
+      } else {
+        alert('Failed to upload any images. Please try again.')
+      }
+    } catch (error) {
+      console.error('Error adding bulk images:', error)
+      alert('Failed to add images: ' + error.message)
+    } finally {
+      setUploading(false)
+      setUploadProgress(0)
     }
   }
 
   // Edit existing image in JSONB array
   const handleEditImage = async () => {
-    if (!editingImage || !newImage.caption.trim()) {
-      alert('Please provide a caption')
+    if (!editingImage) {
+      alert('No image selected for editing')
       return
     }
     
@@ -448,10 +585,12 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     }
     
     try {
-      let imageUrl = newImage.image_url
+      setUploading(true)
+      
+      let imageUrl = singleImage.image_url
       
       // If a new image file was uploaded
-      if (newImage.image_url.startsWith('data:')) {
+      if (singleImage.image_url.startsWith('data:')) {
         const fileInput = fileInputRef.current
         if (fileInput && fileInput.files && fileInput.files[0]) {
           const uploadedUrl = await uploadFileToStorage(fileInput.files[0], album.name)
@@ -466,7 +605,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
       updatedImages[imageIndex] = {
         ...updatedImages[imageIndex],
         url: imageUrl,
-        caption: newImage.caption
+        caption: singleImage.caption || '' // Caption is optional
       }
       
       const updatedAlbum = {
@@ -486,8 +625,8 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
         
         // Reset form
         setEditingImage(null)
-        setNewImage({ image_url: '', caption: '' })
-        setImagePreview(null)
+        setSingleImage({ image_url: '', caption: '' })
+        setUploading(false)
         setShowUploadModal(false)
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
@@ -498,6 +637,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     } catch (error) {
       console.error('Error editing image:', error)
       alert('Failed to edit image: ' + error.message)
+      setUploading(false)
     }
   }
 
@@ -625,19 +765,20 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     
     const image = album.images[imageIndex]
     setEditingImage({ albumId, imageIndex })
-    setNewImage({ 
+    setSingleImage({ 
       image_url: image.url,
       caption: image.caption
     })
-    setImagePreview(image.url)
+    setBulkUploadMode(false) // Set to single upload mode for editing
     setShowUploadModal(true)
   }
 
   // Cancel edit/upload
   const cancelUpload = () => {
     setEditingImage(null)
-    setNewImage({ image_url: '', caption: '' })
-    setImagePreview(null)
+    setSingleImage({ image_url: '', caption: '' })
+    setBulkImages([])
+    setBulkUploadMode(false)
     setShowUploadModal(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -658,7 +799,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     }))
   }
 
-  // Handle drag and drop
+  // Handle drag and drop for bulk upload
   const handleDragOver = (e) => {
     e.preventDefault()
     setDragOver(true)
@@ -672,31 +813,52 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     e.preventDefault()
     setDragOver(false)
     
-    const file = e.dataTransfer.files[0]
-    if (!file) return
+    const files = Array.from(e.dataTransfer.files || [])
+    if (files.length === 0) return
     
-    if (!file.type.startsWith('image/')) {
-      alert('Please drop an image file')
+    // Limit to 10 files
+    if (files.length > 10) {
+      alert('Maximum 10 files allowed at once. Please drop fewer files.')
       return
     }
     
-    if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB')
-      return
+    const newBulkImages = []
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      
+      if (!file.type.startsWith('image/')) {
+        alert(`File "${file.name}" is not an image. Please drop image files only.`)
+        continue
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`File "${file.name}" exceeds 10MB limit.`)
+        continue
+      }
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        newBulkImages[i] = {
+          file,
+          preview: e.target.result,
+          caption: ''
+        }
+        
+        // When all files are processed, update state
+        if (newBulkImages.length === files.length && newBulkImages.every(img => img !== undefined)) {
+          setBulkImages(newBulkImages)
+          setBulkUploadMode(true)
+          setShowUploadModal(true)
+        }
+      }
+      reader.readAsDataURL(file)
     }
     
-    // Create preview and open upload modal
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      setImagePreview(e.target.result)
-      setNewImage(prev => ({ ...prev, image_url: e.target.result }))
-      setShowUploadModal(true)
-    }
-    reader.readAsDataURL(file)
-    
-    // Store file for upload
+    // Store files for upload
     const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(file)
+    files.forEach(file => dataTransfer.items.add(file))
     if (fileInputRef.current) {
       fileInputRef.current.files = dataTransfer.files
     }
@@ -730,6 +892,22 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
     const { albumId, index } = selectedImageIndex
     const album = findAlbumById(albumId)
     return album?.images[index]
+  }
+
+  // Update caption for bulk image
+  const updateBulkImageCaption = (index, caption) => {
+    const updatedBulkImages = [...bulkImages]
+    updatedBulkImages[index] = {
+      ...updatedBulkImages[index],
+      caption
+    }
+    setBulkImages(updatedBulkImages)
+  }
+
+  // Remove image from bulk upload
+  const removeBulkImage = (index) => {
+    const updatedBulkImages = bulkImages.filter((_, i) => i !== index)
+    setBulkImages(updatedBulkImages)
   }
 
   // Filter albums based on search
@@ -859,13 +1037,14 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
                   <button
                     onClick={() => {
                       setEditingImage(null)
-                      setNewImage({ image_url: '', caption: '' })
-                      setImagePreview(null)
+                      setSingleImage({ image_url: '', caption: '' })
+                      setBulkImages([])
+                      setBulkUploadMode(false)
                       setShowUploadModal(true)
                     }}
                     className="px-3 py-1.5 bg-gradient-to-r from-brown-600 to-amber-700 text-white rounded-lg font-medium hover:shadow-lg transition-shadow text-sm"
                   >
-                    Add Photo
+                    Add Photos
                   </button>
                   <button
                     onClick={() => handleDeleteAlbum(activeAlbum)}
@@ -919,13 +1098,14 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
                   <button
                     onClick={() => {
                       setEditingImage(null)
-                      setNewImage({ image_url: '', caption: '' })
-                      setImagePreview(null)
+                      setSingleImage({ image_url: '', caption: '' })
+                      setBulkImages([])
+                      setBulkUploadMode(false)
                       setShowUploadModal(true)
                     }}
                     className="px-5 py-2.5 bg-gradient-to-r from-brown-600 to-amber-700 text-white rounded-lg font-medium hover:shadow-lg transition-shadow"
                   >
-                    Add First Photo
+                    Add Photos
                   </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -943,8 +1123,9 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
                 className="relative group cursor-pointer"
                 onClick={() => {
                   setEditingImage(null)
-                  setNewImage({ image_url: '', caption: '' })
-                  setImagePreview(null)
+                  setSingleImage({ image_url: '', caption: '' })
+                  setBulkImages([])
+                  setBulkUploadMode(false)
                   setShowUploadModal(true)
                 }}
                 onDragOver={handleDragOver}
@@ -961,8 +1142,9 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
                   <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-brown-600 to-amber-700 flex items-center justify-center mb-3 md:mb-4 group-hover:scale-110 transition-transform">
                     <Plus className="h-5 w-5 md:h-8 md:w-8 text-white" />
                   </div>
-                  <p className="text-brown-700 font-medium text-sm md:text-base">Add Photo</p>
+                  <p className="text-brown-700 font-medium text-sm md:text-base">Add Photos</p>
                   <p className="text-xs md:text-sm text-brown-500 mt-1 text-center">Click or drag & drop</p>
+                  <p className="text-xs text-amber-600 mt-2">Up to 10 images at once</p>
                 </div>
               </div>
 
@@ -1030,9 +1212,9 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
                         className={`text-brown-900 cursor-pointer text-sm ${!expandedCaptions[image.id] ? 'line-clamp-2' : ''}`}
                         onClick={() => toggleCaption(image.id)}
                       >
-                        {image.caption}
+                        {image.caption || <span className="text-brown-400 italic">No caption</span>}
                       </div>
-                      {image.caption?.length > 50 && (
+                      {image.caption && image.caption.length > 50 && (
                         <button
                           onClick={() => toggleCaption(image.id)}
                           className="mt-1 text-xs text-amber-600 hover:text-amber-700 flex items-center"
@@ -1155,128 +1337,303 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
         {/* Upload/Edit Modal */}
         {showUploadModal && (
           <div className="fixed inset-0 bg-brown-900/50 backdrop-blur-sm flex items-center justify-center p-3 md:p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
               <div className="p-4 md:p-6 border-b border-brown-200">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg md:text-2xl font-bold text-brown-900">
-                    {editingImage ? 'Edit Photo' : 'Add Photo to Album'}
-                  </h3>
-                  <button
-                    onClick={cancelUpload}
-                    className="p-1.5 md:p-2 hover:bg-amber-50 rounded-lg transition-colors"
-                  >
-                    <X className="h-5 w-5 md:h-6 md:w-6 text-brown-500" />
-                  </button>
+                  <div>
+                    <h3 className="text-lg md:text-2xl font-bold text-brown-900">
+                      {editingImage ? 'Edit Photo' : (bulkUploadMode ? 'Bulk Upload Images' : 'Add Photo to Album')}
+                    </h3>
+                    <p className="text-brown-600 text-sm md:text-base mt-1">
+                      {editingImage 
+                        ? 'Update your photo details' 
+                        : bulkUploadMode 
+                          ? `Add up to 10 images to "${getActiveAlbum()?.name}"`
+                          : `Add a photo to "${getActiveAlbum()?.name}"`
+                      }
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {!editingImage && (
+                      <div className="flex bg-amber-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setBulkUploadMode(false)}
+                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${!bulkUploadMode ? 'bg-white text-brown-900 shadow-sm' : 'text-brown-600 hover:text-brown-900'}`}
+                        >
+                          Single
+                        </button>
+                        <button
+                          onClick={() => setBulkUploadMode(true)}
+                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${bulkUploadMode ? 'bg-white text-brown-900 shadow-sm' : 'text-brown-600 hover:text-brown-900'}`}
+                        >
+                          <FileImage className="h-3 w-3 inline mr-1" />
+                          Bulk (10)
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      onClick={cancelUpload}
+                      className="p-1.5 md:p-2 hover:bg-amber-50 rounded-lg transition-colors"
+                    >
+                      <X className="h-5 w-5 md:h-6 md:w-6 text-brown-500" />
+                    </button>
+                  </div>
                 </div>
-                <p className="text-brown-600 text-sm md:text-base mt-1 md:mt-2">
-                  {editingImage ? 'Update your photo details' : `Add a photo to "${getActiveAlbum()?.name}"`}
-                </p>
               </div>
               
               <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(90vh-160px)]">
-                <div className="space-y-4">
-                  {/* Image Upload Area */}
-                  <div 
-                    className={`
-                      border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 cursor-pointer
-                      ${imagePreview ? 'border-brown-300' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-50'}
-                    `}
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileSelect}
-                      accept="image/*"
-                    />
-                    
-                    {imagePreview ? (
-                      <div className="relative">
-                        <img 
-                          src={imagePreview} 
-                          alt="Preview" 
-                          className="w-48 h-48 object-cover rounded-lg mx-auto mb-4 shadow-lg"
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setImagePreview(null)
-                            setNewImage(prev => ({ ...prev, image_url: '' }))
-                            if (fileInputRef.current) {
-                              fileInputRef.current.value = ''
-                            }
-                          }}
-                          className="absolute top-1 right-1 p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white"
-                        >
-                          <X className="h-3 w-3 text-brown-700" />
-                        </button>
+                {uploadProgress > 0 && (
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm text-brown-600 mb-1">
+                      <span>Uploading...</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-brown-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-amber-500 to-amber-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                
+                {bulkUploadMode && !editingImage ? (
+                  // Bulk Upload Mode
+                  <div className="space-y-4">
+                    <div 
+                      className={`
+                        border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 cursor-pointer
+                        ${dragOver ? 'border-amber-400 bg-amber-50' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-50'}
+                      `}
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleBulkFileSelect}
+                        accept="image/*"
+                        multiple
+                      />
+                      
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brown-600 to-amber-700 flex items-center justify-center mx-auto mb-4">
+                        <FileImage className="h-8 w-8 text-white" />
                       </div>
-                    ) : (
-                      <>
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brown-600 to-amber-700 flex items-center justify-center mx-auto mb-4">
-                          <Upload className="h-8 w-8 text-white" />
+                      <p className="text-lg font-medium text-brown-900 mb-2">
+                        Drop your images here, or click to browse
+                      </p>
+                      <p className="text-sm text-brown-500">
+                        Up to 10 images • Supports JPG, PNG, GIF, WebP • Max 10MB each
+                      </p>
+                      {bulkImages.length > 0 && (
+                        <p className="text-sm text-amber-600 mt-2">
+                          {bulkImages.length} image{bulkImages.length !== 1 ? 's' : ''} selected
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Bulk Images Preview */}
+                    {bulkImages.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-brown-700">Selected Images ({bulkImages.length}/10)</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-1">
+                          {bulkImages.map((bulkImage, index) => (
+                            <div key={index} className="border border-brown-200 rounded-lg overflow-hidden">
+                              <div className="aspect-square relative bg-brown-100">
+                                <img 
+                                  src={bulkImage.preview} 
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  onClick={() => removeBulkImage(index)}
+                                  className="absolute top-1 right-1 p-1 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white"
+                                >
+                                  <X className="h-3 w-3 text-brown-700" />
+                                </button>
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                  <span className="text-xs text-white font-medium">Image {index + 1}</span>
+                                </div>
+                              </div>
+                              <div className="p-2">
+                                <input
+                                  type="text"
+                                  value={bulkImage.caption}
+                                  onChange={(e) => updateBulkImageCaption(index, e.target.value)}
+                                  placeholder="Optional caption"
+                                  className="w-full text-xs border border-brown-200 rounded px-2 py-1 focus:outline-none focus:border-amber-300"
+                                  maxLength={100}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <p className="text-lg font-medium text-brown-900 mb-2">
-                          Drop your image here, or click to browse
+                        <p className="text-xs text-brown-500 text-center">
+                          Captions are optional. You can add them later.
                         </p>
-                        <p className="text-sm text-brown-500">
-                          Supports JPG, PNG, GIF, WebP • Max 10MB
-                        </p>
-                      </>
+                      </div>
                     )}
                   </div>
-                  
-                  {/* Caption Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-brown-700 mb-2">
-                      Photo Caption
-                    </label>
-                    <textarea
-                      value={newImage.caption}
-                      onChange={(e) => setNewImage(prev => ({ ...prev, caption: e.target.value }))}
-                      placeholder="Describe your photo..."
-                      className="w-full h-24 rounded-lg border border-brown-300 px-3 py-2 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 resize-none text-sm"
-                      maxLength={200}
-                    />
+                ) : (
+                  // Single Upload Mode
+                  <div className="space-y-4">
+                    {/* Image Upload Area */}
+                    <div 
+                      className={`
+                        border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 cursor-pointer
+                        ${singleImage.image_url ? 'border-brown-300' : 'border-amber-300 bg-amber-50/50 hover:bg-amber-50'}
+                      `}
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        setDragOver(false)
+                        
+                        const file = e.dataTransfer.files[0]
+                        if (!file) return
+                        
+                        if (!file.type.startsWith('image/')) {
+                          alert('Please drop an image file')
+                          return
+                        }
+                        
+                        if (file.size > 10 * 1024 * 1024) {
+                          alert('File size must be less than 10MB')
+                          return
+                        }
+                        
+                        // Create preview
+                        const reader = new FileReader()
+                        reader.onload = (e) => {
+                          setSingleImage(prev => ({ ...prev, image_url: e.target.result }))
+                          setBulkUploadMode(false)
+                        }
+                        reader.readAsDataURL(file)
+                        
+                        // Store file for upload
+                        const dataTransfer = new DataTransfer()
+                        dataTransfer.items.add(file)
+                        if (fileInputRef.current) {
+                          fileInputRef.current.files = dataTransfer.files
+                        }
+                      }}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleSingleFileSelect}
+                        accept="image/*"
+                      />
+                      
+                      {singleImage.image_url ? (
+                        <div className="relative">
+                          <img 
+                            src={singleImage.image_url} 
+                            alt="Preview" 
+                            className="w-48 h-48 object-cover rounded-lg mx-auto mb-4 shadow-lg"
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSingleImage(prev => ({ ...prev, image_url: '' }))
+                              if (fileInputRef.current) {
+                                fileInputRef.current.value = ''
+                              }
+                            }}
+                            className="absolute top-1 right-1 p-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white"
+                          >
+                            <X className="h-3 w-3 text-brown-700" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brown-600 to-amber-700 flex items-center justify-center mx-auto mb-4">
+                            <Upload className="h-8 w-8 text-white" />
+                          </div>
+                          <p className="text-lg font-medium text-brown-900 mb-2">
+                            Drop your image here, or click to browse
+                          </p>
+                          <p className="text-sm text-brown-500">
+                            Supports JPG, PNG, GIF, WebP • Max 10MB
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Caption Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-brown-700 mb-2">
+                        Photo Caption (Optional)
+                        <span className="text-brown-400 font-normal ml-1">- Add a description if you want</span>
+                      </label>
+                      <textarea
+                        value={singleImage.caption}
+                        onChange={(e) => setSingleImage(prev => ({ ...prev, caption: e.target.value }))}
+                        placeholder="Describe your photo... (optional)"
+                        className="w-full h-24 rounded-lg border border-brown-300 px-3 py-2 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 resize-none text-sm"
+                        maxLength={200}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               
               <div className="p-4 md:p-6 border-t border-brown-200 bg-amber-50">
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={cancelUpload}
-                    className="px-4 py-2 border border-brown-300 rounded-lg text-brown-700 font-medium hover:bg-white transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={editingImage ? handleEditImage : handleAddImage}
-                    disabled={uploading || isLoading || !newImage.caption?.trim() || !imagePreview}
-                    className={`
-                      px-5 py-2 rounded-lg font-medium flex items-center space-x-1.5 transition-all text-sm
-                      ${uploading || isLoading || !newImage.caption?.trim() || !imagePreview
-                        ? 'bg-brown-300 text-brown-500 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-brown-600 to-amber-700 text-white hover:shadow-lg'
-                      }
-                    `}
-                  >
-                    {uploading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Uploading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4" />
-                        <span>{editingImage ? 'Update Photo' : 'Add to Album'}</span>
-                      </>
-                    )}
-                  </button>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-brown-500">
+                    {bulkUploadMode && !editingImage 
+                      ? `${bulkImages.length} image${bulkImages.length !== 1 ? 's' : ''} selected` 
+                      : 'Caption is optional'}
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={cancelUpload}
+                      className="px-4 py-2 border border-brown-300 rounded-lg text-brown-700 font-medium hover:bg-white transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={editingImage ? handleEditImage : (bulkUploadMode ? handleAddBulkImages : handleAddSingleImage)}
+                      disabled={uploading || isLoading || (
+                        editingImage 
+                          ? false 
+                          : bulkUploadMode 
+                            ? bulkImages.length === 0 
+                            : !singleImage.image_url
+                      )}
+                      className={`
+                        px-5 py-2 rounded-lg font-medium flex items-center space-x-1.5 transition-all text-sm
+                        ${uploading || isLoading || (editingImage ? false : bulkUploadMode ? bulkImages.length === 0 : !singleImage.image_url)
+                          ? 'bg-brown-300 text-brown-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-brown-600 to-amber-700 text-white hover:shadow-lg'
+                        }
+                      `}
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>{bulkUploadMode ? 'Uploading...' : 'Uploading...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4" />
+                          <span>
+                            {editingImage 
+                              ? 'Update Photo' 
+                              : bulkUploadMode 
+                                ? `Upload ${bulkImages.length} Image${bulkImages.length !== 1 ? 's' : ''}`
+                                : 'Add to Album'
+                            }
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1327,7 +1684,7 @@ export default function GalleriesManager({ data, onUpdate, supabase }) {
                 <div className="lg:w-80 bg-white/10 backdrop-blur-sm rounded-xl p-4 mt-3 lg:mt-0 lg:ml-3">
                   <div className="text-white">
                     <h3 className="text-xl font-bold mb-3">Photo Details</h3>
-                    <p className="text-base mb-4">{getCurrentModalImage()?.caption}</p>
+                    <p className="text-base mb-4">{getCurrentModalImage()?.caption || <span className="text-white/60 italic">No caption</span>}</p>
                     
                     <div className="space-y-3">
                       <div>

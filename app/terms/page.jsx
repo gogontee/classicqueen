@@ -27,7 +27,7 @@ const TermsAndConditionsPage = () => {
               Terms and Conditions
             </h2>
             <p className="text-lg text-amber-100 mb-6">
-              Last Updated: {new Date(2025, 5, 24).toLocaleDateString('en-US', { 
+              Last Updated: {new Date(2024, 5, 24).toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 
@@ -406,7 +406,7 @@ const TermsAndConditionsPage = () => {
                     <h3 className="text-xl font-bold text-brown-800 mb-3">6. Registration Fee</h3>
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
                       <p className="text-brown-700 font-bold mb-2">
-                        Registration Fee: USD$200 (Payable only if application is approved)
+                        Registration Fee: USD$300 (Payable only if application is approved)
                       </p>
                       <p className="text-brown-700">
                         No payment is required to submit your application. The registration fee is only payable if your application is approved and you accept the invitation to participate. This fee covers:
