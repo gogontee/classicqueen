@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, Save, X, Upload, Film, Image as ImageIcon, Video, ExternalLink, RefreshCw } from 'lucide-react'
+import { Plus, Edit2, Trash2, Save, X, Upload, Film, Image as ImageIcon, Video, ExternalLink, RefreshCw, FileUp } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
 // Create Supabase client
@@ -23,6 +23,7 @@ export default function HeroManager() {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingEdit, setUploadingEdit] = useState(null) // Track which item is uploading
   const TABLE_ID = 1989 // Your specific table ID
 
   // Fetch hero items from database
@@ -115,11 +116,17 @@ export default function HeroManager() {
   }
 
   // Upload file to Supabase storage - UPDATED TO USE 'classic' BUCKET
-  const handleFileUpload = async (event) => {
+  const handleFileUpload = async (event, index = null) => {
     const file = event.target.files[0]
     if (!file) return
     
-    setUploading(true)
+    // Set uploading state
+    if (index !== null) {
+      setUploadingEdit(index)
+    } else {
+      setUploading(true)
+    }
+    
     try {
       const fileExt = file.name.split('.').pop()
       const fileName = `hero_${Date.now()}.${fileExt}`
@@ -146,14 +153,21 @@ export default function HeroManager() {
       
       const mediaType = file.type.startsWith('video/') ? 'video' : 'image'
       
-      setNewItem(prev => ({ 
-        ...prev, 
-        src: urlData.publicUrl,
-        type: mediaType
-      }))
+      if (index !== null) {
+        // Update existing item
+        updateItemField(index, 'src', urlData.publicUrl)
+        updateItemField(index, 'type', mediaType)
+      } else {
+        // Update new item
+        setNewItem(prev => ({ 
+          ...prev, 
+          src: urlData.publicUrl,
+          type: mediaType
+        }))
+      }
       
       console.log('✅ File uploaded to classic bucket:', urlData.publicUrl)
-      alert('File uploaded successfully to classic bucket!')
+      alert('File uploaded successfully!')
       
     } catch (error) {
       console.error('❌ Upload error:', error)
@@ -170,7 +184,11 @@ export default function HeroManager() {
         console.error('Bucket check error:', bucketError)
       }
     } finally {
-      setUploading(false)
+      if (index !== null) {
+        setUploadingEdit(null)
+      } else {
+        setUploading(false)
+      }
     }
   }
 
@@ -241,6 +259,7 @@ export default function HeroManager() {
     }
     setHeroItems(updatedItems)
     setEditingIndex(null)
+    setUploadingEdit(null)
   }
 
   const updateItemField = (index, field, value) => {
@@ -282,6 +301,7 @@ export default function HeroManager() {
     if (result.success) {
       setHeroItems(updatedItems)
       setEditingIndex(null)
+      setUploadingEdit(null)
       alert('✅ Changes saved successfully!')
     } else {
       alert(`❌ Failed to save: ${result.error}`)
@@ -423,7 +443,7 @@ export default function HeroManager() {
                     <input
                       type="file"
                       className="hidden"
-                      onChange={handleFileUpload}
+                      onChange={(e) => handleFileUpload(e)}
                       accept="image/*,video/*"
                       disabled={uploading}
                     />
@@ -584,13 +604,37 @@ export default function HeroManager() {
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">Media URL</label>
-                          <input
-                            type="text"
-                            value={item.src}
-                            onChange={(e) => updateItemField(index, 'src', e.target.value)}
-                            className="w-full text-sm rounded border border-gray-300 px-2 py-1.5 focus:ring-1 focus:ring-blue-500"
-                            disabled={saving}
-                          />
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={item.src}
+                              onChange={(e) => updateItemField(index, 'src', e.target.value)}
+                              className="flex-1 text-sm rounded border border-gray-300 px-2 py-1.5 focus:ring-1 focus:ring-blue-500"
+                              disabled={saving || uploadingEdit === index}
+                            />
+                            <label className="cursor-pointer">
+                              <div className={`px-3 py-1.5 rounded text-sm font-medium ${uploadingEdit === index ? 'bg-gray-300 text-gray-600' : 'bg-blue-600 hover:bg-blue-700 text-white'} transition-colors`}>
+                                {uploadingEdit === index ? (
+                                  <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                                    Uploading...
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center">
+                                    <FileUp className="h-3 w-3 mr-1" />
+                                    Upload
+                                  </div>
+                                )}
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  onChange={(e) => handleFileUpload(e, index)}
+                                  accept="image/*,video/*"
+                                  disabled={uploadingEdit === index || saving}
+                                />
+                              </div>
+                            </label>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
@@ -599,7 +643,7 @@ export default function HeroManager() {
                               value={item.type}
                               onChange={(e) => updateItemField(index, 'type', e.target.value)}
                               className="w-full text-sm rounded border border-gray-300 px-2 py-1.5 focus:ring-1 focus:ring-blue-500"
-                              disabled={saving}
+                              disabled={saving || uploadingEdit === index}
                             >
                               <option value="image">Image</option>
                               <option value="video">Video</option>
@@ -612,10 +656,20 @@ export default function HeroManager() {
                               value={item.cta.href}
                               onChange={(e) => updateItemField(index, 'cta.href', e.target.value)}
                               className="w-full text-sm rounded border border-gray-300 px-2 py-1.5 focus:ring-1 focus:ring-blue-500"
-                              disabled={saving}
+                              disabled={saving || uploadingEdit === index}
                             />
                           </div>
                         </div>
+                        
+                        {/* Upload Progress Indicator */}
+                        {uploadingEdit === index && (
+                          <div className="mt-2 text-xs text-blue-600">
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-2 w-2 border-b-2 border-blue-600 mr-2"></div>
+                              Uploading file to 'classic' bucket...
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div>
@@ -652,7 +706,7 @@ export default function HeroManager() {
                         onClick={() => cancelEditing(index)}
                         className="px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                         title="Cancel"
-                        disabled={saving}
+                        disabled={saving || uploadingEdit === index}
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -660,7 +714,7 @@ export default function HeroManager() {
                         onClick={() => saveEdit(index)}
                         className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
                         title="Save"
-                        disabled={saving}
+                        disabled={saving || uploadingEdit === index || !item.src.trim()}
                       >
                         <Save className="h-4 w-4" />
                       </button>
@@ -718,7 +772,7 @@ export default function HeroManager() {
           <div>• Column: <code className="bg-gray-100 px-1 rounded">hero (JSONB)</code></div>
           <div>• Storage Bucket: <code className="bg-gray-100 px-1 rounded">classic</code> (New uploads go here)</div>
           <div>• Storage Path: <code className="bg-gray-100 px-1 rounded">classic/heros/</code></div>
-          <div>• Existing files may be in 'heros' bucket, new uploads go to 'classic' bucket</div>
+          <div>• Click the "Upload" button in edit mode to replace media files</div>
         </div>
       </div>
     </div>
