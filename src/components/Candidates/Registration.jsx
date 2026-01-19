@@ -390,7 +390,7 @@ const CandidateRegistrationForm = () => {
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <div className="bg-brown-700 px-3 py-1 rounded-full inline-flex items-center text-sm">
-                  <span className="font-semibold">Registration Fee: USD200 (If approved)</span>
+                  <span className="font-semibold">Registration Fee: USD300 (If approved)</span>
                 </div>
                 <div className="bg-amber-600 px-3 py-1 rounded-full inline-flex items-center text-sm">
                   <span className="font-semibold">No payment required now</span>
@@ -458,7 +458,7 @@ const CandidateRegistrationForm = () => {
                     <h3 className="font-bold text-amber-800">Registration Fee Information</h3>
                     <p className="text-amber-700 text-sm mt-1">
                       There is <span className="font-bold">no payment required</span> to submit your application. 
-                      If your application is approved, you will be required to pay a registration fee of <span className="font-bold">USD$200</span> to secure your spot as a contestant.
+                      If your application is approved, you will be required to pay a registration fee of <span className="font-bold">USD$300</span> to secure your spot as a contestant.
                     </p>
                   </div>
                 </div>
@@ -1130,7 +1130,7 @@ const CandidateRegistrationForm = () => {
                     )}
                   </button>
                   <p className="text-center text-brown-600 text-sm mt-3">
-                    <span className="font-bold text-amber-700">Registration Fee: $500 (Payable only if application is approved)</span>
+                    <span className="font-bold text-amber-700">Registration Fee: $300 (Payable only if application is approved)</span>
                     <br />
                     <span className="text-brown-500">No payment required to submit your application</span>
                     {countryWarning && (
@@ -1216,7 +1216,7 @@ const CandidateRegistrationForm = () => {
                   <div className="pt-4 border-t border-gold-200">
                     <p className="text-sm text-brown-600">Fee Information</p>
                     <p className="text-amber-700 font-medium">
-                      $200 Registration Fee
+                      $300 Registration Fee
                     </p>
                     <p className="text-sm text-green-600 mt-1">
                       ✓ No payment required now

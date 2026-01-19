@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { 
   Database, Image as ImageIcon, Film, BarChart3, 
   Globe, Users, Trophy, Settings, Eye,
-  Newspaper, Lock, LogOut, AlertCircle, CheckCircle
+  Newspaper, Lock, LogOut, AlertCircle, CheckCircle,
+  Mail
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
@@ -16,6 +17,7 @@ import CountriesManager from '../../src/components/CountriesManager'
 import GalleriesManager from '../../src/components/GalleriesManager'
 import AlbumsManager from '../../src/components/AlbumsManager'
 import NewsManagement from '../../src/components/NewsManagement'
+import EnquiriesMail from '../../src/components/Mail/EnquiriesMail'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('hero')
@@ -32,6 +34,7 @@ export default function AdminDashboard() {
     { id: 'galleries', label: 'Galleries', icon: Database, color: 'pink' },
     { id: 'albums', label: 'Albums', icon: Database, color: 'indigo' },
     { id: 'news', label: 'News', icon: Newspaper, color: 'red' },
+    { id: 'mail', label: 'Enquiries Mail', icon: Mail, color: 'cyan' },
   ]
 
   // Check for existing session on component mount
@@ -365,9 +368,10 @@ export default function AdminDashboard() {
             {activeTab === 'galleries' && <GalleriesManager />}
             {activeTab === 'albums' && <AlbumsManager />}
             {activeTab === 'news' && <NewsManagement />}
+            {activeTab === 'mail' && <EnquiriesMail />}
             
             {/* Show message for tabs that don't have components yet */}
-            {activeTab !== 'news' && !['hero', 'featured', 'stats', 'countries', 'galleries', 'albums'].includes(activeTab) && (
+            {activeTab !== 'news' && activeTab !== 'mail' && !['hero', 'featured', 'stats', 'countries', 'galleries', 'albums'].includes(activeTab) && (
               <div className="text-center py-12">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-brown-100 text-brown-600 rounded-full mb-4">
                   <Database size={24} />

@@ -8,6 +8,7 @@ import {
   FileText, Globe, Users, Heart
 } from 'lucide-react'
 import { motion } from "motion/react"
+import { supabase } from '../../lib/supabase'
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -23,7 +24,9 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
+  const [fileUploading, setFileUploading] = useState(false)
   const [activeTab, setActiveTab] = useState('form')
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const inquiryTypes = [
     { value: 'general', label: 'General Inquiry', icon: MessageCircle },
@@ -88,6 +91,77 @@ export default function ContactPage() {
     return Object.keys(newErrors).length === 0
   }
 
+  const uploadFile = async (file) => {
+    try {
+      setUploadProgress(0)
+      
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'text/plain'
+      ]
+      
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('File type not allowed. Please upload PDF, DOC, DOCX, JPG, PNG, WebP, or TXT files.')
+      }
+      
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        throw new Error('File size must be less than 10MB')
+      }
+      
+      // Create unique filename with timestamp
+      const timestamp = Date.now()
+      const randomString = Math.random().toString(36).substring(2, 15)
+      const fileExtension = file.name.split('.').pop()
+      const fileName = `${timestamp}_${randomString}.${fileExtension}`
+      const filePath = `${fileName}`
+      
+      console.log('Uploading file to enquiries bucket:', {
+        bucket: 'enquiries',
+        path: filePath,
+        size: file.size,
+        type: file.type
+      })
+      
+      // Upload to Supabase Storage - enquiries bucket
+      const { data, error: uploadError } = await supabase.storage
+        .from('enquiries')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+      
+      if (uploadError) {
+        console.error('Supabase storage error:', uploadError)
+        throw new Error(`Upload failed: ${uploadError.message}`)
+      }
+      
+      console.log('File uploaded successfully:', data)
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('enquiries')
+        .getPublicUrl(filePath)
+      
+      console.log('Public URL generated:', publicUrl)
+      
+      setUploadProgress(100)
+      return publicUrl
+      
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      throw error
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -97,11 +171,59 @@ export default function ContactPage() {
     
     setIsSubmitting(true)
     
-    setTimeout(() => {
-      console.log('Form submitted:', formData)
-      setIsSubmitting(false)
-      setIsSubmitted(true)
+    try {
+      let attachmentUrl = null
       
+      // Upload file if selected
+      if (selectedFile) {
+        setFileUploading(true)
+        try {
+          console.log('Starting file upload:', selectedFile.name)
+          attachmentUrl = await uploadFile(selectedFile)
+          console.log('File uploaded successfully, URL:', attachmentUrl)
+        } catch (error) {
+          console.error('File upload failed:', error)
+          alert(`File upload failed: ${error.message}. Please try again or submit without attachment.`)
+          setFileUploading(false)
+          setIsSubmitting(false)
+          return
+        }
+        setFileUploading(false)
+      }
+      
+      // Prepare enquiry data
+      const enquiryData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        subject: formData.subject.trim() || null,
+        message: formData.message.trim(),
+        inquiry_type: formData.inquiryType,
+        attachment_url: attachmentUrl,
+        status: 'new',
+        read: false,
+        starred: false,
+        archived: false,
+        deleted: false,
+        created_at: new Date().toISOString()
+      }
+      
+      console.log('Submitting enquiry data:', enquiryData)
+      
+      // Insert into Supabase enquiries table
+      const { data: insertData, error } = await supabase
+        .from('enquiries')
+        .insert([enquiryData])
+        .select()
+      
+      if (error) {
+        console.error('Error saving enquiry to database:', error)
+        throw new Error(`Database error: ${error.message}`)
+      }
+      
+      console.log('Enquiry submitted successfully:', insertData)
+      
+      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -111,32 +233,76 @@ export default function ContactPage() {
         inquiryType: 'general'
       })
       setSelectedFile(null)
+      setUploadProgress(0)
+      setErrors({})
       
+      // Show success message
+      setIsSubmitted(true)
+      setIsSubmitting(false)
+      
+      // Reset success message after 5 seconds
       setTimeout(() => {
         setIsSubmitted(false)
       }, 5000)
-    }, 1500)
+      
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      alert(`Failed to submit enquiry: ${error.message}. Please try again.`)
+      setIsSubmitting(false)
+    }
   }
 
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB')
+      // Reset upload progress
+      setUploadProgress(0)
+      
+      // Check file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'text/plain'
+      ]
+      
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please upload PDF, DOC, DOCX, JPG, PNG, WebP, or TXT files only')
         return
       }
+      
+      // Check file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB')
+        return
+      }
+      
       setSelectedFile(file)
     }
   }
 
   const removeFile = () => {
     setSelectedFile(null)
+    setUploadProgress(0)
   }
 
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 }
+  }
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   return (
@@ -497,28 +663,47 @@ export default function ContactPage() {
                             <motion.div 
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm overflow-hidden"
+                              className="space-y-3"
                             >
-                              <div className="flex items-center min-w-0">
-                                <div className="w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
-                                  <Award size={24} className="text-gold-600" />
+                              <div className="flex items-center justify-between bg-white rounded-lg p-4 shadow-sm overflow-hidden">
+                                <div className="flex items-center min-w-0">
+                                  <div className="w-12 h-12 bg-gold-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+                                    <Award size={24} className="text-gold-600" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-brown-800 truncate">{selectedFile.name}</p>
+                                    <p className="text-sm text-brown-500">
+                                      {formatFileSize(selectedFile.size)}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-brown-800 truncate">{selectedFile.name}</p>
-                                  <p className="text-sm text-brown-500">
-                                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  type="button"
+                                  onClick={removeFile}
+                                  className="text-brown-500 hover:text-red-600 p-2 flex-shrink-0"
+                                >
+                                  <X size={20} />
+                                </motion.button>
+                              </div>
+                              
+                              {/* Upload Progress */}
+                              {fileUploading && (
+                                <div className="space-y-2">
+                                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                    <motion.div 
+                                      className="bg-gradient-to-r from-gold-500 to-gold-600 h-2.5 rounded-full"
+                                      initial={{ width: '0%' }}
+                                      animate={{ width: `${uploadProgress}%` }}
+                                      transition={{ duration: 0.3 }}
+                                    />
+                                  </div>
+                                  <p className="text-sm text-brown-600 text-center">
+                                    Uploading... {uploadProgress}%
                                   </p>
                                 </div>
-                              </div>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                type="button"
-                                onClick={removeFile}
-                                className="text-brown-500 hover:text-red-600 p-2 flex-shrink-0"
-                              >
-                                <X size={20} />
-                              </motion.button>
+                              )}
                             </motion.div>
                           ) : (
                             <>
@@ -527,7 +712,7 @@ export default function ContactPage() {
                                 id="file-upload"
                                 onChange={handleFileChange}
                                 className="hidden"
-                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.txt"
                               />
                               <motion.label
                                 htmlFor="file-upload"
@@ -541,7 +726,7 @@ export default function ContactPage() {
                                   Click to upload a file
                                 </p>
                                 <p className="text-brown-500 text-sm">
-                                  PDF, DOC, JPG, PNG up to 5MB
+                                  PDF, DOC, JPG, PNG, WebP, TXT up to 10MB
                                 </p>
                               </motion.label>
                             </>
@@ -551,15 +736,17 @@ export default function ContactPage() {
 
                       <motion.button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || fileUploading}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="w-full bg-gradient-to-r from-brown-600 to-brown-700 hover:from-brown-700 hover:to-brown-800 text-white font-semibold py-4 rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                       >
-                        {isSubmitting ? (
+                        {isSubmitting || fileUploading ? (
                           <div className="flex items-center justify-center">
                             <Loader2 size={20} className="animate-spin mr-3" />
-                            <span>Sending Message...</span>
+                            <span>
+                              {fileUploading ? 'Uploading File...' : 'Sending Message...'}
+                            </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">

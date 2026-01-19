@@ -84,23 +84,24 @@ export default function NewsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+              {/* Page title increased by 50% */}
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold mb-4">
                 Latest <span className="text-gold-400">News</span>
               </h1>
               <p className="text-xl text-gold-300 mb-8 max-w-3xl mx-auto">
                 Stay updated with the latest announcements, events, and stories from Classic Queen International
               </p>
               
-              {/* Search Bar */}
-              <div className="max-w-2xl mx-auto mt-8">
+              {/* Search Bar - Reduced by 50% in height */}
+              <div className="max-w-md mx-auto mt-8">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-brown-400" size={20} />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brown-400" size={16} />
                   <input
                     type="text"
                     placeholder="Search news articles..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-brown-300 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-brown-300 focus:outline-none focus:ring-2 focus:ring-gold-500 focus:border-transparent text-sm"
                   />
                 </div>
               </div>
@@ -132,7 +133,7 @@ export default function NewsPage() {
                 <p className="text-brown-600">Try searching with different keywords</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {filteredNews.map((item) => (
                   <motion.div
                     key={item.id}
@@ -141,8 +142,8 @@ export default function NewsPage() {
                     transition={{ duration: 0.3 }}
                   >
                     <Link href={`/news/${item.id}`}>
-                      <div className="group bg-white rounded-2xl shadow-lg overflow-hidden border border-brown-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col">
-                        {/* Cover Image */}
+                      <div className="group bg-white rounded-xl md:rounded-2xl shadow-lg overflow-hidden border border-brown-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                        {/* Cover Image - RESTORED to original styling */}
                         <div className="relative h-48 md:h-56 overflow-hidden bg-gradient-to-br from-brown-200 to-brown-300">
                           {item.cover_image ? (
                             <Image
@@ -165,35 +166,36 @@ export default function NewsPage() {
                         </div>
 
                         {/* Content */}
-                        <div className="p-6 flex-1 flex flex-col">
-                          <div className="flex items-center text-sm text-brown-500 mb-3">
-                            <Calendar size={14} className="mr-2" />
-                            <span>{new Date(item.created_at).toLocaleDateString('en-US', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}</span>
-                            <span className="mx-2">•</span>
-                            <Clock size={14} className="mr-2" />
-                            <span>{item.read_time || '5'} min read</span>
+                        <div className="p-3 md:p-6 flex-1 flex flex-col">
+                          {/* Date only - Very small on mobile, normal on desktop */}
+                          <div className="text-[10px] xs:text-xs md:text-sm text-brown-500 mb-2 md:mb-3">
+                            <div className="flex items-center">
+                              <Calendar size={10} className="mr-1 md:mr-2" />
+                              <span>{new Date(item.created_at).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}</span>
+                            </div>
                           </div>
 
-                          <h3 className="text-lg font-bold text-brown-900 mb-3 line-clamp-2">
+                          <h3 className="text-sm md:text-lg font-bold text-brown-900 mb-2 md:mb-3 line-clamp-2">
                             {item.title}
                           </h3>
 
-                          <p className="text-brown-600 text-sm mb-4 line-clamp-3 flex-1">
-                            {item.excerpt || item.content.substring(0, 120)}...
+                          <p className="text-brown-600 text-xs md:text-sm mb-3 md:mb-4 line-clamp-2 md:line-clamp-3 flex-1">
+                            {item.excerpt || item.content.substring(0, 80)}...
                           </p>
 
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-brown-100">
-                            <div className="flex items-center">
+                          <div className="flex items-center justify-between mt-3 md:mt-4 pt-3 md:pt-4 border-t border-brown-100">
+                            {/* Author - Hidden on mobile, shown on desktop */}
+                            <div className="hidden md:flex items-center">
                               <User size={14} className="mr-2 text-brown-500" />
                               <span className="text-sm text-brown-700">{item.author || 'Admin'}</span>
                             </div>
-                            <div className="flex items-center text-gold-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                            <div className="flex items-center text-gold-600 text-xs md:text-sm font-medium group-hover:translate-x-1 transition-transform ml-auto">
                               Read More
-                              <ArrowRight size={16} className="ml-1" />
+                              <ArrowRight size={12} className="ml-0.5 md:ml-1" />
                             </div>
                           </div>
                         </div>

@@ -226,7 +226,7 @@ const FeaturedPost = () => {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">OUR CURRENT QUEEN</h2>
+          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Featured Post</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="aspect-square bg-gradient-to-br from-brown-100 to-brown-200 rounded-lg animate-pulse"></div>
@@ -241,7 +241,7 @@ const FeaturedPost = () => {
     <section className="py-8 bg-gradient-to-b from-white to-brown-50">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6 text-brown-900">
-          Our Current Queen
+          Featured Post
         </h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

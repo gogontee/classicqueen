@@ -27,7 +27,7 @@ const TermsAndConditionsPage = () => {
               Terms and Conditions
             </h2>
             <p className="text-lg text-amber-100 mb-6">
-              Last Updated: {new Date().toLocaleDateString('en-US', { 
+              Last Updated: {new Date(2025, 5, 24).toLocaleDateString('en-US', { 
                 year: 'numeric', 
                 month: 'long', 
                 day: 'numeric' 

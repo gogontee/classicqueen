@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear()
+  const currentYear = 2024;
 
   return (
     <footer className="bg-brown-900 text-white mt-auto border-t border-gold-600/20">

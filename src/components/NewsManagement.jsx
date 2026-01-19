@@ -151,8 +151,8 @@ export default function NewsManagement() {
       setUploading(true)
       setUploadError('')
 
-      // In a real implementation, you would upload to Supabase Storage
-      // For now, we'll use a placeholder URL
+      // For demo purposes, using FileReader to create a data URL
+      // In production, upload to Supabase Storage
       const reader = new FileReader()
       reader.onloadend = () => {
         setFormData(prev => ({
@@ -197,28 +197,44 @@ export default function NewsManagement() {
 
       let result
       if (currentNews) {
-        // Update existing news
-        const { data, error } = await supabase
+        // Update existing news - FIXED: Don't use .select() after update
+        const { error } = await supabase
           .from('news')
           .update(newsData)
           .eq('id', currentNews.id)
-          .select()
-          .single()
 
         if (error) throw error
-        result = data
+        
+        // Fetch the updated news item separately
+        const { data: updatedData, error: fetchError } = await supabase
+          .from('news')
+          .select('*')
+          .eq('id', currentNews.id)
+          .single()
+          
+        if (fetchError) throw fetchError
+        result = updatedData
         
         setSuccessMessage('News updated successfully!')
       } else {
-        // Create new news
+        // Create new news - FIXED: Don't use .select() after insert
         const { data, error } = await supabase
           .from('news')
           .insert([newsData])
-          .select()
-          .single()
 
         if (error) throw error
-        result = data
+        
+        // Fetch the newly created news item
+        const { data: newData, error: fetchError } = await supabase
+          .from('news')
+          .select('*')
+          .eq('title', newsData.title)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+          
+        if (fetchError) throw fetchError
+        result = newData
         
         setSuccessMessage('News created successfully!')
       }
