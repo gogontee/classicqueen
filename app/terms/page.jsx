@@ -646,7 +646,7 @@ const TermsAndConditionsPage = () => {
                     <h3 className="text-xl font-bold text-brown-800 mb-3">17. Camp Coverage</h3>
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
                       <p className="text-brown-700">
-                        <span className="font-bold">Note:</span> The registration fee of USD$200 covers all camp-related expenses including:
+                        <span className="font-bold">Note:</span> The registration fee of USD$300 covers all camp-related expenses including:
                       </p>
                       <ul className="text-brown-700 space-y-1 mt-2 ml-4">
                         <li className="flex items-start">

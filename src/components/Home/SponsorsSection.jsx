@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 
 const SponsorsSection = () => {
   const [isPaused, setIsPaused] = useState(false)
   const scrollContainerRef = useRef(null)
   const contentRef = useRef(null)
+  const router = useRouter()
   
   // Sponsor type images instead of brand logos
   const sponsors = [
@@ -101,6 +103,11 @@ const SponsorsSection = () => {
     }
   }, [isPaused])
 
+  // Handle sponsor contact button click
+  const handleSponsorContact = () => {
+    router.push('/contact')
+  }
+
   return (
     <section className="py-8 md:py-12 bg-gradient-to-b from-white to-brown-50">
       <div className="container mx-auto px-4">
@@ -111,7 +118,7 @@ const SponsorsSection = () => {
           </h2>
           <div className="w-20 h-1 bg-gradient-to-r from-gold-500 to-gold-600 mx-auto mt-2 rounded-full"></div>
           <p className="text-brown-600 text-sm md:text-base mt-3 max-w-2xl mx-auto">
-            This is a space for visionary brands ready to stand at the forefront of Africa’s most refined pageant experience.
+            This is a space for visionary brands ready to stand at the forefront of Africa's most refined pageant experience.
           </p>
         </div>
 
@@ -209,7 +216,10 @@ const SponsorsSection = () => {
                 Partner with us and reach a premium audience
               </p>
             </div>
-            <button className="px-6 py-2.5 bg-gradient-to-r from-brown-900 to-brown-800 hover:from-gold-600 hover:to-gold-500 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 whitespace-nowrap w-full sm:w-auto">
+            <button 
+              onClick={handleSponsorContact}
+              className="px-6 py-2.5 bg-gradient-to-r from-brown-900 to-brown-800 hover:from-gold-600 hover:to-gold-500 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 whitespace-nowrap w-full sm:w-auto"
+            >
               Contact for Sponsorship
             </button>
           </div>

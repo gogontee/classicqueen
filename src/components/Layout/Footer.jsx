@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 
 const Footer = () => {
   const router = useRouter()
-  const currentYear = 2024
+  const currentYear = new Date().getFullYear() // Dynamic year
 
   const handleAdminClick = () => {
     router.push('/admin')
@@ -74,6 +74,7 @@ const Footer = () => {
                 { name: 'About', path: '/about' },
                 { name: 'Sponsors', path: '/sponsors' },
                 { name: 'Registration', path: '/registration' },
+                { name: 'Terms of Service', path: '/terms' }, // Added Terms of Service
               ].map((item) => (
                 <li key={item.path}>
                   <Link 
