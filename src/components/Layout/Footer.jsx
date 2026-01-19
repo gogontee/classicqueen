@@ -1,9 +1,17 @@
-import { Instagram, Facebook, Mail, MapPin, Phone } from 'lucide-react'
+'use client'
+
+import { Instagram, Facebook, Mail, MapPin, Phone, Shield } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 const Footer = () => {
-  const currentYear = 2024;
+  const router = useRouter()
+  const currentYear = 2024
+
+  const handleAdminClick = () => {
+    router.push('/admin')
+  }
 
   return (
     <footer className="bg-brown-900 text-white mt-auto border-t border-gold-600/20">
@@ -149,8 +157,18 @@ const Footer = () => {
                 Proudly supporting women's empowerment worldwide
               </p>
             </div>
-            <div className="text-brown-300 text-sm">
-              <Link href="/privacy" className="hover:text-gold-300 transition-colors mx-4">Privacy Policy</Link>
+            <div className="text-brown-300 text-sm flex items-center">
+              <div className="flex items-center">
+                <Link href="/privacy" className="hover:text-gold-300 transition-colors mx-4">Privacy Policy</Link>
+                <button
+                  onClick={handleAdminClick}
+                  className="ml-1 p-1 bg-brown-800 text-brown-300 hover:bg-brown-700 hover:text-brown-100 transition-colors duration-200 rounded-sm"
+                  title="Admin Panel"
+                  aria-label="Admin Panel"
+                >
+                  <Shield size={10} />
+                </button>
+              </div>
               <span className="text-brown-600">|</span>
               <Link href="/terms" className="hover:text-gold-300 transition-colors mx-4">Terms of Service</Link>
               <span className="text-brown-600">|</span>

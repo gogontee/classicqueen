@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Crown, ShoppingBag, Clock, Mail, Sparkles, Star, Gift, Heart, Phone } from 'lucide-react'
 import { motion } from 'motion/react'
 import { supabase } from '../../lib/supabase'
@@ -13,6 +13,25 @@ export default function QueensMallPage() {
   const [contact, setContact] = useState('')
   const [subscribed, setSubscribed] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+  const containerRef = useRef(null)
+
+  // Get window dimensions only on client side
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (typeof window !== 'undefined') {
+        setDimensions({
+          width: window.innerWidth,
+          height: window.innerHeight
+        })
+      }
+    }
+
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [])
 
   // Set launch date (example: 30 days from now)
   useEffect(() => {
@@ -118,30 +137,32 @@ export default function QueensMallPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brown-50 via-amber-50 to-white overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-gold-600 rounded-full"
-            initial={{ 
-              x: Math.random() * window.innerWidth,
-              y: Math.random() * window.innerHeight,
-              opacity: Math.random() * 0.3 + 0.1
-            }}
-            animate={{
-              y: [null, -80],
-              opacity: [0.2, 0]
-            }}
-            transition={{
-              duration: Math.random() * 3 + 2,
-              repeat: Infinity,
-              delay: Math.random() * 3
-            }}
-          />
-        ))}
-      </div>
+    <div ref={containerRef} className="min-h-screen bg-gradient-to-b from-brown-50 via-amber-50 to-white overflow-hidden">
+      {/* Animated Background Elements - Only render on client side */}
+      {dimensions.width > 0 && dimensions.height > 0 && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          {[...Array(15)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-gold-600 rounded-full"
+              initial={{ 
+                x: Math.random() * dimensions.width,
+                y: Math.random() * dimensions.height,
+                opacity: Math.random() * 0.3 + 0.1
+              }}
+              animate={{
+                y: [null, -80],
+                opacity: [0.2, 0]
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                repeat: Infinity,
+                delay: Math.random() * 3
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="relative container mx-auto px-4 py-8 md:py-16">
