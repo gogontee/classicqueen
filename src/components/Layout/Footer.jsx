@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 
 const Footer = () => {
   const router = useRouter()
-  const currentYear = new Date().getFullYear() // Dynamic year
 
   const handleAdminClick = () => {
     router.push('/admin')
@@ -161,7 +160,7 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
               <p className="text-brown-300 text-sm">
-                © {currentYear} Classic Queen International. All rights reserved.
+                © 2024 Classic Queen International. All rights reserved.
               </p>
               <p className="text-brown-400 text-xs mt-1">
                 Proudly supporting women's empowerment worldwide
