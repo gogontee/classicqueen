@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation' // Import useRouter
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const NationalDirector = () => {
-  const router = useRouter() // Initialize router
+  const router = useRouter()
   const [formData, setFormData] = useState({
     // Personal Information
     full_name: '',
@@ -21,7 +22,7 @@ const NationalDirector = () => {
     years_experience: '',
     previous_events_organized: '',
     
-    // Business Information
+    // Social Media Information
     website: '',
     instagram: '',
     facebook: '',
@@ -42,7 +43,7 @@ const NationalDirector = () => {
   const [photo, setPhoto] = useState(null)
   const [photoPreview, setPhotoPreview] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [applicationFee] = useState(500) // Updated variable name
+  const [applicationFee] = useState(500)
   const [countryCheckLoading, setCountryCheckLoading] = useState(false)
   const [countryWarning, setCountryWarning] = useState(null)
   const [showCountryWarningModal, setShowCountryWarningModal] = useState(false)
@@ -659,11 +660,11 @@ const NationalDirector = () => {
                 </div>
               </div>
 
-              {/* Business Information */}
+              {/* Social Media Information */}
               <div className="bg-brown-50 rounded-xl p-4 md:p-6">
                 <h3 className="text-lg md:text-xl font-bold text-brown-900 mb-4 flex items-center">
                   <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-brown-900 text-white flex items-center justify-center mr-2 md:mr-3 text-sm">4</span>
-                  Business Information
+                  Social Media Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -835,7 +836,15 @@ const NationalDirector = () => {
                       required
                     />
                     <label htmlFor="agree_terms" className="text-brown-700 text-sm md:text-base">
-                      <span className="font-medium">I agree to the Classic Queen International Terms and Conditions *</span>
+                      <span className="font-medium">I agree to the </span>
+                      <Link 
+                        href="/terms" 
+                        target="_blank"
+                        className="text-brown-800 font-bold underline hover:text-brown-900 transition-colors"
+                      >
+                        Classic Queen International Terms and Conditions
+                      </Link>
+                      <span className="font-medium"> *</span>
                       <p className="text-xs md:text-sm text-brown-600 mt-1">
                         By checking this box, you agree to abide by all franchise rules and regulations.
                       </p>
@@ -858,7 +867,15 @@ const NationalDirector = () => {
                       required
                     />
                     <label htmlFor="agree_franchise_terms" className="text-brown-700 text-sm md:text-base">
-                      <span className="font-medium">I agree to the Franchise Agreement terms *</span>
+                      <span className="font-medium">I agree to the </span>
+                      <Link 
+                        href="/franchiseterms" 
+                        target="_blank"
+                        className="text-brown-800 font-bold underline hover:text-brown-900 transition-colors"
+                      >
+                        Franchise Agreement terms
+                      </Link>
+                      <span className="font-medium"> *</span>
                       <p className="text-xs md:text-sm text-brown-600 mt-1">
                         Including minimum performance standards, royalty fees, and brand guidelines.
                       </p>
@@ -988,7 +1005,6 @@ const NationalDirector = () => {
               </button>
               <button
                 onClick={() => {
-                  // Route to contact page instead of showing alert
                   router.push('/contact')
                   setShowCountryWarningModal(false)
                 }}

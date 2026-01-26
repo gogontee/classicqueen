@@ -1,6 +1,6 @@
 'use client'
 
-import { Instagram, Facebook, Mail, MapPin, Phone, Shield } from 'lucide-react'
+import { Instagram, Facebook, Mail, Phone, Shield } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,10 @@ const Footer = () => {
 
   const handleAdminClick = () => {
     router.push('/admin')
+  }
+
+  const handleRegistrationClick = () => {
+    router.push('/register')
   }
 
   return (
@@ -71,8 +75,6 @@ const Footer = () => {
                 { name: 'Gallery', path: '/gallery' },
                 { name: 'News', path: '/news' },
                 { name: 'About', path: '/about' },
-                { name: 'Sponsors', path: '/sponsors' },
-                { name: 'Registration', path: '/registration' },
                 { name: 'Terms', path: '/terms' },
               ].map((item) => (
                 <div key={item.path} className="text-center md:text-left">
@@ -84,6 +86,15 @@ const Footer = () => {
                   </Link>
                 </div>
               ))}
+              {/* Registration button with router push */}
+              <div className="text-center md:text-left">
+                <button
+                  onClick={handleRegistrationClick}
+                  className="text-brown-200 hover:text-gold-300 transition-colors duration-300 inline-block py-1 md:py-0"
+                >
+                  <span className="text-sm md:text-base">Registration</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -167,11 +178,7 @@ const Footer = () => {
               </p>
             </div>
             <div className="text-brown-300 text-sm flex flex-wrap justify-center gap-4 items-center">
-              <Link href="/privacy" className="hover:text-gold-300 transition-colors">Privacy Policy</Link>
-              <span className="text-brown-600 hidden md:inline">|</span>
               <Link href="/terms" className="hover:text-gold-300 transition-colors">Terms of Service</Link>
-              <span className="text-brown-600 hidden md:inline">|</span>
-              <Link href="/sitemap" className="hover:text-gold-300 transition-colors">Sitemap</Link>
             </div>
           </div>
         </div>
