@@ -315,7 +315,7 @@ const FranchiseTerms = () => {
                   <ul className="space-y-6 text-brown-700">
                     {[
                       "National pageant must meet minimum production standards set by headquarters",
-                      "Contestants must meet Classic Queen International eligibility criteria",
+                      "Contestants must meet Classic Queen International eligibility criteria", 
                       "All pageant activities must align with Classic Queen International values"
                     ].map((item, index) => (
                       <li key={index} className="flex items-start bg-brown-50 p-6 rounded-xl border border-brown-200">
