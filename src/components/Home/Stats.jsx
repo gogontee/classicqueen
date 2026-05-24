@@ -57,7 +57,7 @@ const Stats = () => {
             {
               "icon": "FiTrophy",
               "title": "Star Prize",
-              "value": "$10,000"
+              "value": "$5,000"
             },
             {
               "icon": "FaCrown",
@@ -83,7 +83,7 @@ const Stats = () => {
           {
             "icon": "FiTrophy",
             "title": "Star Prize",
-            "value": "$10,000"
+            "value": "$5,000"
           },
           {
             "icon": "FaCrown",
