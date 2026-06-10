@@ -13,6 +13,30 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 })
 
+// Default fallback hero items from public folder
+const DEFAULT_FALLBACK_ITEMS = [
+  {
+    cta: { href: "/register", label: "REGISTER NOW" },
+    src: "/hero1.mp4",
+    type: "video"
+  },
+  {
+    cta: { href: "/register", label: "REGISTER NOW" },
+    src: "/hero2.mp4",
+    type: "video"
+  },
+  {
+    cta: { href: "/register", label: "REGISTER NOW" },
+    src: "/hero3.mp4",
+    type: "video"
+  },
+  {
+    cta: { href: "/register", label: "REGISTER NOW" },
+    src: "/hero4.jpg",
+    type: "image"
+  }
+]
+
 const HeroSection = () => {
   const [heroItems, setHeroItems] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -20,79 +44,64 @@ const HeroSection = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isMuted, setIsMuted] = useState(true)
   const [error, setError] = useState(null)
-  const [transitionDirection, setTransitionDirection] = useState('next') // 'next' or 'prev'
+  const [transitionDirection, setTransitionDirection] = useState('next')
   const [isTransitioning, setIsTransitioning] = useState(false)
   const videoRef = useRef(null)
   const slideInterval = useRef(null)
 
-  // Fetch hero content from Supabase
+  // Fetch hero content from Supabase with fallback to public files
   useEffect(() => {
     const fetchHeroContent = async () => {
       try {
         setIsLoading(true)
         setError(null)
         
-        const { data, error: supabaseError } = await supabase
+        // Try: Fetch from Supabase
+        const { data: supabaseData, error: supabaseError } = await supabase
           .from('classicqueen')
           .select('hero')
           .eq('id', 1989)
           .single()
 
-        if (supabaseError) {
-          setError('Failed to load hero content')
-          
-          // Fallback to sample data if database fetch fails
-          const fallbackData = [
-            {
-              "cta": { "href": "/register", "label": "REGISTER NOW" },
-              "src": "https://mttimgygxzfqzmnirfyq.supabase.co/storage/v1/object/public/heros/heros/fkyavyzu7dq_1767319747847.jpg",
-              "type": "image"
-            },
-            {
-              "cta": { "href": "/register", "label": "REGISTER NOW" },
-              "src": "https://mttimgygxzfqzmnirfyq.supabase.co/storage/v1/object/public/heros/heros/queenvideo1.mp4",
-              "type": "video"
-            },
-          ]
-          setHeroItems(fallbackData)
-          return
-        }
-
-        if (data?.hero) {
+        if (!supabaseError && supabaseData?.hero) {
           // Parse the JSONB column
           let itemsArray
-          if (Array.isArray(data.hero)) {
-            itemsArray = data.hero
+          if (Array.isArray(supabaseData.hero)) {
+            itemsArray = supabaseData.hero
           } else {
             try {
-              itemsArray = JSON.parse(data.hero || '[]')
+              itemsArray = JSON.parse(supabaseData.hero || '[]')
             } catch {
               itemsArray = []
             }
           }
           
-          // Add label to CTA if not present
-          const formattedItems = itemsArray.map(item => ({
-            ...item,
-            cta: {
-              href: item.cta?.href || '/register',
-              label: item.cta?.label || 'REGISTER NOW'
-            }
-          }))
-          
-          setHeroItems(formattedItems)
-          
-          if (formattedItems.length === 0) {
-            setError('No hero items found in database')
+          if (itemsArray.length > 0) {
+            // Add label to CTA if not present
+            const formattedItems = itemsArray.map(item => ({
+              ...item,
+              cta: {
+                href: item.cta?.href || '/register',
+                label: item.cta?.label || 'REGISTER NOW'
+              }
+            }))
+            
+            setHeroItems(formattedItems)
+            console.log('Using hero data from Supabase')
+            setIsLoading(false)
+            return
           }
-        } else {
-          setError('No hero content available')
-          setHeroItems([])
         }
+
+        // Fallback: Use default files from public folder
+        console.log('Supabase failed or empty, using default hero files...')
+        setHeroItems(DEFAULT_FALLBACK_ITEMS)
         
-      } catch {
-        setError('Error loading hero content')
-        setHeroItems([])
+      } catch (error) {
+        console.error('Error fetching hero:', error)
+        // Final fallback: Use default files
+        setHeroItems(DEFAULT_FALLBACK_ITEMS)
+        setError('Using default hero content')
       } finally {
         setIsLoading(false)
       }
@@ -157,7 +166,7 @@ const HeroSection = () => {
         video.currentTime = 0
         
         if (isPlaying) {
-          video.play().catch(() => {})
+          video.play().catch(err => console.log('Video play error:', err))
         } else {
           video.pause()
         }
@@ -217,17 +226,6 @@ const HeroSection = () => {
       return () => video.removeEventListener('timeupdate', updateProgress)
     }
   }, [currentIndex, heroItems])
-
-  // Calculate transition classes
-  const getTransitionClasses = () => {
-    if (!isTransitioning) return ''
-    
-    if (transitionDirection === 'next') {
-      return 'translate-x-full opacity-0'
-    } else {
-      return '-translate-x-full opacity-0'
-    }
-  }
 
   if (isLoading) {
     return (
@@ -314,13 +312,14 @@ const HeroSection = () => {
                 <div className="relative w-full h-full">
                   <Image
                     src={item.src}
-                    alt="Hero slide"
+                    alt={item.title || "Hero slide"}
                     fill
                     className="object-cover"
                     priority={isActive}
                     sizes="100vw"
                     unoptimized
                     onError={(e) => {
+                      console.error(`Failed to load image: ${item.src}`)
                       e.target.style.display = 'none'
                     }}
                   />
@@ -336,6 +335,7 @@ const HeroSection = () => {
                     muted={isActive && isMuted}
                     playsInline
                     onError={(e) => {
+                      console.error(`Failed to load video: ${item.src}`)
                       e.target.style.display = 'none'
                     }}
                   />

@@ -2,15 +2,36 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 
 const NextQueenSection = () => {
+  const [imageErrors, setImageErrors] = useState({})
+  
   const positions = [
     { title: 'First Runner Up', id: 2 },
     { title: 'Winner', id: 1 },
     { title: 'Second Runner Up', id: 3 }
   ]
 
-  const imageSrc = 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/silhouette1.jpg'
+  const supabaseImageSrc = 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/silhouette1.jpg'
+  const fallbackImageSrc = '/who1.jpg'
+
+  // Handle image error
+  const handleImageError = (positionId) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [positionId]: true
+    }))
+    console.log(`Failed to load image for ${positions.find(p => p.id === positionId)?.title}, using fallback`)
+  }
+
+  // Get image source based on whether there was an error
+  const getImageSrc = (positionId) => {
+    if (imageErrors[positionId]) {
+      return fallbackImageSrc
+    }
+    return supabaseImageSrc
+  }
 
   return (
     <section className="py-4 md:py-6">
@@ -31,12 +52,12 @@ const NextQueenSection = () => {
               <div className="relative aspect-[3/4] rounded-lg overflow-hidden shadow-md">
                 <div className="relative w-full h-full">
                   <Image
-                    src={imageSrc}
+                    src={getImageSrc(position.id)}
                     alt={`Silhouette of ${position.title}`}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     sizes="(max-width: 768px) 33vw, 160px"
-                    unoptimized
+                    onError={() => handleImageError(position.id)}
                   />
                   
                   {/* Gradient Overlay */}

@@ -4,8 +4,10 @@ import { Instagram, Facebook, Mail, Phone, Shield } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 const Footer = () => {
+  const [logoError, setLogoError] = useState(false)
   const router = useRouter()
 
   const handleAdminClick = () => {
@@ -16,6 +18,14 @@ const Footer = () => {
     router.push('/register')
   }
 
+  const supabaseLogoSrc = 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/Untitled%20design%20(2).png'
+  const fallbackLogoSrc = '/cqi.png'
+
+  const handleLogoError = () => {
+    setLogoError(true)
+    console.log('Failed to load logo from Supabase, using fallback')
+  }
+
   return (
     <footer className="bg-brown-900 text-white mt-auto border-t border-gold-600/20">
       <div className="container mx-auto px-4 py-12 md:py-16">
@@ -23,15 +33,15 @@ const Footer = () => {
           {/* Brand Section with Logo */}
           <div className="md:col-span-2 space-y-6 flex flex-col items-center md:items-start">
             <div className="space-y-2">
-              {/* Logo */}
+              {/* Logo with Fallback */}
               <div className="relative h-16 w-64">
                 <Image
-                  src="https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/Untitled%20design%20(2).png"
+                  src={logoError ? fallbackLogoSrc : supabaseLogoSrc}
                   alt="Classic Queen International Logo"
                   fill
                   className="object-contain object-left md:object-left"
                   priority
-                  unoptimized
+                  onError={handleLogoError}
                 />
               </div>
             </div>

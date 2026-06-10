@@ -9,6 +9,7 @@ import Image from 'next/image'
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [imgError, setImgError] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -49,14 +50,26 @@ const Header = () => {
           <Link href="/" className="flex items-center space-x-3 group ml-4">
             <div className="relative">
               <div className="relative w-16 h-16 md:w-20 md:h-20">
-                <Image
-                  src="https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/Untitled%20design%20(2).png"
-                  alt="Classic Queen International Logo"
-                  fill
-                  className="object-contain transition-transform duration-300 group-hover:scale-105"
-                  sizes="(max-width: 768px) 86px, 100px"
-                  priority
-                />
+                {!imgError ? (
+                  <Image
+                    src="https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/Untitled%20design%20(2).png"
+                    alt="Classic Queen International Logo"
+                    fill
+                    className="object-contain transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 768px) 86px, 100px"
+                    priority
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <Image
+                    src="/cqi.png"
+                    alt="Classic Queen International Logo"
+                    fill
+                    className="object-contain transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 768px) 86px, 100px"
+                    priority
+                  />
+                )}
               </div>
             </div>
           </Link>

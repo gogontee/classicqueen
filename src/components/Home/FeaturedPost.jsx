@@ -6,6 +6,34 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
+// Default fallback featured items from public folder
+const DEFAULT_FALLBACK_ITEMS = [
+  {
+    type: "image",
+    src: "/featured1.jpeg",
+    caption: "Elegance personified 👑",
+    href: "/gallery"
+  },
+  {
+    type: "image",
+    src: "/featured2.jpeg",
+    caption: "Grace and beauty ✨",
+    href: "/gallery"
+  },
+  {
+    type: "image",
+    src: "/featured3.jpeg",
+    caption: "Confidence in every step 💫",
+    href: "/gallery"
+  },
+  {
+    type: "image",
+    src: "/featured4.jpeg",
+    caption: "Queen with purpose 👑",
+    href: "/gallery"
+  }
+]
+
 const FeaturedPost = () => {
   const [featuredItems, setFeaturedItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
@@ -27,65 +55,17 @@ const FeaturedPost = () => {
 
         if (error) throw error
 
-        if (data?.feature_post) {
+        if (data?.feature_post && data.feature_post.length > 0) {
           setFeaturedItems(data.feature_post)
         } else {
-          // Fallback to sample data
-          setFeaturedItems([
-            {
-              "type": "video",
-              "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/Smiles_as_the_202601021954_og4d5.mp4",
-              "caption": "Her journey to the crown 👑",
-              "href": "/gallery"
-            },
-            {
-              "type": "image",
-              "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/queen6.jpg",
-              "caption": "Grace, elegance and royalty ✨",
-              "href": "/gallery"
-            },
-            {
-              "type": "image",
-              "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/queen5.jpg",
-              "caption": "Beauty crowned with purpose 👑",
-              "href": "/gallery"
-            },
-            {
-              "type": "image",
-              "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/queen3.jpg",
-              "caption": "Confidence. Poise. Power.",
-              "href": "/gallery"
-            }
-          ])
+          // Fallback to default local images
+          console.log('No featured posts from Supabase, using default images...')
+          setFeaturedItems(DEFAULT_FALLBACK_ITEMS)
         }
       } catch (error) {
         console.error('Error fetching posts:', error)
-        setFeaturedItems([
-          {
-            "type": "video",
-            "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/Smiles_as_the_202601021954_og4d5.mp4",
-            "caption": "Her journey to the crown 👑",
-            "href": "/gallery"
-          },
-          {
-            "type": "image",
-            "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/queen6.jpg",
-            "caption": "Grace, elegance and royalty ✨",
-            "href": "/gallery"
-          },
-          {
-            "type": "image",
-            "src": "https://prolgmzklxduqnizyhqau.supabase.co/storage/v1/object/public/classic/queen5.jpg",
-            "caption": "Beauty crowned with purpose 👑",
-            "href": "/gallery"
-          },
-          {
-            "type": "image",
-            "src": "https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/queen3.jpg",
-            "caption": "Confidence. Poise. Power.",
-            "href": "/gallery"
-          }
-        ])
+        // Fallback to default local images
+        setFeaturedItems(DEFAULT_FALLBACK_ITEMS)
       } finally {
         setIsLoading(false)
       }
@@ -114,7 +94,7 @@ const FeaturedPost = () => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isModalOpen, currentIndex])
+  }, [isModalOpen, currentIndex, featuredItems])
 
   // Handle touch/swipe gestures for mobile
   useEffect(() => {
@@ -155,7 +135,7 @@ const FeaturedPost = () => {
       modalElement.removeEventListener('touchstart', handleTouchStart)
       modalElement.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [isModalOpen, currentIndex])
+  }, [isModalOpen, currentIndex, featuredItems])
 
   const handleItemClick = (item, index) => {
     setSelectedItem(item)
@@ -237,6 +217,19 @@ const FeaturedPost = () => {
     )
   }
 
+  if (featuredItems.length === 0) {
+    return (
+      <div className="py-8">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Featured Post</h2>
+          <div className="text-center p-8 bg-brown-50 rounded-lg">
+            <p className="text-brown-600">No featured posts available.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <section className="py-8 bg-gradient-to-b from-white to-brown-50">
       <div className="container mx-auto px-4">
@@ -260,7 +253,10 @@ const FeaturedPost = () => {
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     sizes="(max-width: 768px) 50vw, 25vw"
-                    unoptimized
+                    onError={(e) => {
+                      console.error(`Failed to load image: ${item.src}`)
+                      e.target.style.display = 'none'
+                    }}
                   />
                 ) : (
                   <div className="relative w-full h-full">
@@ -271,6 +267,10 @@ const FeaturedPost = () => {
                       loop
                       playsInline
                       preload="metadata"
+                      onError={(e) => {
+                        console.error(`Failed to load video: ${item.src}`)
+                        e.target.style.display = 'none'
+                      }}
                     />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
                   </div>
@@ -370,8 +370,10 @@ const FeaturedPost = () => {
                   alt={selectedItem.caption}
                   fill
                   className="object-contain"
-                  unoptimized
-                  priority
+                  onError={(e) => {
+                    console.error(`Failed to load modal image: ${selectedItem.src}`)
+                    e.target.style.display = 'none'
+                  }}
                 />
               ) : (
                 <video
@@ -380,6 +382,10 @@ const FeaturedPost = () => {
                   controls
                   autoPlay
                   playsInline
+                  onError={(e) => {
+                    console.error(`Failed to load modal video: ${selectedItem.src}`)
+                    e.target.style.display = 'none'
+                  }}
                 />
               )}
             </div>

@@ -6,34 +6,48 @@ import { useRouter } from 'next/navigation'
 
 const SponsorsSection = () => {
   const [isPaused, setIsPaused] = useState(false)
+  const [imageErrors, setImageErrors] = useState({})
   const scrollContainerRef = useRef(null)
   const contentRef = useRef(null)
   const router = useRouter()
   
+  // Helper function to get fallback image based on sponsor type
+  const getFallbackImage = (sponsorName) => {
+    if (sponsorName.includes('Platinum')) return '/platinum.jpg'
+    if (sponsorName.includes('Gold')) return '/gold.jpg'
+    if (sponsorName.includes('Silver')) return '/silver.jpg'
+    if (sponsorName.includes('Media')) return '/mediapartner.jpg'
+    return '/platinum.jpg' // default fallback
+  }
+
   // Sponsor type images instead of brand logos
   const sponsors = [
     {
       id: 1,
       name: 'Platinum Sponsors',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/platinum.jpg',
+      fallbackLogo: '/platinum.jpg',
       type: 'Highest Level'
     },
     {
       id: 2,
       name: 'Gold Sponsors',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/gold.jpg',
+      fallbackLogo: '/gold.jpg',
       type: 'Premium Level'
     },
     {
       id: 3,
       name: 'Media Partners',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/media%20partner.jpg',
+      fallbackLogo: '/mediapartner.jpg',
       type: 'Broadcast & Media'
     },
     {
       id: 4,
       name: 'Silver Sponsors',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/silver.jpg',
+      fallbackLogo: '/silver.jpg',
       type: 'Supporting Level'
     },
     // Duplicate a couple to fill more space for scrolling
@@ -41,27 +55,48 @@ const SponsorsSection = () => {
       id: 5,
       name: 'Platinum Sponsors',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/platinum.jpg',
+      fallbackLogo: '/platinum.jpg',
       type: 'Highest Level'
     },
     {
       id: 6,
       name: 'Gold Sponsors',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/gold.jpg',
+      fallbackLogo: '/gold.jpg',
       type: 'Premium Level'
     },
     {
       id: 7,
       name: 'Media Partners',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/media%20partner.jpg',
+      fallbackLogo: '/mediapartner.jpg',
       type: 'Broadcast & Media'
     },
     {
       id: 8,
       name: 'Silver Sponsors',
       logo: 'https://prolgmzklxddnizyhqau.supabase.co/storage/v1/object/public/classic/silver.jpg',
+      fallbackLogo: '/silver.jpg',
       type: 'Supporting Level'
     }
   ]
+
+  // Function to handle image error
+  const handleImageError = (sponsorId, sponsorName) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [sponsorId]: true
+    }))
+    console.log(`Failed to load image for ${sponsorName}, using fallback`)
+  }
+
+  // Get the actual image source based on whether there was an error
+  const getImageSrc = (sponsor) => {
+    if (imageErrors[sponsor.id]) {
+      return sponsor.fallbackLogo
+    }
+    return sponsor.logo
+  }
 
   // Duplicate sponsors for seamless loop
   const duplicatedSponsors = [...sponsors, ...sponsors]
@@ -73,7 +108,6 @@ const SponsorsSection = () => {
     const scrollContainer = scrollContainerRef.current
     let scrollPosition = 0
     const scrollSpeed = 0.5
-    let animationId
     let requestId
 
     const autoScroll = () => {
@@ -143,16 +177,16 @@ const SponsorsSection = () => {
                   }}
                 >
                   <div className="w-full group relative bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-brown-100 hover:border-gold-200 h-full">
-                    {/* Sponsor Logo - NOW USING YOUR SPONSOR TYPE IMAGES */}
+                    {/* Sponsor Logo - WITH FALLBACK */}
                     <div className="relative aspect-square p-4 flex items-center justify-center">
                       <div className="relative w-full h-full">
                         <Image
-                          src={sponsor.logo}
+                          src={getImageSrc(sponsor)}
                           alt={`${sponsor.name}`}
                           fill
                           className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                           sizes="(max-width: 768px) 33vw, 25vw"
-                          unoptimized
+                          onError={() => handleImageError(sponsor.id, sponsor.name)}
                         />
                       </div>
                     </div>
@@ -168,8 +202,6 @@ const SponsorsSection = () => {
                         </span>
                       </div>
                     </div>
-                    
-                    {/* REMOVED: Sponsor Type Badge - No tags/labels on the images */}
                   </div>
                 </div>
               ))}
