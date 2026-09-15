@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Download, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
 const DEFAULT_FALLBACK_ITEMS = [
@@ -16,7 +15,7 @@ const DEFAULT_FALLBACK_ITEMS = [
 const GOLD_GRADIENT =
   'linear-gradient(90deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #BF953F 100%)'
 
-const AUTO_SCROLL_PX_PER_SEC = 24
+const AUTO_SCROLL_PX_PER_SEC = 20
 const RESUME_AFTER_MS        = 5000
 const DESKTOP_AUTOSCROLL_MIN = 7
 const MAX_DT                 = 0.05 // cap frame delta at 50ms to prevent post-stall jumps
@@ -38,7 +37,7 @@ export default function FeaturedPost() {
   const desktopSetWidth     = useRef(0)
   const desktopPaused       = useRef(false)
   const desktopResumeTimer  = useRef(null)
-  const desktopExpected     = useRef(0) // last scrollLeft value WE wrote
+  const desktopExpected     = useRef(0)
 
   // -------- mobile top track --------
   const topRef              = useRef(null)
@@ -292,7 +291,7 @@ export default function FeaturedPost() {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Featured Post</h2>
+          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Past Queens</h2>
           <div className="flex gap-4 overflow-hidden">
             {[...Array(5)].map((_, i) => (
               <div
@@ -311,7 +310,7 @@ export default function FeaturedPost() {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Featured Post</h2>
+          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Past Queens</h2>
           <div className="text-center p-8 bg-brown-50 rounded-lg">
             <p className="text-brown-600">No featured posts available.</p>
           </div>
@@ -340,7 +339,7 @@ export default function FeaturedPost() {
           [&::-webkit-scrollbar]:hidden
           px-4 md:px-6 select-none
         "
-        style={{ touchAction: 'pan-x' }}
+        style={{ touchAction: 'pan-x pan-y' }}
       >
         {loopItems.map((item, i) => (
           <FeaturedCard
@@ -363,7 +362,7 @@ export default function FeaturedPost() {
             [&::-webkit-scrollbar]:hidden
             px-4 select-none
           "
-          style={{ touchAction: 'pan-x' }}
+          style={{ touchAction: 'pan-x pan-y' }}
         >
           {loopItems.map((item, i) => (
             <FeaturedCard
@@ -384,7 +383,7 @@ export default function FeaturedPost() {
             [&::-webkit-scrollbar]:hidden
             px-4 select-none
           "
-          style={{ touchAction: 'pan-x' }}
+          style={{ touchAction: 'pan-x pan-y' }}
         >
           {loopItems.map((item, i) => (
             <FeaturedCard
@@ -412,10 +411,9 @@ export default function FeaturedPost() {
         </AnimatePresence>
       </div>
 
-      {/* ---------------- View All + description ---------------- */}
+      {/* ---------------- Description ---------------- */}
       <div className="container mx-auto px-4">
         <div className="mx-auto mt-8 max-w-3xl text-center">
-          
           <div className="mt-6 px-4">
             <p className="text-sm leading-relaxed text-brown-700 md:text-lg">
               Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
@@ -520,7 +518,7 @@ export default function FeaturedPost() {
   )
 }
 
-// ------------------- Card — same shape as ContentCard, with gold outline + 3:4 -------------------
+// ------------------- Card — gold outline + 3:4 -------------------
 function FeaturedCard({ item, onClick, widthClass }) {
   return (
     <button
