@@ -15,7 +15,7 @@ const DEFAULT_FALLBACK_ITEMS = [
 const GOLD_GRADIENT =
   'linear-gradient(90deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #BF953F 100%)'
 
-const AUTO_SCROLL_PX_PER_SEC = 20
+const AUTO_SCROLL_PX_PER_SEC = 24
 const RESUME_AFTER_MS        = 5000
 const DESKTOP_AUTOSCROLL_MIN = 7
 const MAX_DT                 = 0.05 // cap frame delta at 50ms to prevent post-stall jumps
