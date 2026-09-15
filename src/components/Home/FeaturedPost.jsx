@@ -1,215 +1,305 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Download, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '../../lib/supabase'
 
-// Default fallback featured items from public folder
 const DEFAULT_FALLBACK_ITEMS = [
-  {
-    type: "image",
-    src: "/featured1.jpeg",
-    caption: "Elegance personified 👑",
-    href: "/gallery"
-  },
-  {
-    type: "image",
-    src: "/featured2.jpeg",
-    caption: "Grace and beauty ✨",
-    href: "/gallery"
-  },
-  {
-    type: "image",
-    src: "/featured3.jpeg",
-    caption: "Confidence in every step 💫",
-    href: "/gallery"
-  },
-  {
-    type: "image",
-    src: "/featured4.jpeg",
-    caption: "Queen with purpose 👑",
-    href: "/gallery"
-  }
+  { type: 'image', src: '/featured1.jpeg', caption: 'Elegance personified 👑', href: '/gallery' },
+  { type: 'image', src: '/featured2.jpeg', caption: 'Grace and beauty ✨', href: '/gallery' },
+  { type: 'image', src: '/featured3.jpeg', caption: 'Confidence in every step 💫', href: '/gallery' },
+  { type: 'image', src: '/featured4.jpeg', caption: 'Queen with purpose 👑', href: '/gallery' }
 ]
 
-const FeaturedPost = () => {
+const GOLD_GRADIENT =
+  'linear-gradient(90deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #BF953F 100%)'
+
+const AUTO_SCROLL_PX_PER_SEC = 24
+const RESUME_AFTER_MS        = 5000
+const DESKTOP_AUTOSCROLL_MIN = 7
+const MAX_DT                 = 0.05 // cap frame delta at 50ms to prevent post-stall jumps
+
+export default function FeaturedPost() {
   const [featuredItems, setFeaturedItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedItem, setSelectedItem] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+
   const modalRef = useRef(null)
 
-  // Fetch featured posts from Supabase
+  // -------- desktop track --------
+  const desktopRef          = useRef(null)
+  const desktopRaf          = useRef(null)
+  const desktopLastTs       = useRef(0)
+  const desktopSetWidth     = useRef(0)
+  const desktopPaused       = useRef(false)
+  const desktopResumeTimer  = useRef(null)
+  const desktopExpected     = useRef(0) // last scrollLeft value WE wrote
+
+  // -------- mobile top track --------
+  const topRef              = useRef(null)
+  const topRaf              = useRef(null)
+  const topLastTs           = useRef(0)
+  const topSetWidth         = useRef(0)
+  const topPaused           = useRef(false)
+  const topResumeTimer      = useRef(null)
+  const topExpected         = useRef(0)
+
+  // -------- mobile bottom track (reverse) --------
+  const bottomRef           = useRef(null)
+  const bottomRaf           = useRef(null)
+  const bottomLastTs        = useRef(0)
+  const bottomSetWidth      = useRef(0)
+  const bottomPaused        = useRef(false)
+  const bottomResumeTimer   = useRef(null)
+  const bottomExpected      = useRef(0)
+
+  // ------------------- fetch -------------------
   useEffect(() => {
     const fetchFeaturedPosts = async () => {
       try {
         setIsLoading(true)
-        
         const { data, error } = await supabase
           .from('classicqueen')
           .select('feature_post')
           .single()
-
         if (error) throw error
-
         if (data?.feature_post && data.feature_post.length > 0) {
           setFeaturedItems(data.feature_post)
         } else {
-          // Fallback to default local images
-          console.log('No featured posts from Supabase, using default images...')
           setFeaturedItems(DEFAULT_FALLBACK_ITEMS)
         }
-      } catch (error) {
-        console.error('Error fetching posts:', error)
-        // Fallback to default local images
+      } catch (err) {
+        console.error('Error fetching posts:', err)
         setFeaturedItems(DEFAULT_FALLBACK_ITEMS)
       } finally {
         setIsLoading(false)
       }
     }
-
     fetchFeaturedPosts()
   }, [])
 
-  // Handle keyboard navigation in modal
+  // ------------------- modal keyboard nav -------------------
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!isModalOpen) return
-      
-      switch(e.key) {
-        case 'Escape':
-          closeModal()
-          break
-        case 'ArrowRight':
-          navigateToNext()
-          break
-        case 'ArrowLeft':
-          navigateToPrev()
-          break
-      }
+    if (!isModalOpen) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeModal()
+      if (e.key === 'ArrowRight') navigateToNext()
+      if (e.key === 'ArrowLeft') navigateToPrev()
     }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [isModalOpen, currentIndex, featuredItems])
 
-  // Handle touch/swipe gestures for mobile
-  useEffect(() => {
-    if (!modalRef.current || !isModalOpen) return
-
-    let touchStartX = 0
-    let touchEndX = 0
-
-    const handleTouchStart = (e) => {
-      touchStartX = e.changedTouches[0].screenX
-    }
-
-    const handleTouchEnd = (e) => {
-      touchEndX = e.changedTouches[0].screenX
-      handleSwipe()
-    }
-
-    const handleSwipe = () => {
-      const swipeThreshold = 50
-      const diff = touchStartX - touchEndX
-
-      if (Math.abs(diff) > swipeThreshold) {
-        if (diff > 0) {
-          // Swipe left - next
-          navigateToNext()
-        } else {
-          // Swipe right - previous
-          navigateToPrev()
-        }
+  // ------------------- generic pause/resume -------------------
+  const makePauseResume = (pausedRef, resumeTimerRef) => {
+    const pause = () => {
+      pausedRef.current = true
+      setIsPaused(true)
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current)
+        resumeTimerRef.current = null
       }
     }
+    const scheduleResume = () => {
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
+      resumeTimerRef.current = setTimeout(() => {
+        pausedRef.current = false
+        setIsPaused(false)
+      }, RESUME_AFTER_MS)
+    }
+    return { pause, scheduleResume }
+  }
 
-    const modalElement = modalRef.current
-    modalElement.addEventListener('touchstart', handleTouchStart)
-    modalElement.addEventListener('touchend', handleTouchEnd)
+  // ------------------- one autoscroll loop per track -------------------
+  // dir = 1 → scrollLeft increases (moves left). dir = -1 → decreases (moves right).
+  const startAutoScroll = (
+    trackRef, rafRef, lastTsRef, setWidthRef, pausedRef, expectedRef, dir = 1
+  ) => {
+    const track = trackRef.current
+    if (!track) return () => {}
+
+    const measure = () => {
+      setWidthRef.current = track.scrollWidth / 2
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(track)
+
+    // reverse track: start mid-way so we have room to move backwards
+    if (dir === -1 && setWidthRef.current > 0) {
+      track.scrollLeft = setWidthRef.current
+      expectedRef.current = track.scrollLeft
+    } else {
+      expectedRef.current = track.scrollLeft
+    }
+
+    const step = (ts) => {
+      if (!lastTsRef.current) lastTsRef.current = ts
+      let dt = (ts - lastTsRef.current) / 1000
+      if (dt > MAX_DT) dt = MAX_DT
+      lastTsRef.current = ts
+
+      if (!pausedRef.current && track) {
+        track.scrollLeft += AUTO_SCROLL_PX_PER_SEC * dt * dir
+
+        const w = setWidthRef.current
+        if (w > 0) {
+          if (dir === 1 && track.scrollLeft >= w) track.scrollLeft -= w
+          else if (dir === -1 && track.scrollLeft <= 0) track.scrollLeft += w
+        }
+
+        // remember exactly what we wrote, so the scroll listener can tell
+        // whether the scroll event was caused by us or by the user
+        expectedRef.current = track.scrollLeft
+      }
+      rafRef.current = requestAnimationFrame(step)
+    }
+    rafRef.current = requestAnimationFrame(step)
 
     return () => {
-      modalElement.removeEventListener('touchstart', handleTouchStart)
-      modalElement.removeEventListener('touchend', handleTouchEnd)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      lastTsRef.current = 0
+      ro.disconnect()
     }
-  }, [isModalOpen, currentIndex, featuredItems])
+  }
 
+  // ------------------- attach user-interaction pause listeners -------------------
+  const attachPauseHandlers = (trackRef, pausedRef, resumeTimerRef, expectedRef) => {
+    const track = trackRef.current
+    if (!track) return () => {}
+    const { pause, scheduleResume } = makePauseResume(pausedRef, resumeTimerRef)
+    const onInteract = () => { pause(); scheduleResume() }
+
+    track.addEventListener('wheel', onInteract, { passive: true })
+    track.addEventListener('touchstart', onInteract, { passive: true })
+    track.addEventListener('touchmove', onInteract, { passive: true })
+    track.addEventListener('pointerdown', onInteract)
+
+    // Only pause on scroll events that we did NOT cause.
+    // Our RAF loop writes to expectedRef.current each frame; if the
+    // actual scrollLeft differs from that, the user scrolled.
+    track.addEventListener('scroll', () => {
+      const diff = Math.abs(track.scrollLeft - expectedRef.current)
+      if (diff > 1) {
+        if (!pausedRef.current) { pause(); scheduleResume() }
+      }
+    }, { passive: true })
+
+    return () => {
+      track.removeEventListener('wheel', onInteract)
+      track.removeEventListener('touchstart', onInteract)
+      track.removeEventListener('touchmove', onInteract)
+      track.removeEventListener('pointerdown', onInteract)
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current)
+    }
+  }
+
+  // ------------------- boot all tracks when items load -------------------
+  useEffect(() => {
+    if (isLoading || featuredItems.length === 0) return
+
+    const cleanups = []
+
+    // Desktop: only auto-scroll if 7+ items
+    if (featuredItems.length >= DESKTOP_AUTOSCROLL_MIN) {
+      cleanups.push(startAutoScroll(
+        desktopRef, desktopRaf, desktopLastTs, desktopSetWidth,
+        desktopPaused, desktopExpected, 1
+      ))
+      cleanups.push(attachPauseHandlers(
+        desktopRef, desktopPaused, desktopResumeTimer, desktopExpected
+      ))
+    }
+
+    // Mobile: need at least 4 to bother
+    if (featuredItems.length >= 4) {
+      cleanups.push(startAutoScroll(
+        topRef, topRaf, topLastTs, topSetWidth,
+        topPaused, topExpected, 1
+      ))
+      cleanups.push(attachPauseHandlers(
+        topRef, topPaused, topResumeTimer, topExpected
+      ))
+
+      cleanups.push(startAutoScroll(
+        bottomRef, bottomRaf, bottomLastTs, bottomSetWidth,
+        bottomPaused, bottomExpected, -1
+      ))
+      cleanups.push(attachPauseHandlers(
+        bottomRef, bottomPaused, bottomResumeTimer, bottomExpected
+      ))
+    }
+
+    return () => cleanups.forEach((fn) => fn && fn())
+  }, [isLoading, featuredItems])
+
+  // ------------------- handlers -------------------
   const handleItemClick = (item, index) => {
     setSelectedItem(item)
     setCurrentIndex(index)
     setIsModalOpen(true)
     document.body.style.overflow = 'hidden'
   }
-
   const closeModal = () => {
     setIsModalOpen(false)
-    document.body.style.overflow = 'auto'
-    setTimeout(() => {
-      setSelectedItem(null)
-      setCurrentIndex(0)
-    }, 300)
+    document.body.style.overflow = ''
+    setTimeout(() => { setSelectedItem(null); setCurrentIndex(0) }, 300)
   }
-
   const navigateToNext = () => {
-    if (featuredItems.length > 0) {
-      const nextIndex = (currentIndex + 1) % featuredItems.length
-      setSelectedItem(featuredItems[nextIndex])
-      setCurrentIndex(nextIndex)
-    }
+    if (!featuredItems.length) return
+    const n = (currentIndex + 1) % featuredItems.length
+    setSelectedItem(featuredItems[n]); setCurrentIndex(n)
   }
-
   const navigateToPrev = () => {
-    if (featuredItems.length > 0) {
-      const prevIndex = (currentIndex - 1 + featuredItems.length) % featuredItems.length
-      setSelectedItem(featuredItems[prevIndex])
-      setCurrentIndex(prevIndex)
-    }
+    if (!featuredItems.length) return
+    const p = (currentIndex - 1 + featuredItems.length) % featuredItems.length
+    setSelectedItem(featuredItems[p]); setCurrentIndex(p)
   }
-
   const handleShare = async () => {
-    if (selectedItem) {
-      const shareUrl = selectedItem.src
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: selectedItem.caption,
-            text: `Check out this ${selectedItem.type} from Classic Queen`,
-            url: shareUrl,
-          })
-        } catch (error) {
-          console.log('Sharing failed:', error)
-          await navigator.clipboard.writeText(shareUrl)
-          alert('Link copied to clipboard!')
-        }
-      } else {
+    if (!selectedItem) return
+    const shareUrl = selectedItem.src
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: selectedItem.caption,
+          text: `Check out this ${selectedItem.type} from Classic Queen`,
+          url: shareUrl,
+        })
+      } catch {
         await navigator.clipboard.writeText(shareUrl)
         alert('Link copied to clipboard!')
       }
+    } else {
+      await navigator.clipboard.writeText(shareUrl)
+      alert('Link copied to clipboard!')
     }
   }
-
   const handleDownload = () => {
-    if (selectedItem) {
-      const link = document.createElement('a')
-      link.href = selectedItem.src
-      link.download = `classic-queen-${selectedItem.type}-${Date.now()}`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
+    if (!selectedItem) return
+    const link = document.createElement('a')
+    link.href = selectedItem.src
+    link.download = `classic-queen-${selectedItem.type}-${Date.now()}`
+    document.body.appendChild(link); link.click(); document.body.removeChild(link)
   }
 
+  // ------------------- early returns -------------------
   if (isLoading) {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Featured Post</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="aspect-square bg-gradient-to-br from-brown-100 to-brown-200 rounded-lg animate-pulse"></div>
+          <div className="flex gap-4 overflow-hidden">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="shrink-0 aspect-[3/4] bg-gradient-to-br from-brown-100 to-brown-200 rounded-lg animate-pulse"
+                style={{ width: 'calc((100% - 3rem) / 5)' }}
+              />
             ))}
           </div>
         </div>
@@ -217,7 +307,7 @@ const FeaturedPost = () => {
     )
   }
 
-  if (featuredItems.length === 0) {
+  if (!featuredItems.length) {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
@@ -230,218 +320,248 @@ const FeaturedPost = () => {
     )
   }
 
+  // render each item twice for the seamless loop — same as ContentScroll
+  const loopItems = [...featuredItems, ...featuredItems]
+
   return (
-    <section className="py-8 bg-gradient-to-b from-white to-brown-50">
+    <section className="w-full py-8 bg-gradient-to-b from-white to-brown-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6 text-brown-900">
-          Featured Post
+        <h2 className="text-center text-3xl md:text-4xl font-bold mb-6 text-brown-900">
+          Past Queens
         </h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {featuredItems.map((item, index) => (
-            <div
-              key={index}
-              className="group relative aspect-square rounded-lg overflow-hidden cursor-pointer"
-              onClick={() => handleItemClick(item, index)}
-            >
-              {/* Media Container */}
-              <div className="absolute inset-0">
-                {item.type === 'image' ? (
-                  <Image
-                    src={item.src}
-                    alt={item.caption}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes="(max-width: 768px) 50vw, 25vw"
-                    onError={(e) => {
-                      console.error(`Failed to load image: ${item.src}`)
-                      e.target.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  <div className="relative w-full h-full">
-                    <video
-                      src={item.src}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      muted
-                      loop
-                      playsInline
-                      preload="metadata"
-                      onError={(e) => {
-                        console.error(`Failed to load video: ${item.src}`)
-                        e.target.style.display = 'none'
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors duration-300" />
-                  </div>
-                )}
-              </div>
+      </div>
 
-              {/* Caption Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                <p className="text-white text-sm font-medium truncate">{item.caption}</p>
-              </div>
+      {/* ---------------- DESKTOP: one row, scroll left ---------------- */}
+      <div
+        ref={desktopRef}
+        className="
+          hidden md:flex gap-4 overflow-x-auto
+          [scrollbar-width:none] [-ms-overflow-style:none]
+          [&::-webkit-scrollbar]:hidden
+          px-4 md:px-6 select-none
+        "
+        style={{ touchAction: 'pan-x' }}
+      >
+        {loopItems.map((item, i) => (
+          <FeaturedCard
+            key={`d-${i}`}
+            item={item}
+            onClick={() => handleItemClick(item, i % featuredItems.length)}
+            widthClass="md:w-[calc((100%-3rem)/5)]"
+          />
+        ))}
+      </div>
 
-              {/* Type Indicator - Hidden from users */}
-              <div className="sr-only">
-                {item.type === 'video' ? 'VIDEO' : 'IMAGE'}
-              </div>
-            </div>
+      {/* ---------------- MOBILE: two rows, opposite directions ---------------- */}
+      <div className="md:hidden space-y-4">
+        {/* top row — scroll left */}
+        <div
+          ref={topRef}
+          className="
+            flex gap-3 overflow-x-auto
+            [scrollbar-width:none] [-ms-overflow-style:none]
+            [&::-webkit-scrollbar]:hidden
+            px-4 select-none
+          "
+          style={{ touchAction: 'pan-x' }}
+        >
+          {loopItems.map((item, i) => (
+            <FeaturedCard
+              key={`t-${i}`}
+              item={item}
+              onClick={() => handleItemClick(item, i % featuredItems.length)}
+              widthClass="w-[44vw] sm:w-[30vw]"
+            />
           ))}
         </div>
 
-        {/* View All Link and Description */}
-        <div className="text-center mt-8 max-w-3xl mx-auto">
-          <Link
-            href="/gallery"
-            className="inline-flex items-center text-brown-900 hover:text-brown-700 font-semibold border-b-2 border-gold-500 pb-1 mb-4"
-          >
-            View All Featured Posts
-            <ChevronRight size={20} className="ml-1" />
-          </Link>
+        {/* bottom row — scroll right */}
+        <div
+          ref={bottomRef}
+          className="
+            flex gap-3 overflow-x-auto
+            [scrollbar-width:none] [-ms-overflow-style:none]
+            [&::-webkit-scrollbar]:hidden
+            px-4 select-none
+          "
+          style={{ touchAction: 'pan-x' }}
+        >
+          {loopItems.map((item, i) => (
+            <FeaturedCard
+              key={`b-${i}`}
+              item={item}
+              onClick={() => handleItemClick(item, i % featuredItems.length)}
+              widthClass="w-[44vw] sm:w-[30vw]"
+            />
+          ))}
+        </div>
+
+        <AnimatePresence>
+          {isPaused && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              className="flex justify-center"
+            >
+              <span className="text-[10px] text-brown-400">
+                Auto-scroll resumes in a few seconds…
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ---------------- View All + description ---------------- */}
+      <div className="container mx-auto px-4">
+        <div className="mx-auto mt-8 max-w-3xl text-center">
           
-          {/* Description of Classic Queen International Pageant */}
           <div className="mt-6 px-4">
-            <p className="text-brown-700 text-sm md:text-lg leading-relaxed">
-              Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women 
-              from around the world. Our platform empowers queens to showcase their unique talents, advocate 
-              for meaningful causes, and inspire positive change in their communities. Through this prestigious 
+            <p className="text-sm leading-relaxed text-brown-700 md:text-lg">
+              Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
+              from around the world. Our platform empowers queens to showcase their unique talents, advocate
+              for meaningful causes, and inspire positive change in their communities. Through this prestigious
               competition, we honor women who embody grace, confidence, and the transformative power of leadership.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Instagram-style Modal */}
-      {isModalOpen && selectedItem && (
-        <div 
-          ref={modalRef}
-          className="fixed inset-0 z-50 bg-black flex items-center justify-center"
-          onClick={closeModal}
-        >
-          {/* Close Button */}
-          <button
+      {/* ---------------- Lightbox ---------------- */}
+      <AnimatePresence>
+        {isModalOpen && selectedItem && (
+          <motion.div
+            ref={modalRef}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex items-center justify-center p-4"
             onClick={closeModal}
-            className="absolute top-4 right-4 z-50 text-white hover:text-gold-300 bg-black/50 rounded-full p-2"
-            aria-label="Close"
+            role="dialog"
+            aria-modal="true"
           >
-            <X size={24} />
-          </button>
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
 
-          {/* Media Container */}
-          <div 
-            className="relative w-full max-w-4xl h-full flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Navigation Arrows */}
             {featuredItems.length > 1 && (
               <>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigateToPrev()
-                  }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-40 text-white hover:text-gold-300 bg-black/50 rounded-full p-2 md:p-3"
+                  onClick={(e) => { e.stopPropagation(); navigateToPrev() }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                   aria-label="Previous"
                 >
-                  <ChevronLeft size={24} className="md:hidden" />
-                  <ChevronLeft size={32} className="hidden md:block" />
+                  <ChevronLeft className="w-6 h-6 text-white" />
                 </button>
-                
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    navigateToNext()
-                  }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-40 text-white hover:text-gold-300 bg-black/50 rounded-full p-2 md:p-3"
+                  onClick={(e) => { e.stopPropagation(); navigateToNext() }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                   aria-label="Next"
                 >
-                  <ChevronRight size={24} className="md:hidden" />
-                  <ChevronRight size={32} className="hidden md:block" />
+                  <ChevronRight className="w-6 h-6 text-white" />
                 </button>
               </>
             )}
 
-            {/* Media Display */}
-            <div className="relative w-full h-full max-h-screen flex items-center justify-center">
-              {selectedItem.type === 'image' ? (
-                <Image
-                  src={selectedItem.src}
-                  alt={selectedItem.caption}
-                  fill
-                  className="object-contain"
-                  onError={(e) => {
-                    console.error(`Failed to load modal image: ${selectedItem.src}`)
-                    e.target.style.display = 'none'
-                  }}
-                />
-              ) : (
+            <motion.div
+              key={selectedItem.src}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="relative max-w-5xl w-full max-h-[85vh] flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {selectedItem.type === 'video' ? (
                 <video
                   src={selectedItem.src}
-                  className="w-full h-full max-h-screen object-contain"
                   controls
                   autoPlay
                   playsInline
-                  onError={(e) => {
-                    console.error(`Failed to load modal video: ${selectedItem.src}`)
-                    e.target.style.display = 'none'
-                  }}
+                  className="max-h-[80vh] w-auto max-w-full rounded-xl"
+                />
+              ) : (
+                <img
+                  src={selectedItem.src}
+                  alt={selectedItem.caption || ''}
+                  className="max-h-[80vh] w-auto max-w-full object-contain rounded-xl"
                 />
               )}
-            </div>
 
-            {/* Bottom Actions Bar */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 flex items-center justify-between">
-              {/* Caption */}
-              <div className="flex-1">
-                <p className="text-white text-sm md:text-base">{selectedItem.caption}</p>
-              </div>
-
-              {/* Action Icons */}
-              <div className="flex items-center gap-3">
+              <div className="mt-4 flex items-center gap-4">
+                {selectedItem.caption && (
+                  <p className="text-white/80 text-sm text-center">
+                    {selectedItem.caption}
+                  </p>
+                )}
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDownload()
-                  }}
-                  className="text-white hover:text-gold-300 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); handleDownload() }}
+                  className="text-white/80 hover:text-gold-300 transition-colors"
                   aria-label="Download"
                 >
                   <Download size={20} />
                 </button>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleShare()
-                  }}
-                  className="text-white hover:text-gold-300 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); handleShare() }}
+                  className="text-white/80 hover:text-gold-300 transition-colors"
                   aria-label="Share"
                 >
                   <Share2 size={20} />
                 </button>
               </div>
-            </div>
-
-            {/* Current Index Indicator */}
-            {featuredItems.length > 1 && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40">
-                <div className="flex gap-1">
-                  {featuredItems.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        index === currentIndex ? 'bg-gold-300' : 'bg-white/50'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   )
 }
 
-export default FeaturedPost
+// ------------------- Card — same shape as ContentCard, with gold outline + 3:4 -------------------
+function FeaturedCard({ item, onClick, widthClass }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        group relative flex-shrink-0 overflow-hidden rounded-xl
+        p-[2px] transition-transform duration-300 hover:scale-[1.02]
+        aspect-[3/4]
+        ${widthClass}
+      `}
+      style={{ background: GOLD_GRADIENT }}
+    >
+      <div className="relative w-full h-full overflow-hidden rounded-[10px] bg-black">
+        {item.type === 'video' ? (
+          <>
+            <video
+              src={item.src}
+              muted
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
+          </>
+        ) : (
+          <img
+            src={item.src}
+            alt={item.caption || ''}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+        {item.caption && (
+          <p className="absolute bottom-0 left-0 right-0 p-2 text-[10px] md:text-xs text-white/90 text-left line-clamp-2">
+            {item.caption}
+          </p>
+        )}
+      </div>
+    </button>
+  )
+}
