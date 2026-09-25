@@ -115,7 +115,6 @@ export default function FeaturedPost() {
   }
 
   // ------------------- one autoscroll loop per track -------------------
-  // dir = 1 → scrollLeft increases (moves left). dir = -1 → decreases (moves right).
   const startAutoScroll = (
     trackRef, rafRef, lastTsRef, setWidthRef, pausedRef, expectedRef, dir = 1
   ) => {
@@ -129,7 +128,6 @@ export default function FeaturedPost() {
     const ro = new ResizeObserver(measure)
     ro.observe(track)
 
-    // reverse track: start mid-way so we have room to move backwards
     if (dir === -1 && setWidthRef.current > 0) {
       track.scrollLeft = setWidthRef.current
       expectedRef.current = track.scrollLeft
@@ -152,8 +150,6 @@ export default function FeaturedPost() {
           else if (dir === -1 && track.scrollLeft <= 0) track.scrollLeft += w
         }
 
-        // remember exactly what we wrote, so the scroll listener can tell
-        // whether the scroll event was caused by us or by the user
         expectedRef.current = track.scrollLeft
       }
       rafRef.current = requestAnimationFrame(step)
@@ -179,9 +175,6 @@ export default function FeaturedPost() {
     track.addEventListener('touchmove', onInteract, { passive: true })
     track.addEventListener('pointerdown', onInteract)
 
-    // Only pause on scroll events that we did NOT cause.
-    // Our RAF loop writes to expectedRef.current each frame; if the
-    // actual scrollLeft differs from that, the user scrolled.
     track.addEventListener('scroll', () => {
       const diff = Math.abs(track.scrollLeft - expectedRef.current)
       if (diff > 1) {
@@ -204,7 +197,6 @@ export default function FeaturedPost() {
 
     const cleanups = []
 
-    // Desktop: only auto-scroll if 7+ items
     if (featuredItems.length >= DESKTOP_AUTOSCROLL_MIN) {
       cleanups.push(startAutoScroll(
         desktopRef, desktopRaf, desktopLastTs, desktopSetWidth,
@@ -215,7 +207,6 @@ export default function FeaturedPost() {
       ))
     }
 
-    // Mobile: need at least 4 to bother
     if (featuredItems.length >= 4) {
       cleanups.push(startAutoScroll(
         topRef, topRaf, topLastTs, topSetWidth,
@@ -319,7 +310,6 @@ export default function FeaturedPost() {
     )
   }
 
-  // render each item twice for the seamless loop — same as ContentScroll
   const loopItems = [...featuredItems, ...featuredItems]
 
   return (
@@ -353,7 +343,6 @@ export default function FeaturedPost() {
 
       {/* ---------------- MOBILE: two rows, opposite directions ---------------- */}
       <div className="md:hidden space-y-4">
-        {/* top row — scroll left */}
         <div
           ref={topRef}
           className="
@@ -374,7 +363,6 @@ export default function FeaturedPost() {
           ))}
         </div>
 
-        {/* bottom row — scroll right */}
         <div
           ref={bottomRef}
           className="
@@ -413,14 +401,58 @@ export default function FeaturedPost() {
 
       {/* ---------------- Description ---------------- */}
       <div className="container mx-auto px-4">
-        <div className="mx-auto mt-8 max-w-3xl text-center">
-          <div className="mt-6 px-4">
-            <p className="text-sm leading-relaxed text-brown-700 md:text-lg">
-              Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
-              from around the world. Our platform empowers queens to showcase their unique talents, advocate
-              for meaningful causes, and inspire positive change in their communities. Through this prestigious
-              competition, we honor women who embody grace, confidence, and the transformative power of leadership.
-            </p>
+        <div className="mx-auto mt-8 max-w-3xl md:max-w-6xl text-center">
+          {/* ---------- MOBILE: single card ---------- */}
+          <div className="md:hidden">
+            <DescriptionCard>
+              <p className="text-sm leading-relaxed text-brown-700">
+                Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
+                from around the world. Our platform empowers queens to showcase their unique talents, advocate
+                for meaningful causes, and inspire positive change in their communities. Through this prestigious
+                competition, we honor women who embody grace, confidence, and the transformative power of leadership.
+              </p>
+
+              <div className="mt-5">
+                <LearnMoreButton />
+              </div>
+            </DescriptionCard>
+          </div>
+
+          {/* ---------- DESKTOP: 3-column grid ---------- */}
+          <div className="hidden md:grid grid-cols-3 gap-5 mt-6 text-left">
+            {/* Column 1 — Short description */}
+            <DescriptionCard>
+              <SectionLabel>About the Pageant</SectionLabel>
+              <p className="text-sm leading-relaxed text-brown-700">
+                Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
+                from around the world. Our platform empowers queens to showcase their unique talents, advocate
+                for meaningful causes, and inspire positive change in their communities.
+              </p>
+            </DescriptionCard>
+
+            {/* Column 2 — Mission */}
+            <DescriptionCard>
+              <SectionLabel>Our Mission</SectionLabel>
+              <p className="text-sm leading-relaxed text-brown-700">
+                To empower women through a prestigious global beauty platform that nurtures confidence,
+                intelligence, leadership, and social responsibility, transforming queens into influential
+                ambassadors of positive change.
+              </p>
+            </DescriptionCard>
+
+            {/* Column 3 — Values */}
+            <DescriptionCard>
+              <SectionLabel>Our Values</SectionLabel>
+              <p className="text-sm leading-relaxed text-brown-700">
+                Classic Queen International stands for elegance, class, and integrity, nurturing queens who
+                are poised, articulate, and socially conscious. 
+              </p>
+            </DescriptionCard>
+          </div>
+
+          {/* Desktop-only centered Learn More button, below the grid */}
+          <div className="hidden md:flex justify-center mt-6">
+            <LearnMoreButton />
           </div>
         </div>
       </div>
@@ -518,7 +550,91 @@ export default function FeaturedPost() {
   )
 }
 
-// ------------------- Card — gold outline + 3:4 -------------------
+/* ---------------- Reusable — metallic gold rim card ---------------- */
+function DescriptionCard({ children }) {
+  return (
+    <div
+      className="rounded-2xl"
+      style={{
+        backgroundImage:
+          "linear-gradient(#ffffff, #ffffff), conic-gradient(from 45deg, #7a5c14, #f9e79f, #c9a227, #fff4c2, #8a6a1a, #f5d76e, #7a5c14)",
+        backgroundOrigin: "border-box",
+        backgroundClip: "padding-box, border-box",
+        borderWidth: "2px",
+        borderStyle: "solid",
+        borderColor: "transparent",
+        padding: "1.5rem",
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/* ---------------- Section label — small gold metallic text ---------------- */
+function SectionLabel({ children }) {
+  return (
+    <div className="mb-3">
+      <h3
+        className="text-base font-bold tracking-wide"
+        style={{
+          backgroundImage:
+            "linear-gradient(135deg, #7a5c14 0%, #c9a227 50%, #9A7B4F 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
+      >
+        {children}
+      </h3>
+      <div
+        className="mt-1.5 h-[2px] w-12 rounded-full"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, #9A7B4F 0%, #f5d76e 50%, #9A7B4F 100%)",
+        }}
+      />
+    </div>
+  )
+}
+
+/* ---------------- Learn More button ---------------- */
+function LearnMoreButton() {
+  return (
+    <a
+      href="/about"
+      className="
+        inline-flex items-center gap-1.5
+        px-5 py-2.5 rounded-full
+        text-sm font-semibold text-[#2E1503]
+        transition-all duration-300
+        hover:-translate-y-0.5 hover:shadow-lg
+      "
+      style={{
+        backgroundImage:
+          "linear-gradient(135deg, #f9e79f 0%, #c9a227 50%, #9A7B4F 100%)",
+        boxShadow: "0 4px 12px rgba(201,162,39,0.35)",
+      }}
+    >
+      Learn More
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M5 12h14" />
+        <path d="m12 5 7 7-7 7" />
+      </svg>
+    </a>
+  )
+}
+
+/* ---------------- Card — gold outline + 3:4 ---------------- */
 function FeaturedCard({ item, onClick, widthClass }) {
   return (
     <button

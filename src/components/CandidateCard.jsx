@@ -45,22 +45,42 @@ export default function CandidateCard({ candidate, onVoteClick }) {
             {candidate.full_name || candidate.username}
           </h3>
 
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={handleVote}
-              className="
-                px-4 py-1.5 rounded-md text-sm font-semibold text-white
-                bg-[#6b4423]
-                border border-[#9A7B4F]
-                transition-all duration-300
-                hover:bg-green-600 hover:border-green-600 hover:brightness-110
-                active:scale-95
-              "
-            >
-              Vote
-            </button>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            {/* Two buttons side by side */}
+            <div className="flex items-center gap-1.5">
+              {/* View button */}
+              <button
+                type="button"
+                className="
+                  px-3 py-1.5 rounded-md text-sm font-semibold
+                  bg-transparent text-[#f5d76e]
+                  border border-[#9A7B4F]
+                  transition-all duration-300
+                  hover:bg-[#9A7B4F]/20 hover:border-[#f5d76e]
+                  active:scale-95
+                "
+              >
+                View
+              </button>
 
+              {/* Vote button */}
+              <button
+                type="button"
+                onClick={handleVote}
+                className="
+                  px-3 py-1.5 rounded-md text-sm font-semibold text-white
+                  bg-[#6b4423]
+                  border border-[#9A7B4F]
+                  transition-all duration-300
+                  hover:bg-green-600 hover:border-green-600 hover:brightness-110
+                  active:scale-95
+                "
+              >
+                Vote
+              </button>
+            </div>
+
+            {/* Vote count */}
             <span className="text-base font-bold tabular-nums text-yellow-400">
               {candidate.vote_count ?? 0}
             </span>
