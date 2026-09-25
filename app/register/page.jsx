@@ -4,6 +4,8 @@ import { useState } from 'react'
 import HeroSection from '../../src/components/Home/HeroSection'
 import CandidateRegistrationForm from '../../src/components/Candidates/Registration'
 import NationalDirectorRegistrationForm from '../../src/components/NationalDirector'
+import { Lock, Calendar, Mail } from 'lucide-react'
+import Link from 'next/link'
 
 const RegistrationPage = () => {
   const [activeTab, setActiveTab] = useState('candidate') // 'candidate' or 'director'
@@ -27,7 +29,7 @@ const RegistrationPage = () => {
             >
               Independent Candidate
             </button>
-            
+
             <button
               onClick={() => setActiveTab('director')}
               className={`px-5 py-2.5 text-sm font-medium rounded-md transition-all duration-200 shadow-sm ${
@@ -44,7 +46,7 @@ const RegistrationPage = () => {
         {/* Active Form */}
         <div className="max-w-6xl mx-auto">
           {activeTab === 'candidate' ? (
-            <CandidateRegistrationForm />
+            <CandidateRegistrationClosed />
           ) : (
             <NationalDirectorRegistrationForm />
           )}
@@ -58,13 +60,13 @@ const RegistrationPage = () => {
           <div className="space-y-3">
             <div className="bg-white rounded-lg p-4 shadow-sm border border-brown-100">
               <h3 className="font-bold text-brown-900 mb-1 text-sm md:text-base">
-                Can I register if I'm from a country without a National Director?
+                Can I register if I&apos;m from a country without a National Director?
               </h3>
               <p className="text-brown-700 text-xs md:text-sm">
-                Yes! Independent candidates can register directly through our website. If your country doesn't have a National Director yet, you'll compete under the international banner and may have the opportunity to become the inaugural National Director for your country.
+                Yes! Independent candidates can register directly through our website. If your country doesn&apos;t have a National Director yet, you&apos;ll compete under the international banner and may have the opportunity to become the inaugural National Director for your country.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg p-4 shadow-sm border border-brown-100">
               <h3 className="font-bold text-brown-900 mb-1 text-sm md:text-base">
                 What are the benefits of becoming a National Director?
@@ -73,16 +75,16 @@ const RegistrationPage = () => {
                 National Directors receive exclusive rights to organize Classic Queen pageants in their country, revenue sharing from registrations and sponsorships, full organizational support from headquarters, training materials, and the opportunity to build a profitable beauty pageant business.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg p-4 shadow-sm border border-brown-100">
               <h3 className="font-bold text-brown-900 mb-1 text-sm md:text-base">
                 Is there an age limit for contestants?
               </h3>
               <p className="text-brown-700 text-xs md:text-sm">
-                Yes, contestants must be between 18-30 years old at the time of registration. There's no age limit for National Directors - we welcome experienced professionals from all age groups.
+                Yes, contestants must be between 18-30 years old at the time of registration. There&apos;s no age limit for National Directors - we welcome experienced professionals from all age groups.
               </p>
             </div>
-            
+
             <div className="bg-white rounded-lg p-4 shadow-sm border border-brown-100">
               <h3 className="font-bold text-brown-900 mb-1 text-sm md:text-base">
                 What happens after I register?
@@ -104,8 +106,8 @@ const RegistrationPage = () => {
               Our team is ready to answer all your questions about registration, eligibility, and opportunities.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a 
-                href="mailto:classicqueeninternational1@gmail.com" 
+              <a
+                href="mailto:classicqueeninternational1@gmail.com"
                 className="inline-flex items-center justify-center px-4 py-2 bg-white text-brown-900 font-medium rounded-lg hover:bg-gold-100 transition-colors text-sm shadow-sm"
               >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -114,8 +116,8 @@ const RegistrationPage = () => {
                 </svg>
                 Email Us
               </a>
-              <a 
-                href="tel:+1238156660109" 
+              <a
+                href="tel:+1238156660109"
                 className="inline-flex items-center justify-center px-4 py-2 bg-gold-600 text-white font-medium rounded-lg hover:bg-gold-700 transition-colors text-sm shadow-sm"
               >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -123,9 +125,9 @@ const RegistrationPage = () => {
                 </svg>
                 Call Us
               </a>
-              <a 
-                href="https://wa.me/2348156660109" 
-                target="_blank" 
+              <a
+                href="https://wa.me/2348156660109"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors text-sm shadow-sm"
               >
@@ -135,6 +137,105 @@ const RegistrationPage = () => {
                 WhatsApp
               </a>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ---------------- Closed Registration Notice ---------------- */
+
+function CandidateRegistrationClosed() {
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div
+        className="rounded-2xl p-[3px]"
+        style={{
+          background:
+            "conic-gradient(from 45deg, #7a5c14, #f9e79f, #c9a227, #fff4c2, #8a6a1a, #f5d76e, #7a5c14)",
+        }}
+      >
+        <div className="rounded-2xl bg-white overflow-hidden">
+          {/* Top accent bar */}
+          <div
+            className="h-1.5 w-full"
+            style={{
+              background:
+                "linear-gradient(90deg, #7a5c14, #c9a227, #f5d76e, #8a6a1a)",
+            }}
+          />
+
+          <div className="p-8 md:p-10 text-center">
+            {/* Lock badge */}
+            <div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-5 p-[2px]"
+              style={{
+                background:
+                  "conic-gradient(from 45deg, #7a5c14, #f9e79f, #c9a227, #fff4c2, #8a6a1a, #f5d76e, #7a5c14)",
+              }}
+            >
+              <div className="flex items-center justify-center w-full h-full rounded-full bg-white">
+                <Lock size={26} className="text-[#6b4423]" />
+              </div>
+            </div>
+
+            <h2 className="text-2xl md:text-3xl font-bold text-[#2E1503] mb-3">
+              Candidate Registration Closed
+            </h2>
+
+            <p className="text-sm md:text-base text-[#6b4423] leading-relaxed max-w-lg mx-auto">
+              Registration for <strong>Classic Queen International 2026</strong>{" "}
+              candidate onboarding has officially closed. Thank you to everyone
+              who applied.
+            </p>
+
+            <div className="mt-6 flex items-center justify-center gap-2 text-xs md:text-sm text-[#9A7B4F]">
+              <Calendar size={14} />
+              <span>Applications closed for the 2026 season</span>
+            </div>
+
+            {/* Info strip */}
+            <div className="mt-8 rounded-xl border border-[#9A7B4F]/25 bg-[#faf6ee] p-4 text-left">
+              <div className="flex items-start gap-3">
+                <Mail
+                  size={16}
+                  className="text-[#9A7B4F] flex-shrink-0 mt-0.5"
+                />
+                <div>
+                  <p className="text-xs md:text-sm font-semibold text-[#2E1503]">
+                    Want to be notified for the next season?
+                  </p>
+                  <p className="text-xs text-[#6b4423]/80 mt-1 leading-relaxed">
+                    Email us at{" "}
+                    <a
+                      href="mailto:classicqueeninternational1@gmail.com"
+                      className="text-[#6b4423] font-semibold underline hover:text-[#c9a227] transition"
+                    >
+                      classicqueeninternational1@gmail.com
+                    </a>{" "}
+                    and we&apos;ll add you to our early-notice list for 2027.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* National Director alternative */}
+            <p className="text-xs text-[#6b4423]/70 mt-6">
+              Interested in bringing Classic Queen to your country? Consider
+              applying as a{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  // Scroll to top so the tab switcher is in view
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="text-[#6b4423] font-semibold underline hover:text-[#c9a227] transition"
+              >
+                National Director
+              </button>
+              .
+            </p>
           </div>
         </div>
       </div>

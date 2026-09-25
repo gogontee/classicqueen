@@ -110,19 +110,8 @@ const SponsorsSection = () => {
   }
 
   return (
-    <section className="py-8 md:py-12 bg-gradient-to-b from-white to-brown-50">
+    <section className="pb-8 md:pb-12 bg-gradient-to-b from-white to-brown-50">
       <div className="container mx-auto px-4">
-        {/* Section Title */}
-        <div className="text-center mb-6 md:mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-brown-900">
-            OUR VALUED SPONSORS & PARTNERS
-          </h2>
-          <div className="w-20 h-1 bg-gradient-to-r from-gold-500 to-gold-600 mx-auto mt-2 rounded-full"></div>
-          <p className="text-brown-600 text-sm md:text-base mt-3 max-w-2xl mx-auto">
-            This is a space for visionary brands ready to stand at the forefront of Africa&apos;s most refined pageant experience.
-          </p>
-        </div>
-
         {/* Horizontal Scroll Container */}
         <div className="relative">
           <div
@@ -140,7 +129,6 @@ const SponsorsSection = () => {
                   className="inline-flex flex-shrink-0 sponsor-card"
                 >
                   <div className="w-full group relative bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-brown-100 hover:border-gold-200">
-                    {/* Sponsor Image — natural ratio, full width */}
                     <div className="relative w-full">
                       <Image
                         src={getImageSrc(sponsor)}
@@ -164,12 +152,10 @@ const SponsorsSection = () => {
 
         {/* Responsive widths + hide scrollbar */}
         <style jsx>{`
-          /* Mobile default: 3 per row */
           .sponsor-card {
             width: calc(33.333% - 0.75rem);
           }
 
-          /* Desktop: 5 per row */
           @media (min-width: 768px) {
             .sponsor-card {
               width: calc(20% - 1rem);

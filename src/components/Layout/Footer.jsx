@@ -1,6 +1,6 @@
 'use client'
 
-import { Instagram, Facebook, Mail, Phone, Shield } from 'lucide-react'
+import { Instagram, Facebook, Mail, Phone } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -9,10 +9,6 @@ import { useState } from 'react'
 const Footer = () => {
   const [logoError, setLogoError] = useState(false)
   const router = useRouter()
-
-  const handleAdminClick = () => {
-    router.push('/admin')
-  }
 
   const handleRegistrationClick = () => {
     router.push('/register')
@@ -33,7 +29,6 @@ const Footer = () => {
           {/* Brand Section with Logo */}
           <div className="md:col-span-2 space-y-6 flex flex-col items-center md:items-start">
             <div className="space-y-2">
-              {/* Logo with Fallback */}
               <div className="relative h-16 w-64">
                 <Image
                   src={logoError ? fallbackLogoSrc : supabaseLogoSrc}
@@ -75,7 +70,7 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Links - 3 column grid on mobile */}
+          {/* Quick Links */}
           <div className="md:col-span-1">
             <h3 className="text-lg font-bold mb-6 text-gold-400 border-b border-gold-600/30 pb-2 text-center md:text-left">Quick Links</h3>
             <div className="grid grid-cols-3 md:grid-cols-1 gap-4 md:gap-4">
@@ -96,7 +91,6 @@ const Footer = () => {
                   </Link>
                 </div>
               ))}
-              {/* Registration button with router push */}
               <div className="text-center md:text-left">
                 <button
                   onClick={handleRegistrationClick}
@@ -161,22 +155,13 @@ const Footer = () => {
                   >
                     TikTok
                   </a>
-                  {/* Admin Button */}
-                  <button
-                    onClick={handleAdminClick}
-                    className="p-1 bg-brown-800 text-brown-300 hover:bg-brown-700 hover:text-brown-100 transition-colors duration-200 rounded-sm flex-shrink-0"
-                    title="Admin Panel"
-                    aria-label="Admin Panel"
-                  >
-                    <Shield size={10} />
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Copyright & Additional Info */}
+        {/* Copyright */}
         <div className="border-t border-brown-700/50 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
@@ -184,7 +169,7 @@ const Footer = () => {
                 © 2024 Classic Queen International. All rights reserved.
               </p>
               <p className="text-brown-400 text-xs mt-1">
-                Proudly supporting women's empowerment worldwide
+                Proudly supporting women&apos;s empowerment worldwide
               </p>
             </div>
             <div className="text-brown-300 text-sm flex flex-wrap justify-center gap-4 items-center">

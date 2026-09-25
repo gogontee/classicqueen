@@ -16,22 +16,22 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 // Default fallback hero items from public folder
 const DEFAULT_FALLBACK_ITEMS = [
   {
-    cta: { href: "/register", label: "REGISTER NOW" },
+    cta: { href: "/candidates", label: "VOTE NOW" },
     src: "/hero1.mp4",
     type: "video"
   },
   {
-    cta: { href: "/register", label: "REGISTER NOW" },
+    cta: { href: "/candidates", label: "VOTE NOW" },
     src: "/hero2.mp4",
     type: "video"
   },
   {
-    cta: { href: "/register", label: "REGISTER NOW" },
+    cta: { href: "/candidates", label: "VOTE NOW" },
     src: "/hero3.mp4",
     type: "video"
   },
   {
-    cta: { href: "/register", label: "REGISTER NOW" },
+    cta: { href: "/candidates", label: "VOTE NOW" },
     src: "/hero4.jpg",
     type: "image"
   }
@@ -81,8 +81,8 @@ const HeroSection = () => {
             const formattedItems = itemsArray.map(item => ({
               ...item,
               cta: {
-                href: item.cta?.href || '/register',
-                label: item.cta?.label || 'REGISTER NOW'
+                href: item.cta?.href || '/candidates',
+                label: item.cta?.label || 'VOTE NOW'
               }
             }))
             
@@ -352,10 +352,10 @@ const HeroSection = () => {
       {/* CTA Button - BOTTOM LEFT */}
       <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 z-30">
         <Link
-          href={currentItem.cta?.href || '/register'}
+          href={currentItem.cta?.href || '/candidates'}
           className="inline-flex items-center justify-center bg-gold-500 hover:bg-gold-600 text-brown-900 font-bold py-1.5 md:py-3 px-3 md:px-8 rounded-lg text-xs md:text-lg transition-all duration-300 hover:scale-105 shadow-2xl scale-90 md:scale-100"
         >
-          {currentItem.cta?.label || 'REGISTER NOW'}
+          {currentItem.cta?.label || 'VOTE NOW'}
         </Link>
       </div>
 

@@ -1,8 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
+    "./pages/**/*.{js,jsx,ts,tsx}",
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -24,7 +27,7 @@ export default {
           400: '#eec98e',
           500: '#d4a574',
           600: '#b08a5e',
-        }
+        },
       },
       fontFamily: {
         playfair: ['Playfair Display', 'serif'],

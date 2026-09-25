@@ -1,15 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { 
-  Database, Image as ImageIcon, Film, BarChart3, 
-  Globe, Users, Trophy, Settings, Eye,
+import { useRouter } from 'next/navigation'
+import {
+  Database, Image as ImageIcon, Film, BarChart3,
+  Globe, Users, Trophy, Eye,
   Newspaper, Lock, LogOut, AlertCircle, CheckCircle,
-  Mail
+  Mail, UserCog, ShieldCheck, Loader2, Calendar
 } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 
-// Import all manager components
+// Existing managers
 import HeroManager from '../../src/components/HeroManager'
 import FeaturedPostsManager from '../../src/components/FeaturedPostsManager'
 import StatsManager from '../../src/components/StatsManager'
@@ -19,51 +20,97 @@ import AlbumsManager from '../../src/components/AlbumsManager'
 import NewsManagement from '../../src/components/NewsManagement'
 import EnquiriesMail from '../../src/components/Mail/EnquiriesMail'
 
+// New managers
+import CandidateManagement from '../../src/components/CandidateManagement'
+import UsersManagement from '../../src/components/UsersManagement'
+import TrophiesManagement from '../../src/components/TrophiesManagement'
+import VoteScheduleManager from '../../src/components/VoteScheduleManager'
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('hero')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  // ---- Stage 1: Supabase auth + role check ----
+  const [checking, setChecking] = useState(true)
+  const [allowed, setAllowed] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(null)
+
+  // ---- Stage 2: Passcode gate ----
+  const [isUnlocked, setIsUnlocked] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [activeTab, setActiveTab] = useState('candidates')
+
   const tabs = [
-    { id: 'hero', label: 'Hero Slider', icon: Film, color: 'blue' },
-    { id: 'featured', label: 'Featured Posts', icon: ImageIcon, color: 'purple' },
-    { id: 'stats', label: 'Statistics', icon: BarChart3, color: 'green' },
-    { id: 'countries', label: 'ND Countries', icon: Globe, color: 'orange' },
-    { id: 'galleries', label: 'Galleries', icon: Database, color: 'pink' },
-    { id: 'albums', label: 'Albums', icon: Database, color: 'indigo' },
-    { id: 'news', label: 'News', icon: Newspaper, color: 'red' },
-    { id: 'mail', label: 'Enquiries Mail', icon: Mail, color: 'cyan' },
+    { id: 'candidates', label: 'Candidates', icon: UserCog },
+    { id: 'users', label: 'Users', icon: Users },
+    { id: 'trophies', label: 'Trophies', icon: Trophy },
+    { id: 'schedule', label: 'Vote Schedule', icon: Calendar },
+    { id: 'hero', label: 'Hero Slider', icon: Film },
+    { id: 'featured', label: 'Featured Posts', icon: ImageIcon },
+    { id: 'stats', label: 'Statistics', icon: BarChart3 },
+    { id: 'countries', label: 'ND Countries', icon: Globe },
+    { id: 'galleries', label: 'Galleries', icon: Database },
+    { id: 'albums', label: 'Albums', icon: Database },
+    { id: 'news', label: 'News', icon: Newspaper },
+    { id: 'mail', label: 'Enquiries Mail', icon: Mail },
   ]
 
-  // Check for existing session on component mount
+  // ---------- Stage 1: verify Supabase session + admin role ----------
   useEffect(() => {
-    const checkSession = () => {
-      const auth = localStorage.getItem('classicqueenAdminAuth')
-      const authTime = localStorage.getItem('classicqueenAdminAuthTime')
-      
-      if (auth === 'true' && authTime) {
-        // Check if session is less than 12 hours old
-        const sessionAge = Date.now() - parseInt(authTime)
-        const maxSessionAge = 12 * 60 * 60 * 1000 // 12 hours
-        
-        if (sessionAge < maxSessionAge) {
-          setIsAuthenticated(true)
-        } else {
-          // Clear expired session
-          localStorage.removeItem('classicqueenAdminAuth')
-          localStorage.removeItem('classicqueenAdminAuthTime')
-        }
+    let cancelled = false
+    ;(async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      if (!authData?.user) {
+        router.push('/auth/login')
+        return
+      }
+
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authData.user.id)
+        .single()
+
+      if (cancelled) return
+
+      if (userRow?.role !== 'admin') {
+        router.push('/auth/dashboard')
+        return
+      }
+
+      setCurrentUserId(authData.user.id)
+      setAllowed(true)
+      setChecking(false)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [router, supabase])
+
+  // ---------- Stage 2: restore passcode unlock from sessionStorage ----------
+  useEffect(() => {
+    if (!allowed) return
+    const auth = sessionStorage.getItem('classicqueenAdminUnlocked')
+    const authTime = sessionStorage.getItem('classicqueenAdminUnlockedTime')
+
+    if (auth === 'true' && authTime) {
+      const sessionAge = Date.now() - parseInt(authTime, 10)
+      const maxSessionAge = 12 * 60 * 60 * 1000 // 12 hours
+      if (sessionAge < maxSessionAge) {
+        setIsUnlocked(true)
+      } else {
+        sessionStorage.removeItem('classicqueenAdminUnlocked')
+        sessionStorage.removeItem('classicqueenAdminUnlockedTime')
       }
     }
-    
-    checkSession()
-  }, [])
+  }, [allowed])
 
-  const handleLogin = async (e) => {
+  const handleUnlock = async (e) => {
     e.preventDefault()
-    
+
     if (!password.trim()) {
       setError('Please enter a passcode')
       return
@@ -73,8 +120,6 @@ export default function AdminDashboard() {
       setLoading(true)
       setError('')
 
-      // Check if passcode exists in the classicqueen.passcode table
-      // Try with schema first, then fallback to regular table
       let query = supabase
         .from('classicqueen')
         .select('passcode')
@@ -83,27 +128,23 @@ export default function AdminDashboard() {
 
       const { data, error: supabaseError } = await query
 
-      // If schema doesn't exist, try admin_passcodes table
       if (supabaseError && supabaseError.code === 'PGRST103') {
         const { data: altData, error: altError } = await supabase
           .from('admin_passcodes')
           .select('passcode')
           .eq('passcode', password.trim())
           .single()
-        
-        if (altError) {
-          throw altError
-        }
-        
+
+        if (altError) throw altError
+
         if (altData && altData.passcode === password.trim()) {
-          handleSuccessfulAuth()
+          handleSuccessfulUnlock()
           return
         }
       }
 
       if (supabaseError) {
         if (supabaseError.code === 'PGRST116') {
-          // No matching passcode found
           setError('Incorrect passcode. Please try again.')
         } else {
           setError('Error verifying passcode. Please try again.')
@@ -113,39 +154,53 @@ export default function AdminDashboard() {
       }
 
       if (data && data.passcode === password.trim()) {
-        handleSuccessfulAuth()
+        handleSuccessfulUnlock()
       } else {
         setError('Incorrect passcode. Please try again.')
       }
     } catch (err) {
       setError('An error occurred. Please try again.')
-      console.error('Login error:', err)
+      console.error('Unlock error:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleSuccessfulAuth = () => {
-    setIsAuthenticated(true)
-    
-    // Store authentication in localStorage for session persistence
-    localStorage.setItem('classicqueenAdminAuth', 'true')
-    localStorage.setItem('classicqueenAdminAuthTime', Date.now().toString())
-    
+  const handleSuccessfulUnlock = () => {
+    setIsUnlocked(true)
+    sessionStorage.setItem('classicqueenAdminUnlocked', 'true')
+    sessionStorage.setItem(
+      'classicqueenAdminUnlockedTime',
+      Date.now().toString()
+    )
     setError('')
     setPassword('')
   }
 
-  const handleLogout = () => {
-    setIsAuthenticated(false)
-    localStorage.removeItem('classicqueenAdminAuth')
-    localStorage.removeItem('classicqueenAdminAuthTime')
-    setPassword('')
-    setActiveTab('hero')
+  const handleLogout = async () => {
+    sessionStorage.removeItem('classicqueenAdminUnlocked')
+    sessionStorage.removeItem('classicqueenAdminUnlockedTime')
+    await supabase.auth.signOut()
+    router.push('/auth/login')
+    router.refresh()
   }
 
-  // Login screen
-  if (!isAuthenticated) {
+  // ---------- Stage 1: loading ----------
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brown-900 via-brown-800 to-brown-950">
+        <div className="flex items-center gap-2 text-[#c9a227] text-sm">
+          <Loader2 size={16} className="animate-spin" />
+          Verifying access…
+        </div>
+      </div>
+    )
+  }
+
+  if (!allowed) return null
+
+  // ---------- Stage 2: passcode gate ----------
+  if (!isUnlocked) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-brown-900 via-brown-800 to-brown-950 flex items-center justify-center px-4 py-8">
         <div className="max-w-md w-full">
@@ -162,7 +217,7 @@ export default function AdminDashboard() {
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form onSubmit={handleUnlock} className="space-y-6">
               <div>
                 <label className="block text-brown-200 font-medium mb-2">
                   Admin Passcode
@@ -180,18 +235,24 @@ export default function AdminDashboard() {
                     disabled={loading}
                     autoFocus
                   />
-                  <Lock size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-brown-300" />
+                  <Lock
+                    size={20}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-brown-300"
+                  />
                 </div>
-                
+
                 {error && (
                   <div className="flex items-center gap-2 mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                    <AlertCircle size={18} className="text-red-400 flex-shrink-0" />
+                    <AlertCircle
+                      size={18}
+                      className="text-red-400 flex-shrink-0"
+                    />
                     <span className="text-red-200 text-sm">{error}</span>
                   </div>
                 )}
 
                 <div className="mt-3 text-sm text-brown-300">
-                  <p>Contact system administrator if you've forgotten the passcode</p>
+                  <p>Contact system administrator if you&apos;ve forgotten the passcode</p>
                 </div>
               </div>
 
@@ -203,7 +264,7 @@ export default function AdminDashboard() {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Verifying...
+                    Verifying…
                   </div>
                 ) : (
                   <div className="flex items-center justify-center">
@@ -232,7 +293,7 @@ export default function AdminDashboard() {
     )
   }
 
-  // Main dashboard
+  // ---------- Main dashboard ----------
   return (
     <div className="min-h-screen bg-gradient-to-b from-brown-50 via-white to-brown-50">
       {/* Admin Header */}
@@ -241,7 +302,7 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-4">
             <div className="flex items-center">
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-gold-400 to-gold-600 rounded-lg shadow-md">
-                <Database className="h-6 w-6 text-white" />
+                <ShieldCheck className="h-6 w-6 text-white" />
               </div>
               <div className="ml-3">
                 <h1 className="text-xl sm:text-2xl font-bold">
@@ -252,13 +313,13 @@ export default function AdminDashboard() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-sm">Authenticated</span>
               </div>
-              
+
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors text-sm font-medium flex items-center gap-2 border border-white/20"
@@ -279,8 +340,12 @@ export default function AdminDashboard() {
               <CheckCircle size={24} />
             </div>
             <div>
-              <h2 className="font-bold text-brown-900 text-lg">Welcome to Admin Dashboard</h2>
-              <p className="text-brown-700 text-sm">You can now manage all content for Classic Queen International</p>
+              <h2 className="font-bold text-brown-900 text-lg">
+                Welcome to Admin Dashboard
+              </h2>
+              <p className="text-brown-700 text-sm">
+                You can now manage all content for Classic Queen International
+              </p>
               <div className="flex items-center gap-4 mt-2 text-xs text-brown-600">
                 <span className="flex items-center gap-1">
                   <Eye size={12} />
@@ -291,45 +356,62 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Tabs Navigation */}
+        {/* Tabs Navigation — horizontally scrollable on narrow screens */}
         <div className="mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-brown-100 overflow-hidden">
             <div className="p-4 border-b border-brown-100">
               <h3 className="font-bold text-brown-900">Content Management</h3>
-              <p className="text-brown-600 text-sm">Select a section to manage</p>
+              <p className="text-brown-600 text-sm">
+                Select a section to manage — swipe or scroll to see more
+              </p>
             </div>
-            
-            <nav className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-wrap gap-1 p-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
-                
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      flex items-center gap-2 p-3 rounded-lg transition-all duration-200
-                      ${isActive 
-                        ? 'bg-gradient-to-r from-gold-50 to-gold-100 text-brown-900 border border-gold-200 shadow-sm' 
-                        : 'text-brown-700 hover:bg-brown-50'
-                      }
-                    `}
-                  >
-                    <div className={`
-                      w-8 h-8 rounded-lg flex items-center justify-center
-                      ${isActive 
-                        ? 'bg-gradient-to-br from-gold-500 to-gold-600 text-white shadow-sm' 
-                        : 'bg-brown-100 text-brown-600'
-                      }
-                    `}>
-                      <Icon size={16} />
-                    </div>
-                    <span className="text-sm font-medium whitespace-nowrap">{tab.label}</span>
-                  </button>
-                )
-              })}
-            </nav>
+
+            <div
+              className="
+                overflow-x-auto
+                [-webkit-overflow-scrolling:touch]
+                [scrollbar-width:thin]
+              "
+            >
+              <nav className="flex gap-1 p-2 min-w-max">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeTab === tab.id
+
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`
+                        flex items-center gap-2 p-3 rounded-lg transition-all duration-200
+                        whitespace-nowrap flex-shrink-0
+                        ${
+                          isActive
+                            ? 'bg-gradient-to-r from-gold-50 to-gold-100 text-brown-900 border border-gold-200 shadow-sm'
+                            : 'text-brown-700 hover:bg-brown-50'
+                        }
+                      `}
+                    >
+                      <div
+                        className={`
+                          w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                          ${
+                            isActive
+                              ? 'bg-gradient-to-br from-gold-500 to-gold-600 text-white shadow-sm'
+                              : 'bg-brown-100 text-brown-600'
+                          }
+                        `}
+                      >
+                        <Icon size={16} />
+                      </div>
+                      <span className="text-sm font-medium">
+                        {tab.label}
+                      </span>
+                    </button>
+                  )
+                })}
+              </nav>
+            </div>
           </div>
         </div>
 
@@ -338,7 +420,7 @@ export default function AdminDashboard() {
           <div className="p-4 border-b border-brown-100 bg-gradient-to-r from-brown-50 to-brown-100">
             <div className="flex items-center gap-2">
               {(() => {
-                const activeTabData = tabs.find(tab => tab.id === activeTab)
+                const activeTabData = tabs.find((tab) => tab.id === activeTab)
                 if (activeTabData?.icon) {
                   const Icon = activeTabData.icon
                   return (
@@ -351,16 +433,24 @@ export default function AdminDashboard() {
               })()}
               <div>
                 <h2 className="font-bold text-brown-900 text-lg">
-                  {tabs.find(tab => tab.id === activeTab)?.label || 'Dashboard'}
+                  {tabs.find((tab) => tab.id === activeTab)?.label || 'Dashboard'}
                 </h2>
                 <p className="text-brown-600 text-sm">
-                  Manage {tabs.find(tab => tab.id === activeTab)?.label.toLowerCase() || 'content'}
+                  Manage{' '}
+                  {tabs.find((tab) => tab.id === activeTab)?.label.toLowerCase() ||
+                    'content'}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="p-4 sm:p-6">
+            {activeTab === 'candidates' && <CandidateManagement />}
+            {activeTab === 'users' && (
+              <UsersManagement currentUserId={currentUserId} />
+            )}
+            {activeTab === 'trophies' && <TrophiesManagement />}
+            {activeTab === 'schedule' && <VoteScheduleManager />}
             {activeTab === 'hero' && <HeroManager />}
             {activeTab === 'featured' && <FeaturedPostsManager />}
             {activeTab === 'stats' && <StatsManager />}
@@ -369,33 +459,23 @@ export default function AdminDashboard() {
             {activeTab === 'albums' && <AlbumsManager />}
             {activeTab === 'news' && <NewsManagement />}
             {activeTab === 'mail' && <EnquiriesMail />}
-            
-            {/* Show message for tabs that don't have components yet */}
-            {activeTab !== 'news' && activeTab !== 'mail' && !['hero', 'featured', 'stats', 'countries', 'galleries', 'albums'].includes(activeTab) && (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-brown-100 text-brown-600 rounded-full mb-4">
-                  <Database size={24} />
-                </div>
-                <h3 className="text-xl font-bold text-brown-900 mb-2">Coming Soon</h3>
-                <p className="text-brown-600 max-w-md mx-auto">
-                  The {tabs.find(tab => tab.id === activeTab)?.label || 'selected'} management section is under development.
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-brown-100">
           <div className="text-center text-sm text-brown-500">
-            <p>© {new Date().getFullYear()} Classic Queen International. All rights reserved.</p>
+            <p>
+              © {new Date().getFullYear()} Classic Queen International. All
+              rights reserved.
+            </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-2">
               <span className="flex items-center gap-1">
                 <Database size={12} />
                 Content Management System v1.0
               </span>
               <span className="hidden sm:block">•</span>
-              <span>Session active - Auto logout in 12 hours</span>
+              <span>Session active — auto logout in 12 hours</span>
             </div>
           </div>
         </div>
