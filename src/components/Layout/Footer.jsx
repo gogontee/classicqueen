@@ -76,7 +76,7 @@ const Footer = () => {
             <div className="grid grid-cols-3 md:grid-cols-1 gap-4 md:gap-4">
               {[
                 { name: 'Contestants', path: '/candidates' },
-                { name: 'Voting', path: '/vote' },
+                { name: 'Voting', path: '/candidates' },
                 { name: 'Gallery', path: '/gallery' },
                 { name: 'News', path: '/news' },
                 { name: 'About', path: '/about' },
