@@ -1,42 +1,38 @@
-"use client";
+'use client'
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import HeroSection from '../src/components/Home/HeroSection';
+import FeaturedPost from '../src/components/Home/FeaturedPost';
+import Stats from '../src/components/Home/Stats';
+import NextQueenSection from '../src/components/Home/NextQueenSection';
+import SponsorsSection from '../src/components/Home/SponsorsSection';
+import TopNews from '../src/components/Home/TopNews';
 
-export default function Stats() {
-  const supabase = createClient();
-  const { reportNetworkError } = useNetworkError();
-  const [data, setData] = useState(null);
+export default function Home() {
+  return (
+    <div className="min-h-screen">
+      {/* Hero directly under header - NO SPACING */}
+      <HeroSection />
 
-  useEffect(() => {
-    let cancelled = false;
+      {/* Stats with NO spacing - Full width on mobile */}
+      <Stats />
 
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("classicqueen")
-          .select("*")
-          .limit(1)
-          .maybeSingle();
+      {/* Featured Posts with NO spacing */}
+      <div className="mt-0">
+        <FeaturedPost />
+      </div>
 
-        if (cancelled) return;
-        if (error) throw error;
-        setData(data);
-      } catch (err) {
-        if (cancelled) return;
-        if (isNetworkError(err)) {
-          reportNetworkError();
-          return;
-        }
-        console.error("Stats fetch failed:", err);
-      }
-    })();
+      {/* Who Becomes the Next Queen Section */}
+      <div className="mt-0 md:mt-0">
+        <NextQueenSection />
+      </div>
 
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase, reportNetworkError]);
+      {/* Sponsors Section */}
+      <div className="mt-0 md:mt-0">
+        <SponsorsSection />
+      </div>
 
-  // ...render
+      {/* Top News — last section */}
+      <TopNews />
+    </div>
+  );
 }
