@@ -4,13 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Eye, EyeOff, Check, Sparkles, Shield } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 
 export default function Login() {
   const router = useRouter();
   const supabase = createClient();
+  const { reportNetworkError } = useNetworkError();
 
   const [form, setForm] = useState({
     email: "",
@@ -28,6 +30,12 @@ export default function Login() {
 
     if (!form.email || !form.password) {
       setError("Please enter your email and password.");
+      return;
+    }
+
+    // Short-circuit if the browser already knows it's offline
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      reportNetworkError();
       return;
     }
 
@@ -62,11 +70,18 @@ export default function Login() {
       router.push("/auth/dashboard");
       router.refresh();
     } catch (err) {
-      const msg = err?.message || "Something went wrong.";
-      if (msg.toLowerCase().includes("invalid login credentials")) {
-        setError("Incorrect email or password.");
+      // If the error looks like a network failure, ask the global
+      // provider to show its popup instead of the inline red box.
+      if (isNetworkError(err)) {
+        reportNetworkError();
+        setError("");
       } else {
-        setError(msg);
+        const msg = err?.message || "Something went wrong.";
+        if (msg.toLowerCase().includes("invalid login credentials")) {
+          setError("Incorrect email or password.");
+        } else {
+          setError(msg);
+        }
       }
     } finally {
       setLoading(false);

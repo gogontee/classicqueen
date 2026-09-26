@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Eye, EyeOff, Upload, Check, X, Sparkles, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function SignUp() {
   const router = useRouter();
   const supabase = createClient();
+  const { reportNetworkError } = useNetworkError();
 
   const [form, setForm] = useState({
     firstName: "",
@@ -92,75 +94,83 @@ export default function SignUp() {
 
     const { hasLower, hasUpper, hasNumber, minLength } = passwordStrength;
     if (!minLength || !hasLower || !hasUpper || !hasNumber) {
-      setError("Password must be at least 6 characters and contain uppercase, lowercase, and number.");
+      setError(
+        "Password must be at least 6 characters and contain uppercase, lowercase, and number."
+      );
+      return;
+    }
+
+    // Short-circuit if the browser already knows it's offline
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      reportNetworkError();
       return;
     }
 
     setLoading(true);
 
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-    });
+    try {
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+      });
 
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
+      if (signUpError) throw signUpError;
+      if (!authData?.user?.id) throw new Error("Could not get user after sign up.");
 
-    if (!authData?.user?.id) {
-      setError("Could not get user after sign up.");
-      setLoading(false);
-      return;
-    }
+      const userId = authData.user.id;
+      let avatar_url = null;
 
-    const userId = authData.user.id;
-    let avatar_url = null;
+      if (form.photo) {
+        const fileExt = form.photo.name.split(".").pop();
+        const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
-    if (form.photo) {
-      const fileExt = form.photo.name.split(".").pop();
-      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, form.photo, {
+            upsert: true,
+            contentType: form.photo.type,
+          });
 
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, form.photo, {
-          upsert: true,
-          contentType: form.photo.type,
-        });
+        if (uploadError) {
+          console.error("Photo upload error:", uploadError.message);
+          throw new Error("Failed to upload profile photo.");
+        }
 
-      if (uploadError) {
-        console.error("Photo upload error:", uploadError.message);
-        setError("Failed to upload profile photo.");
-        setLoading(false);
-        return;
+        const { data: urlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(filePath);
+        avatar_url = urlData?.publicUrl;
       }
 
-      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-      avatar_url = urlData?.publicUrl;
-    }
+      const { error: insertError } = await supabase.from("users").insert([
+        {
+          id: userId,
+          first_name: form.firstName,
+          last_name: form.lastName,
+          email: form.email,
+          avatar_url,
+          role: "user",
+          is_active: true,
+          is_verified: false,
+        },
+      ]);
 
-    const { error: insertError } = await supabase.from("users").insert([
-      {
-        id: userId,
-        first_name: form.firstName,
-        last_name: form.lastName,
-        email: form.email,
-        avatar_url,
-        role: "user",
-        is_active: true,
-        is_verified: false,
-      },
-    ]);
+      if (insertError) {
+        throw new Error("Account setup failed: " + insertError.message);
+      }
 
-    if (insertError) {
-      setError("Account setup failed: " + insertError.message);
+      setShowSuccess(true);
+    } catch (err) {
+      // Network-flavored error → global popup, no inline red box
+      if (isNetworkError(err)) {
+        reportNetworkError();
+        setError("");
+      } else {
+        setError(err?.message || "Something went wrong.");
+      }
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setShowSuccess(true);
   };
 
   const handleSuccessContinue = () => {

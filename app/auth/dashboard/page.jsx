@@ -18,10 +18,12 @@ import Link from "next/link";
 import EditProfileModal from "@/components/EditProfileModal";
 import AddFavoriteModal from "@/components/AddFavoriteModal";
 import VoteModal from "@/components/VoteModal";
+import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 
 export default function Dashboard() {
   const router = useRouter();
   const supabase = createClient();
+  const { reportNetworkError } = useNetworkError();
 
   const [profile, setProfile] = useState(null);
   const [favorites, setFavorites] = useState([]);
@@ -36,53 +38,64 @@ export default function Dashboard() {
   const [voteOpen, setVoteOpen] = useState(false);
 
   const loadProfile = useCallback(async () => {
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) {
-      router.push("/auth/login");
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user) {
+        router.push("/auth/login");
+        return null;
+      }
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authData.user.id)
+        .single();
+      if (error) throw error;
+      setProfile(data);
+      return data;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        reportNetworkError();
+        return null;
+      }
+      setError(err?.message || "Failed to load profile.");
       return null;
     }
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authData.user.id)
-      .single();
-    if (error) {
-      setError(error.message);
-      return null;
-    }
-    setProfile(data);
-    return data;
-  }, [router, supabase]);
+  }, [router, supabase, reportNetworkError]);
 
   const loadFavorites = useCallback(
     async (userId) => {
-      const { data, error } = await supabase
-        .from("favorites")
-        .select(
-          `
-          id,
-          created_at,
-          candidate:candidates (
+      try {
+        const { data, error } = await supabase
+          .from("favorites")
+          .select(
+            `
             id,
-            username,
-            full_name,
-            country,
-            photo,
-            status,
-            vote_count
+            created_at,
+            candidate:candidates (
+              id,
+              username,
+              full_name,
+              country,
+              photo,
+              status,
+              vote_count
+            )
+          `
           )
-        `
-        )
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Favorites error:", error.message);
-        return;
+        if (error) throw error;
+        setFavorites(data ?? []);
+      } catch (err) {
+        if (isNetworkError(err)) {
+          reportNetworkError();
+          return;
+        }
+        console.error("Favorites error:", err?.message);
       }
-      setFavorites(data ?? []);
     },
-    [supabase]
+    [supabase, reportNetworkError]
   );
 
   useEffect(() => {
@@ -105,7 +118,15 @@ export default function Dashboard() {
   }, [profile?.avatar_url]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      if (isNetworkError(err)) {
+        reportNetworkError();
+        return;
+      }
+      console.error("Logout error:", err?.message);
+    }
     router.push("/auth/login");
     router.refresh();
   };
@@ -113,9 +134,19 @@ export default function Dashboard() {
   const handleRemoveFavorite = async (favoriteId) => {
     const prev = favorites;
     setFavorites((f) => f.filter((x) => x.id !== favoriteId));
-    const { error } = await supabase.from("favorites").delete().eq("id", favoriteId);
-    if (error) {
-      console.error("Remove favorite failed:", error.message);
+    try {
+      const { error } = await supabase
+        .from("favorites")
+        .delete()
+        .eq("id", favoriteId);
+      if (error) throw error;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        reportNetworkError();
+      } else {
+        console.error("Remove favorite failed:", err?.message);
+      }
+      // Roll back optimistic update on any failure
       setFavorites(prev);
     }
   };

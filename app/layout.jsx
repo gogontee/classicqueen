@@ -1,6 +1,7 @@
 import Header from '../src/components/Layout/Header'
 import MobileBottomTab from '../src/components/Layout/MobileBottomTab'
 import Footer from '../src/components/Layout/Footer'
+import { NetworkErrorProvider } from '../src/contexts/NetworkErrorContext'
 import '../src/styles/globals.css'
 
 export const metadata = {
@@ -68,10 +69,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="flex flex-col min-h-screen bg-brown-50">
-        <Header />
-        <main className="flex-grow pb-16 lg:pb-0">{children}</main>
-        <Footer />
-        <MobileBottomTab />
+        <NetworkErrorProvider>
+          <Header />
+          <main className="flex-grow pb-16 lg:pb-0">{children}</main>
+          <Footer />
+          <MobileBottomTab />
+        </NetworkErrorProvider>
       </body>
     </html>
   )

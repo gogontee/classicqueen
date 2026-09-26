@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
+import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 
 // Fixed backend conversion. 1 vote = $1 USD = ₦1500 NGN.
 // Paystack is charged in NGN; the user always sees USD.
@@ -56,6 +57,7 @@ export default function VoteModal({
   onVoteError,
 }) {
   const supabase = createClient();
+  const { reportNetworkError } = useNetworkError();
 
   const [voteCount, setVoteCount] = useState(1);
   const [customVotes, setCustomVotes] = useState("");
@@ -98,15 +100,25 @@ export default function VoteModal({
         if (cancelled) return;
 
         if (error) {
-          console.error("Voting window fetch error:", error.message);
-          setWindowStatus({ state: "open" });
+          if (isNetworkError(error)) {
+            reportNetworkError();
+            setWindowStatus(null);
+          } else {
+            console.error("Voting window fetch error:", error.message);
+            setWindowStatus({ state: "open" });
+          }
         } else {
           setWindowStatus(computeVotingWindow(data?.vote_start, data?.vote_end));
         }
       } catch (err) {
         if (!cancelled) {
-          console.error("Voting window fetch failed:", err);
-          setWindowStatus({ state: "open" });
+          if (isNetworkError(err)) {
+            reportNetworkError();
+            setWindowStatus(null);
+          } else {
+            console.error("Voting window fetch failed:", err);
+            setWindowStatus({ state: "open" });
+          }
         }
       } finally {
         if (!cancelled) setWindowLoading(false);
@@ -116,20 +128,33 @@ export default function VoteModal({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, supabase]);
+  }, [isOpen, supabase, reportNetworkError]);
 
   // Load auth user when modal opens
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!cancelled) setCurrentUser(data?.user ?? null);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (error && isNetworkError(error)) {
+          reportNetworkError();
+          setCurrentUser(null);
+          return;
+        }
+        setCurrentUser(data?.user ?? null);
+      } catch (err) {
+        if (!cancelled && isNetworkError(err)) {
+          reportNetworkError();
+          setCurrentUser(null);
+        }
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [isOpen, supabase]);
+  }, [isOpen, supabase, reportNetworkError]);
 
   // Reset state on close
   useEffect(() => {
@@ -356,6 +381,17 @@ export default function VoteModal({
       }, 2500);
     } catch (err) {
       console.error("Vote insert failed:", err);
+
+      // Network error → global popup; keep the modal open so the user
+      // can see the popup and retry once connectivity returns.
+      if (isNetworkError(err)) {
+        reportNetworkError();
+        setPaymentStep("selection");
+        setProcessing(false);
+        if (onVoteError) onVoteError(err?.message || "Network error");
+        return;
+      }
+
       setError("Payment verified but vote could not be saved: " + err.message);
       setPaymentStep("selection");
       setProcessing(false);
