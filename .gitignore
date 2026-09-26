@@ -6,3 +6,5 @@ node_modules
 .env.development
 npm-debug.log
 yarn-error.log
+supabase/.env.local
+supabase/.env.production

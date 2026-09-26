@@ -15,9 +15,10 @@ import {
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import PayPalButton from "@/components/PayPalButton";
 
 // Fixed backend conversion. 1 vote = $1 USD = ₦1500 NGN.
-// Paystack is charged in NGN; the user always sees USD.
+// Paystack is charged in NGN; PayPal is charged in USD.
 const USD_TO_NGN = 1500;
 const PRICE_PER_VOTE_USD = 1;
 const PRICE_PER_VOTE_NGN = PRICE_PER_VOTE_USD * USD_TO_NGN;
@@ -65,6 +66,7 @@ export default function VoteModal({
   const [guestInfo, setGuestInfo] = useState({ email: "", name: "" });
   const [currentUser, setCurrentUser] = useState(null);
   const [paymentStep, setPaymentStep] = useState("selection");
+  const [paymentMethod, setPaymentMethod] = useState(null); // null | "paystack" | "paypal"
   const [error, setError] = useState("");
   const [paystackLoaded, setPaystackLoaded] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
@@ -164,6 +166,7 @@ export default function VoteModal({
       setProcessing(false);
       setGuestInfo({ email: "", name: "" });
       setPaymentStep("selection");
+      setPaymentMethod(null);
       setError("");
       setShouldScroll(false);
       setPaymentError({ show: false, message: "", suggestion: "" });
@@ -226,6 +229,7 @@ export default function VoteModal({
     }
   };
 
+  // ---------- Paystack flow (NGN) ----------
   const processPaystackPayment = () => {
     if (!window.PaystackPop) {
       setError("Payment system not loaded.");
@@ -260,30 +264,14 @@ export default function VoteModal({
         ref: reference,
         metadata: {
           custom_fields: [
-            {
-              display_name: "Voter Name",
-              variable_name: "voter_name",
-              value: name,
-            },
-            {
-              display_name: "Candidate",
-              variable_name: "candidate",
-              value: candidate?.username,
-            },
-            {
-              display_name: "Votes",
-              variable_name: "votes",
-              value: String(voteCount),
-            },
-            {
-              display_name: "Amount (USD)",
-              variable_name: "amount_usd",
-              value: totalUSD.toFixed(2),
-            },
+            { display_name: "Voter Name", variable_name: "voter_name", value: name },
+            { display_name: "Candidate", variable_name: "candidate", value: candidate?.username },
+            { display_name: "Votes", variable_name: "votes", value: String(voteCount) },
+            { display_name: "Amount (USD)", variable_name: "amount_usd", value: totalUSD.toFixed(2) },
           ],
         },
         callback: (response) => {
-          handlePaymentSuccess({
+          handlePaystackSuccess({
             reference: response.reference,
             totalUSD,
             totalNGN,
@@ -292,9 +280,6 @@ export default function VoteModal({
           });
         },
         onClose: () => {
-          // User closed the Paystack iframe WITHOUT completing payment.
-          // Reset back to the selection step so the modal isn't stuck
-          // on "Verifying payment…" forever.
           setProcessing(false);
           setPaymentStep("selection");
           setError("Payment cancelled.");
@@ -309,31 +294,7 @@ export default function VoteModal({
     }
   };
 
-  const processPayment = () => {
-    if (windowStatus?.state !== "open") {
-      setError("Voting is not currently open.");
-      return;
-    }
-    if (voteCount < 1) {
-      setError("Please select or enter a valid number of votes.");
-      return;
-    }
-    if (!currentUser && !guestInfo.email) {
-      setError("Please enter your email address.");
-      return;
-    }
-    if (!paystackLoaded) {
-      setError("Payment system is loading. Please wait…");
-      return;
-    }
-
-    setProcessing(true);
-    setError("");
-    setPaymentStep("processing");
-    processPaystackPayment();
-  };
-
-  const handlePaymentSuccess = async ({
+  const handlePaystackSuccess = async ({
     reference,
     totalUSD,
     totalNGN,
@@ -382,8 +343,6 @@ export default function VoteModal({
     } catch (err) {
       console.error("Vote insert failed:", err);
 
-      // Network error → global popup; keep the modal open so the user
-      // can see the popup and retry once connectivity returns.
       if (isNetworkError(err)) {
         reportNetworkError();
         setPaymentStep("selection");
@@ -399,7 +358,61 @@ export default function VoteModal({
     }
   };
 
+  // ---------- Shared success handler for PayPal ----------
+  const handlePayPalSuccess = (votes, amountLabel) => {
+    setPaymentStep("success");
+    setProcessing(false);
+    if (onVoteSuccess) onVoteSuccess(votes, amountLabel);
+    setTimeout(() => {
+      onClose();
+    }, 2500);
+  };
+
+  const handlePayPalError = (message) => {
+    if (message && message.toLowerCase().includes("cancel")) {
+      setError("Payment cancelled.");
+    } else {
+      setError(message || "PayPal payment failed.");
+    }
+    setProcessing(false);
+  };
+
+  // ---------- Entry point when user clicks the pay button ----------
+  const handleProceed = () => {
+    if (windowStatus?.state !== "open") {
+      setError("Voting is not currently open.");
+      return;
+    }
+    if (voteCount < 1) {
+      setError("Please select or enter a valid number of votes.");
+      return;
+    }
+    if (!currentUser && !guestInfo.email) {
+      setError("Please enter your email address.");
+      return;
+    }
+    if (!paymentMethod) {
+      setError("Please choose a payment method.");
+      return;
+    }
+
+    setError("");
+    setProcessing(true);
+
+    if (paymentMethod === "paystack") {
+      if (!paystackLoaded) {
+        setError("Payment system is loading. Please wait…");
+        setProcessing(false);
+        return;
+      }
+      setPaymentStep("processing");
+      processPaystackPayment();
+    }
+    // For PayPal, no extra step is needed — the button handles its own flow.
+  };
+
   const totalUSD = voteCount * PRICE_PER_VOTE_USD;
+  const totalNGN = voteCount * PRICE_PER_VOTE_NGN;
 
   // Which view to render
   let view;
@@ -427,7 +440,7 @@ export default function VoteModal({
             className="w-full bg-gradient-to-b from-[#1a0d02] to-black rounded-xl border border-[#9A7B4F]/30 overflow-hidden my-auto"
             style={{
               maxWidth: "420px",
-              height: "min(80vh, 640px)",
+              height: "min(85vh, 700px)",
               display: "flex",
               flexDirection: "column",
             }}
@@ -435,15 +448,10 @@ export default function VoteModal({
             {/* Header */}
             <div
               className="p-3 border-b border-[#9A7B4F]/30 flex items-center justify-between sticky top-0 z-10 flex-shrink-0"
-              style={{
-                background: "linear-gradient(90deg, #6b4423, #9A7B4F)",
-              }}
+              style={{ background: "linear-gradient(90deg, #6b4423, #9A7B4F)" }}
             >
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 min-w-0">
-                <span
-                  className="relative flex-shrink-0"
-                  style={{ width: "32px", height: "32px" }}
-                >
+                <span className="relative flex-shrink-0" style={{ width: "32px", height: "32px" }}>
                   <Image
                     src="/cqi.png"
                     alt="Classic Queen International"
@@ -468,18 +476,10 @@ export default function VoteModal({
                     <img
                       src={candidate.photo}
                       alt={candidate?.full_name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
                   ) : (
-                    <span
-                      className="relative block"
-                      style={{ width: "100%", height: "100%" }}
-                    >
+                    <span className="relative block" style={{ width: "100%", height: "100%" }}>
                       <Image
                         src="/cqi.png"
                         alt="Classic Queen"
@@ -506,9 +506,7 @@ export default function VoteModal({
               {view === "loading" && (
                 <div className="p-10 text-center">
                   <Loader className="w-8 h-8 text-[#c9a227] animate-spin mx-auto mb-3" />
-                  <p className="text-white/60 text-xs">
-                    Checking voting schedule…
-                  </p>
+                  <p className="text-white/60 text-xs">Checking voting schedule…</p>
                 </div>
               )}
 
@@ -523,9 +521,7 @@ export default function VoteModal({
                   >
                     <Check className="w-8 h-8 text-white" />
                   </motion.div>
-                  <h3 className="text-lg font-bold text-white mb-1">
-                    Vote Cast Successfully!
-                  </h3>
+                  <h3 className="text-lg font-bold text-white mb-1">Vote Cast Successfully!</h3>
                   <p className="text-white/60 text-xs mb-3">
                     You&apos;ve cast {voteCount} vote{voteCount > 1 ? "s" : ""} for{" "}
                     {candidate?.full_name || `@${candidate?.username}`}
@@ -541,15 +537,8 @@ export default function VoteModal({
               {view === "processing" && (
                 <div className="p-10 text-center">
                   <Loader className="w-8 h-8 text-[#c9a227] animate-spin mx-auto mb-3" />
-                  <p className="text-white text-sm font-medium">
-                    Verifying payment…
-                  </p>
-                  <p className="text-white/40 text-xs mt-1">
-                    Please do not close this window.
-                  </p>
-                  {/* Cancel fallback — in case the payment iframe closes
-                      without firing its own onClose (rare, but possible
-                      on some mobile browsers). */}
+                  <p className="text-white text-sm font-medium">Verifying payment…</p>
+                  <p className="text-white/40 text-xs mt-1">Please do not close this window.</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -583,12 +572,8 @@ export default function VoteModal({
                               : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"
                           }`}
                         >
-                          <span className="block text-base font-bold text-white">
-                            {votes}
-                          </span>
-                          <span className="text-[10px] text-[#c9a227]">
-                            ${votes}
-                          </span>
+                          <span className="block text-base font-bold text-white">{votes}</span>
+                          <span className="text-[10px] text-[#c9a227]">${votes}</span>
                         </button>
                       ))}
                     </div>
@@ -607,9 +592,7 @@ export default function VoteModal({
                       placeholder="Enter number of votes"
                       className="w-full px-3 py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-base text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none text-center"
                     />
-                    <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">
-                      $1 = 1 vote
-                    </p>
+                    <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">$1 = 1 vote</p>
                   </div>
 
                   {/* Summary */}
@@ -617,9 +600,7 @@ export default function VoteModal({
                     <div className="bg-white/5 rounded-lg p-3 border border-[#9A7B4F]/20">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs text-white/60">Votes:</span>
-                        <span className="text-xl font-bold text-white">
-                          {voteCount}
-                        </span>
+                        <span className="text-xl font-bold text-white">{voteCount}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-white/60">Total:</span>
@@ -657,6 +638,60 @@ export default function VoteModal({
                     </div>
                   )}
 
+                  {/* Payment method selector */}
+                  <div className="p-3 border-b border-[#9A7B4F]/20">
+                    <label className="block text-xs font-medium text-white/80 mb-2">
+                      Choose payment method
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentMethod("paystack");
+                          setError("");
+                        }}
+                        className={`p-3 rounded-lg border text-left transition-all ${
+                          paymentMethod === "paystack"
+                            ? "border-[#c9a227] bg-[#c9a227]/15"
+                            : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"
+                        }`}
+                      >
+                        <span className="block text-sm font-bold text-white">
+                          Paystack
+                        </span>
+                        <span className="block text-[10px] text-[#c9a227] mt-0.5">
+                          Nigeria · ₦
+                        </span>
+                        <span className="block text-[10px] text-white/50 mt-1">
+                          ₦{totalNGN.toLocaleString()}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentMethod("paypal");
+                          setError("");
+                        }}
+                        className={`p-3 rounded-lg border text-left transition-all ${
+                          paymentMethod === "paypal"
+                            ? "border-[#c9a227] bg-[#c9a227]/15"
+                            : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"
+                        }`}
+                      >
+                        <span className="block text-sm font-bold text-white">
+                          PayPal
+                        </span>
+                        <span className="block text-[10px] text-[#c9a227] mt-0.5">
+                          International · $
+                        </span>
+                        <span className="block text-[10px] text-white/50 mt-1">
+                          ${totalUSD.toFixed(2)}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Trust line */}
                   <div className="px-3 py-2">
                     <div className="flex items-center gap-2 bg-[#9A7B4F]/10 border border-[#9A7B4F]/30 rounded-lg p-2">
@@ -676,50 +711,81 @@ export default function VoteModal({
                     </div>
                   )}
 
-                  {/* Pay button */}
+                  {/* Pay action — different per method */}
                   <div ref={payButtonRef} className="p-3">
-                    <button
-                      onClick={processPayment}
-                      disabled={processing || (!currentUser && !guestInfo.email)}
-                      className="
-                        w-full py-3 text-white rounded-lg text-sm font-semibold
-                        flex items-center justify-center gap-2
-                        transition-all duration-300
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        hover:brightness-110
-                      "
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
-                        boxShadow: "0 10px 20px rgba(0,0,0,0.3)",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!processing && (currentUser || guestInfo.email)) {
-                          e.currentTarget.style.background =
-                            "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background =
-                          "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)";
-                      }}
-                    >
-                      {processing ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          Processing…
-                        </>
-                      ) : (
-                        <>
-                          Pay ${totalUSD.toFixed(2)}
-                          <ChevronRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-[10px] text-white/40 text-center mt-2">
-                      By proceeding, you agree to our Terms of Service
-                    </p>
+                    {paymentMethod === "paypal" ? (
+                      <>
+                        <PayPalButton
+                          amount={totalUSD}
+                          currency="USD"
+                          candidate={candidate}
+                          voteCount={voteCount}
+                          currentUser={currentUser}
+                          guestInfo={guestInfo}
+                          onSuccess={handlePayPalSuccess}
+                          onError={handlePayPalError}
+                        />
+                        <p className="text-[10px] text-white/40 text-center mt-2">
+                          By proceeding, you agree to our Terms of Service
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleProceed}
+                          disabled={
+                            processing ||
+                            !paymentMethod ||
+                            (!currentUser && !guestInfo.email)
+                          }
+                          className="
+                            w-full py-3 text-white rounded-lg text-sm font-semibold
+                            flex items-center justify-center gap-2
+                            transition-all duration-300
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            hover:brightness-110
+                          "
+                          style={{
+                            background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
+                            boxShadow: "0 10px 20px rgba(0,0,0,0.3)",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (
+                              !processing &&
+                              paymentMethod &&
+                              (currentUser || guestInfo.email)
+                            ) {
+                              e.currentTarget.style.background =
+                                "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background =
+                              "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)";
+                          }}
+                        >
+                          {processing ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Processing…
+                            </>
+                          ) : paymentMethod === "paystack" ? (
+                            <>
+                              Pay ₦{totalNGN.toLocaleString()}
+                              <ChevronRight className="w-4 h-4" />
+                            </>
+                          ) : (
+                            <>
+                              Select a payment method
+                              <ChevronRight className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                        <p className="text-[10px] text-white/40 text-center mt-2">
+                          By proceeding, you agree to our Terms of Service
+                        </p>
+                      </>
+                    )}
                   </div>
                 </>
               )}
@@ -748,29 +814,19 @@ export default function VoteModal({
                       <X className="w-8 h-8 text-red-400" />
                     </div>
                   </div>
-
                   <h3 className="text-lg font-bold text-white text-center mb-2">
                     Payment Failed
                   </h3>
-                  <p className="text-white/80 text-center mb-4">
-                    {paymentError.message}
-                  </p>
-
+                  <p className="text-white/80 text-center mb-4">{paymentError.message}</p>
                   <div className="bg-white/5 border border-[#9A7B4F]/20 rounded-lg p-3 mb-6">
                     <p className="text-sm text-white/60 text-center">
                       💡 {paymentError.suggestion}
                     </p>
                   </div>
-
                   <button
-                    onClick={() =>
-                      setPaymentError({ ...paymentError, show: false })
-                    }
+                    onClick={() => setPaymentError({ ...paymentError, show: false })}
                     className="w-full py-3 text-white rounded-lg font-semibold hover:brightness-110 transition-all"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
-                    }}
+                    style={{ background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)" }}
                   >
                     Try Again
                   </button>
@@ -802,13 +858,11 @@ function BlockedView({ status }) {
             <Lock size={26} className="text-[#c9a227]" />
           </div>
         </div>
-
         <h3 className="text-lg font-bold text-white mb-2">Voting Line Closed</h3>
         <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
-          The voting line is currently closed. Watch out for announcements
-          about when it will be reopened.
+          The voting line is currently closed. Watch out for announcements about when
+          it will be reopened.
         </p>
-
         <div className="mt-6 bg-[#9A7B4F]/10 border border-[#9A7B4F]/30 rounded-lg p-3">
           <p className="text-[11px] text-[#c9a227] text-center">
             Keep an eye on this page — voting dates will be posted soon.
@@ -832,18 +886,13 @@ function BlockedView({ status }) {
             <Calendar size={26} className="text-[#c9a227]" />
           </div>
         </div>
-
         <h3 className="text-lg font-bold text-white mb-2">Voting Starts Soon</h3>
         <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
           The voting line hasn&apos;t opened yet. Get ready — it starts on:
         </p>
-
         <div className="mt-4 bg-white/5 border border-[#c9a227]/30 rounded-lg p-3">
-          <p className="text-sm font-bold text-[#c9a227]">
-            {formatDate(status.start)}
-          </p>
+          <p className="text-sm font-bold text-[#c9a227]">{formatDate(status.start)}</p>
         </div>
-
         <p className="text-[11px] text-white/40 mt-4">
           Come back on that date to cast your vote.
         </p>
@@ -865,18 +914,13 @@ function BlockedView({ status }) {
             <Clock size={26} className="text-[#c9a227]" />
           </div>
         </div>
-
         <h3 className="text-lg font-bold text-white mb-2">Voting Line Closed</h3>
         <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
           The voting line has closed. Voting ended on:
         </p>
-
         <div className="mt-4 bg-white/5 border border-[#9A7B4F]/30 rounded-lg p-3">
-          <p className="text-sm font-bold text-[#c9a227]">
-            {formatDate(status.end)}
-          </p>
+          <p className="text-sm font-bold text-[#c9a227]">{formatDate(status.end)}</p>
         </div>
-
         <p className="text-[11px] text-white/40 mt-4">
           Thanks to everyone who voted. Stay tuned for results.
         </p>
