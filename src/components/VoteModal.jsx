@@ -11,6 +11,7 @@ import {
   Clock,
   Calendar,
   Lock,
+  Mail,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
@@ -75,6 +76,9 @@ export default function VoteModal({
     message: "",
     suggestion: "",
   });
+
+  // Custom email-required popup for guests
+  const [emailPrompt, setEmailPrompt] = useState(false);
 
   // Voting window
   const [windowStatus, setWindowStatus] = useState(null);
@@ -170,6 +174,7 @@ export default function VoteModal({
       setError("");
       setShouldScroll(false);
       setPaymentError({ show: false, message: "", suggestion: "" });
+      setEmailPrompt(false);
       setWindowStatus(null);
       setWindowLoading(true);
       if (customTimerRef.current) clearTimeout(customTimerRef.current);
@@ -387,12 +392,14 @@ export default function VoteModal({
       setError("Please select or enter a valid number of votes.");
       return;
     }
-    if (!currentUser && !guestInfo.email) {
-      setError("Please enter your email address.");
-      return;
-    }
     if (!paymentMethod) {
       setError("Please choose a payment method.");
+      return;
+    }
+
+    // Guest email check — show custom popup instead of inline error
+    if (!currentUser && !guestInfo.email) {
+      setEmailPrompt(true);
       return;
     }
 
@@ -638,12 +645,59 @@ export default function VoteModal({
                     </div>
                   )}
 
-                  {/* Payment method selector */}
+                  {/* Payment method selector — Card first, Others second */}
                   <div className="p-3 border-b border-[#9A7B4F]/20">
                     <label className="block text-xs font-medium text-white/80 mb-2">
                       Choose payment method
                     </label>
                     <div className="grid grid-cols-2 gap-2">
+                      {/* Debit/Credit Card — blue, orange on hover */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentMethod("paypal");
+                          setError("");
+                        }}
+                        className={`group p-3 rounded-lg border text-left transition-all ${
+                          paymentMethod === "paypal"
+                            ? "border-[#c9a227] bg-[#c9a227]/15"
+                            : "border-[#9A7B4F]/25 bg-white/5"
+                        }`}
+                        style={{
+                          background:
+                            paymentMethod === "paypal"
+                              ? "rgba(201, 162, 39, 0.15)"
+                              : "#1e3a8a",
+                          borderColor:
+                            paymentMethod === "paypal"
+                              ? "#c9a227"
+                              : "rgba(30, 58, 138, 0.6)",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (paymentMethod !== "paypal") {
+                            e.currentTarget.style.background = "#ea580c";
+                            e.currentTarget.style.borderColor = "#f97316";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (paymentMethod !== "paypal") {
+                            e.currentTarget.style.background = "#1e3a8a";
+                            e.currentTarget.style.borderColor = "rgba(30, 58, 138, 0.6)";
+                          }
+                        }}
+                      >
+                        <span className="block text-sm font-bold text-white">
+                          Debit/Credit Card
+                        </span>
+                        <span className="block text-[10px] text-white/80 mt-0.5">
+                          Pay from anywhere
+                        </span>
+                        <span className="block text-[10px] text-white/70 mt-1">
+                          ${totalUSD.toFixed(2)}
+                        </span>
+                      </button>
+
+                      {/* Other Options — green, darker green on hover */}
                       <button
                         type="button"
                         onClick={() => {
@@ -653,40 +707,39 @@ export default function VoteModal({
                         className={`p-3 rounded-lg border text-left transition-all ${
                           paymentMethod === "paystack"
                             ? "border-[#c9a227] bg-[#c9a227]/15"
-                            : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"
+                            : "border-[#9A7B4F]/25 bg-white/5"
                         }`}
-                      >
-                        <span className="block text-sm font-bold text-white">
-                          Paystack
-                        </span>
-                        <span className="block text-[10px] text-[#c9a227] mt-0.5">
-                          Nigeria · ₦
-                        </span>
-                        <span className="block text-[10px] text-white/50 mt-1">
-                          ₦{totalNGN.toLocaleString()}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPaymentMethod("paypal");
-                          setError("");
+                        style={{
+                          background:
+                            paymentMethod === "paystack"
+                              ? "rgba(201, 162, 39, 0.15)"
+                              : "#15803d",
+                          borderColor:
+                            paymentMethod === "paystack"
+                              ? "#c9a227"
+                              : "rgba(21, 128, 61, 0.6)",
                         }}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          paymentMethod === "paypal"
-                            ? "border-[#c9a227] bg-[#c9a227]/15"
-                            : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"
-                        }`}
+                        onMouseEnter={(e) => {
+                          if (paymentMethod !== "paystack") {
+                            e.currentTarget.style.background = "#166534";
+                            e.currentTarget.style.borderColor = "#22c55e";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (paymentMethod !== "paystack") {
+                            e.currentTarget.style.background = "#15803d";
+                            e.currentTarget.style.borderColor = "rgba(21, 128, 61, 0.6)";
+                          }
+                        }}
                       >
                         <span className="block text-sm font-bold text-white">
-                          PayPal
+                          Other Options
                         </span>
-                        <span className="block text-[10px] text-[#c9a227] mt-0.5">
-                          International · $
+                        <span className="block text-[10px] text-white/80 mt-0.5">
+                          Transfer, bank/USSD
                         </span>
-                        <span className="block text-[10px] text-white/50 mt-1">
-                          ${totalUSD.toFixed(2)}
+                        <span className="block text-[10px] text-white/70 mt-1">
+                          ₦{totalNGN.toLocaleString()}
                         </span>
                       </button>
                     </div>
@@ -733,11 +786,7 @@ export default function VoteModal({
                       <>
                         <button
                           onClick={handleProceed}
-                          disabled={
-                            processing ||
-                            !paymentMethod ||
-                            (!currentUser && !guestInfo.email)
-                          }
+                          disabled={processing || !paymentMethod}
                           className="
                             w-full py-3 text-white rounded-lg text-sm font-semibold
                             flex items-center justify-center gap-2
@@ -750,11 +799,7 @@ export default function VoteModal({
                             boxShadow: "0 10px 20px rgba(0,0,0,0.3)",
                           }}
                           onMouseEnter={(e) => {
-                            if (
-                              !processing &&
-                              paymentMethod &&
-                              (currentUser || guestInfo.email)
-                            ) {
+                            if (!processing && paymentMethod) {
                               e.currentTarget.style.background =
                                 "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
                             }
@@ -791,6 +836,88 @@ export default function VoteModal({
               )}
             </div>
           </motion.div>
+
+          {/* Email-required popup for guests */}
+          <AnimatePresence>
+            {emailPrompt && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                onClick={() => setEmailPrompt(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, y: 20 }}
+                  animate={{ scale: 1, y: 0 }}
+                  exit={{ scale: 0.9, y: 20 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 22 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded-2xl p-[3px] max-w-[320px] w-full"
+                  style={{
+                    background:
+                      "conic-gradient(from 45deg, #7a5c14, #f9e79f, #c9a227, #fff4c2, #8a6a1a, #f5d76e, #7a5c14)",
+                    boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6)",
+                  }}
+                >
+                  <div className="rounded-[13px] bg-[#1a0d02] p-6 text-center relative">
+                    <button
+                      onClick={() => setEmailPrompt(false)}
+                      aria-label="Close"
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition"
+                    >
+                      <X size={14} />
+                    </button>
+
+                    <div
+                      className="w-16 h-16 mx-auto mb-4 rounded-full p-[2px]"
+                      style={{
+                        background:
+                          "conic-gradient(from 45deg, #7a5c14, #f9e79f, #c9a227, #fff4c2, #8a6a1a, #f5d76e, #7a5c14)",
+                      }}
+                    >
+                      <div className="w-full h-full rounded-full bg-[#1a0d02] flex items-center justify-center">
+                        <Mail size={26} className="text-[#f5d76e]" />
+                      </div>
+                    </div>
+
+                    <h3
+                      className="text-base font-bold mb-2"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #7a5c14, #c9a227, #f5d76e, #8a6a1a)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }}
+                    >
+                      Email Required
+                    </h3>
+
+                    <p className="text-xs text-white/70 leading-relaxed">
+                      Please enter your email address in the{" "}
+                      <span className="text-[#c9a227] font-semibold">
+                        Your Information
+                      </span>{" "}
+                      section before proceeding to payment.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setEmailPrompt(false)}
+                      className="mt-5 w-full py-2.5 rounded-lg text-white text-sm font-semibold transition hover:brightness-110"
+                      style={{
+                        background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
+                        boxShadow: "0 6px 14px rgba(107,68,35,0.35)",
+                      }}
+                    >
+                      Got it
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Payment error popup */}
           <AnimatePresence>
