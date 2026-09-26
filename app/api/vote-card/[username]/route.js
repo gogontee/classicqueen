@@ -39,7 +39,7 @@ export async function GET(request, { params }) {
           justifyContent: 'center',
           background:
             'linear-gradient(180deg, #2E1503 0%, #1a0d02 50%, #0a0703 100%)',
-          padding: '32px',
+          padding: '20px',
           fontFamily: 'sans-serif',
         }}
       >
@@ -53,37 +53,37 @@ export async function GET(request, { params }) {
             width: '100%',
             height: '100%',
             border: '3px solid #9A7B4F',
-            borderRadius: '28px',
-            padding: '24px',
+            borderRadius: '24px',
+            padding: '16px',
             background:
               'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.55) 100%)',
           }}
         >
-          {/* Title — VOTE (white) + gap + NAME (gold) */}
-<div
-  style={{
-    display: 'flex',
-    fontSize: 56,
-    fontWeight: 800,
-    letterSpacing: '2px',
-    marginBottom: 20,
-  }}
->
-  <span style={{ color: '#ffffff', marginRight: 16 }}>VOTE</span>
-  <span style={{ color: '#f5d76e' }}>{cardName}</span>
-</div>
-
-          {/* Candidate photo — 3:4 aspect */}
+          {/* Title */}
           <div
             style={{
               display: 'flex',
-              width: 540,
-              height: 720,
-              borderRadius: 24,
+              fontSize: 40,
+              fontWeight: 800,
+              letterSpacing: '1.5px',
+              marginBottom: 14,
+            }}
+          >
+            <span style={{ color: '#ffffff', marginRight: 12 }}>VOTE</span>
+            <span style={{ color: '#f5d76e' }}>{cardName}</span>
+          </div>
+
+          {/* Candidate photo — 3:4 aspect, scaled down */}
+          <div
+            style={{
+              display: 'flex',
+              width: 380,
+              height: 500,
+              borderRadius: 20,
               overflow: 'hidden',
               border: '3px solid rgba(201,162,39,0.5)',
               background: '#1a1a1a',
-              marginBottom: 24,
+              marginBottom: 18,
             }}
           >
             {photoUrl ? (
@@ -106,7 +106,7 @@ export async function GET(request, { params }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: '#9A7B4F',
-                  fontSize: 140,
+                  fontSize: 100,
                   fontWeight: 800,
                 }}
               >
@@ -121,14 +121,14 @@ export async function GET(request, { params }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '20px 48px',
+              padding: '14px 32px',
               background: 'linear-gradient(90deg, #9A7B4F 0%, #6b4423 100%)',
               color: '#ffffff',
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: 800,
-              borderRadius: 20,
+              borderRadius: 16,
               letterSpacing: '0.5px',
-              marginBottom: 22,
+              marginBottom: 16,
             }}
           >
             {'❤️  Click to Vote'}
@@ -140,9 +140,9 @@ export async function GET(request, { params }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 20,
+              fontSize: 14,
               color: 'rgba(255,255,255,0.55)',
-              letterSpacing: '3px',
+              letterSpacing: '2px',
             }}
           >
             {country ? `${country} • ` : ''}CLASSIC QUEEN INTERNATIONAL 2026
@@ -151,8 +151,10 @@ export async function GET(request, { params }) {
       </div>
     ),
     {
-      width: 900,
-      height: 1200,
+      width: 600,
+      height: 800,
+      // Quality hint for the JPEG/PNG encoder (0-100)
+      quality: 75,
     }
   );
 }
