@@ -21,7 +21,7 @@ const USD_TO_NGN = 1500;
 const PRICE_PER_VOTE_USD = 1;
 const PRICE_PER_VOTE_NGN = PRICE_PER_VOTE_USD * USD_TO_NGN;
 
-const quickVotes = [10, 25, 50, 100, 250, 500];
+const quickVotes = [1, 5, 10, 15, 25, 50, 100, 250, 500];
 
 /* ------------------------------------------------------------------
    Compute the voting window status from classicqueen.vote_start/end.
@@ -31,26 +31,12 @@ function computeVotingWindow(voteStart, voteEnd) {
   const start = voteStart ? new Date(voteStart).getTime() : null;
   const end = voteEnd ? new Date(voteEnd).getTime() : null;
 
-  // Both null → no schedule set
-  if (!start && !end) {
-    return { state: "no-window" };
-  }
-
-  // Start is in the future → hasn't opened yet
-  if (start && now < start) {
-    return { state: "not-started", start: new Date(start) };
-  }
-
-  // End is in the past → closed
-  if (end && now >= end) {
-    return { state: "closed", end: new Date(end) };
-  }
-
-  // Otherwise open
+  if (!start && !end) return { state: "no-window" };
+  if (start && now < start) return { state: "not-started", start: new Date(start) };
+  if (end && now >= end) return { state: "closed", end: new Date(end) };
   return { state: "open" };
 }
 
-/* Friendly format: "January 15, 2026 at 9:00 AM" */
 function formatDate(date) {
   if (!date) return "";
   return date.toLocaleString(undefined, {
@@ -71,7 +57,7 @@ export default function VoteModal({
 }) {
   const supabase = createClient();
 
-  const [voteCount, setVoteCount] = useState(10);
+  const [voteCount, setVoteCount] = useState(1);
   const [customVotes, setCustomVotes] = useState("");
   const [processing, setProcessing] = useState(false);
   const [guestInfo, setGuestInfo] = useState({ email: "", name: "" });
@@ -95,7 +81,7 @@ export default function VoteModal({
 
   const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
-  // Fetch voting window from classicqueen table when modal opens
+  // Fetch voting window when modal opens
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -115,9 +101,7 @@ export default function VoteModal({
           console.error("Voting window fetch error:", error.message);
           setWindowStatus({ state: "open" });
         } else {
-          setWindowStatus(
-            computeVotingWindow(data?.vote_start, data?.vote_end)
-          );
+          setWindowStatus(computeVotingWindow(data?.vote_start, data?.vote_end));
         }
       } catch (err) {
         if (!cancelled) {
@@ -147,10 +131,10 @@ export default function VoteModal({
     };
   }, [isOpen, supabase]);
 
-  // Reset on close
+  // Reset state on close
   useEffect(() => {
     if (!isOpen) {
-      setVoteCount(10);
+      setVoteCount(1);
       setCustomVotes("");
       setProcessing(false);
       setGuestInfo({ email: "", name: "" });
@@ -221,6 +205,7 @@ export default function VoteModal({
     if (!window.PaystackPop) {
       setError("Payment system not loaded.");
       setProcessing(false);
+      setPaymentStep("selection");
       return;
     }
 
@@ -228,6 +213,7 @@ export default function VoteModal({
     if (!email) {
       setError("Please enter your email address.");
       setProcessing(false);
+      setPaymentStep("selection");
       return;
     }
 
@@ -281,7 +267,11 @@ export default function VoteModal({
           });
         },
         onClose: () => {
+          // User closed the Paystack iframe WITHOUT completing payment.
+          // Reset back to the selection step so the modal isn't stuck
+          // on "Verifying payment…" forever.
           setProcessing(false);
+          setPaymentStep("selection");
           setError("Payment cancelled.");
         },
       });
@@ -290,6 +280,7 @@ export default function VoteModal({
     } catch {
       setError("Failed to initialize payment.");
       setProcessing(false);
+      setPaymentStep("selection");
     }
   };
 
@@ -374,7 +365,7 @@ export default function VoteModal({
 
   const totalUSD = voteCount * PRICE_PER_VOTE_USD;
 
-  // Which view to render inside the modal body
+  // Which view to render
   let view;
   if (windowLoading) view = "loading";
   else if (windowStatus?.state !== "open") view = "blocked";
@@ -500,7 +491,7 @@ export default function VoteModal({
                     Vote Cast Successfully!
                   </h3>
                   <p className="text-white/60 text-xs mb-3">
-                    You've cast {voteCount} vote{voteCount > 1 ? "s" : ""} for{" "}
+                    You&apos;ve cast {voteCount} vote{voteCount > 1 ? "s" : ""} for{" "}
                     {candidate?.full_name || `@${candidate?.username}`}
                   </p>
                   <div className="bg-white/5 rounded-lg p-3">
@@ -520,6 +511,20 @@ export default function VoteModal({
                   <p className="text-white/40 text-xs mt-1">
                     Please do not close this window.
                   </p>
+                  {/* Cancel fallback — in case the payment iframe closes
+                      without firing its own onClose (rare, but possible
+                      on some mobile browsers). */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProcessing(false);
+                      setPaymentStep("selection");
+                      setError("");
+                    }}
+                    className="mt-6 text-[11px] text-white/40 hover:text-white/70 underline transition"
+                  >
+                    Cancel
+                  </button>
                 </div>
               )}
 
@@ -639,9 +644,7 @@ export default function VoteModal({
                   <div ref={payButtonRef} className="p-3">
                     <button
                       onClick={processPayment}
-                      disabled={
-                        processing || (!currentUser && !guestInfo.email)
-                      }
+                      disabled={processing || (!currentUser && !guestInfo.email)}
                       className="
                         w-full py-3 text-white rounded-lg text-sm font-semibold
                         flex items-center justify-center gap-2
@@ -695,9 +698,7 @@ export default function VoteModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                onClick={() =>
-                  setPaymentError({ ...paymentError, show: false })
-                }
+                onClick={() => setPaymentError({ ...paymentError, show: false })}
               >
                 <motion.div
                   initial={{ scale: 0.95, y: 20 }}
@@ -748,10 +749,9 @@ export default function VoteModal({
 }
 
 /* ------------------------------------------------------------------
-   BlockedView — shown when the voting window is not open.
+   BlockedView
 ------------------------------------------------------------------ */
 function BlockedView({ status }) {
-  // ---- No schedule configured ----
   if (status?.state === "no-window") {
     return (
       <div className="p-6 text-center">
@@ -767,9 +767,7 @@ function BlockedView({ status }) {
           </div>
         </div>
 
-        <h3 className="text-lg font-bold text-white mb-2">
-          Voting Line Closed
-        </h3>
+        <h3 className="text-lg font-bold text-white mb-2">Voting Line Closed</h3>
         <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
           The voting line is currently closed. Watch out for announcements
           about when it will be reopened.
@@ -784,7 +782,6 @@ function BlockedView({ status }) {
     );
   }
 
-  // ---- Start is in the future ----
   if (status?.state === "not-started") {
     return (
       <div className="p-6 text-center">
@@ -800,9 +797,7 @@ function BlockedView({ status }) {
           </div>
         </div>
 
-        <h3 className="text-lg font-bold text-white mb-2">
-          Voting Starts Soon
-        </h3>
+        <h3 className="text-lg font-bold text-white mb-2">Voting Starts Soon</h3>
         <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
           The voting line hasn&apos;t opened yet. Get ready — it starts on:
         </p>
@@ -820,7 +815,6 @@ function BlockedView({ status }) {
     );
   }
 
-  // ---- End has passed ----
   if (status?.state === "closed") {
     return (
       <div className="p-6 text-center">
@@ -836,9 +830,7 @@ function BlockedView({ status }) {
           </div>
         </div>
 
-        <h3 className="text-lg font-bold text-white mb-2">
-          Voting Line Closed
-        </h3>
+        <h3 className="text-lg font-bold text-white mb-2">Voting Line Closed</h3>
         <p className="text-sm text-white/70 leading-relaxed max-w-xs mx-auto">
           The voting line has closed. Voting ended on:
         </p>
