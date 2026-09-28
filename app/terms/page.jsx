@@ -456,7 +456,7 @@ const TermsAndConditionsPage = () => {
                       </li>
                     </ul>
                     <p className="text-brown-700">
-                      This policy applies regardless of whether the contestant completes the pageant, is disqualified, withdraws, or is unable to participate for any reason.
+                      This policy applies regardless of whether the contestant completes the pageant, is disqualified, withdraws, or is unable to participate for any reason except for deliberate total event cancellation where the reason is not associated with an act of God, Then refund will be made after deduction of service charged by financial institutions.
                     </p>
                   </div>
                   
