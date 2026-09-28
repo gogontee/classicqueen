@@ -125,7 +125,8 @@ export default function AboutPage() {
                     Classic Queen International is a prestigious global platform created to celebrate 
                     beauty with purpose, intelligence, and cultural excellence. Beyond glamour and the crown, 
                     we are dedicated to empowering young women to become confident leaders, influential voices, 
-                    and agents of positive change in their communities and across the world.
+                    and agents of positive change in their communities and across the world. 
+                    This Project is powered by stargate studios Africa.
                   </p>
                 </div>
 
