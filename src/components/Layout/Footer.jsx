@@ -166,11 +166,9 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
               <p className="text-brown-300 text-sm">
-                © 2024 Classic Queen International. All rights reserved.
+                © 2024 Stargate Studios. All rights reserved.
               </p>
-              <p className="text-brown-400 text-xs mt-1">
-                Proudly supporting women&apos;s empowerment worldwide
-              </p>
+              
             </div>
             <div className="text-brown-300 text-sm flex flex-wrap justify-center gap-4 items-center">
               <Link href="/terms" className="hover:text-gold-300 transition-colors">Terms of Service</Link>
