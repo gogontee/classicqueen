@@ -23,135 +23,23 @@ import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { useNetworkError, isNetworkError } from '@/contexts/NetworkErrorContext';
 import { normalizePaymentMethod } from '@/lib/paymentMethods';
+import { getUserCurrency } from '@/lib/currency';
 
 const FLW_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
-/**
- * Regal gift catalogue — every item reads like a royal court title.
- * Prices are in USD. Starting at $20.
- * 12 gifts total, spanning $20 → $1000.
- */
 const GIFTS = [
-  {
-    id: 'rose',
-    name: 'Royal Rose',
-    emoji: '🌹',
-    amount: 20,
-    accent: '#f472b6',
-    bg: 'rgba(244, 114, 182, 0.10)',
-    border: 'rgba(244, 114, 182, 0.35)',
-    icon: Flower2,
-  },
-  {
-    id: 'hot_kisses',
-    name: 'Hot Kisses',
-    emoji: '💋',
-    amount: 30,
-    accent: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.10)',
-    border: 'rgba(239, 68, 68, 0.35)',
-    icon: Heart,
-  },
-  {
-    id: 'heart_of_gold',
-    name: 'Heart of Gold',
-    emoji: '💖',
-    amount: 50,
-    accent: '#e879f9',
-    bg: 'rgba(232, 121, 249, 0.10)',
-    border: 'rgba(232, 121, 249, 0.35)',
-    icon: Heart,
-  },
-  {
-    id: 'gold_crown',
-    name: 'Gold Crown',
-    emoji: '👑',
-    amount: 75,
-    accent: '#fbbf24',
-    bg: 'rgba(251, 191, 36, 0.10)',
-    border: 'rgba(251, 191, 36, 0.35)',
-    icon: Crown,
-  },
-  {
-    id: 'sapphire_gem',
-    name: 'Sapphire Gem',
-    emoji: '💎',
-    amount: 100,
-    accent: '#3b82f6',
-    bg: 'rgba(59, 130, 246, 0.10)',
-    border: 'rgba(59, 130, 246, 0.35)',
-    icon: Gem,
-  },
-  {
-    id: 'golden_throne',
-    name: 'Golden Throne',
-    emoji: '🪑',
-    amount: 150,
-    accent: '#f59e0b',
-    bg: 'rgba(245, 158, 11, 0.10)',
-    border: 'rgba(245, 158, 11, 0.35)',
-    icon: Crown,
-  },
-  {
-    id: 'royal_scepter',
-    name: 'Royal Scepter',
-    emoji: '🪄',
-    amount: 250,
-    accent: '#a855f7',
-    bg: 'rgba(168, 85, 247, 0.10)',
-    border: 'rgba(168, 85, 247, 0.35)',
-    icon: Sparkles,
-  },
-  {
-    id: 'royal_ruby',
-    name: 'Royal Ruby',
-    emoji: '❤️‍🔥',
-    amount: 300,
-    accent: '#dc2626',
-    bg: 'rgba(220, 38, 38, 0.10)',
-    border: 'rgba(220, 38, 38, 0.35)',
-    icon: Gem,
-  },
-  {
-    id: 'queen_dragon',
-    name: 'Queen Dragon',
-    emoji: '🐉',
-    amount: 400,
-    accent: '#10b981',
-    bg: 'rgba(16, 185, 129, 0.10)',
-    border: 'rgba(16, 185, 129, 0.35)',
-    icon: Trophy,
-  },
-  {
-    id: 'crystal_chalice',
-    name: 'Crystal Chalice',
-    emoji: '🏆',
-    amount: 500,
-    accent: '#06b6d4',
-    bg: 'rgba(6, 182, 212, 0.10)',
-    border: 'rgba(6, 182, 212, 0.35)',
-    icon: Trophy,
-  },
-  {
-    id: 'eternal_crown',
-    name: 'Eternal Crown',
-    emoji: '👸',
-    amount: 700,
-    accent: '#fbbf24',
-    bg: 'rgba(251, 191, 36, 0.10)',
-    border: 'rgba(251, 191, 36, 0.35)',
-    icon: Award,
-  },
-  {
-    id: 'star_of_court',
-    name: 'Star of the Court',
-    emoji: '⭐',
-    amount: 1000,
-    accent: '#facc15',
-    bg: 'rgba(250, 204, 21, 0.10)',
-    border: 'rgba(250, 204, 21, 0.35)',
-    icon: Star,
-  },
+  { id: 'rose', name: 'Royal Rose', emoji: '🌹', amount: 20, accent: '#f472b6', bg: 'rgba(244, 114, 182, 0.10)', border: 'rgba(244, 114, 182, 0.35)', icon: Flower2 },
+  { id: 'hot_kisses', name: 'Hot Kisses', emoji: '💋', amount: 30, accent: '#ef4444', bg: 'rgba(239, 68, 68, 0.10)', border: 'rgba(239, 68, 68, 0.35)', icon: Heart },
+  { id: 'heart_of_gold', name: 'Heart of Gold', emoji: '💖', amount: 50, accent: '#e879f9', bg: 'rgba(232, 121, 249, 0.10)', border: 'rgba(232, 121, 249, 0.35)', icon: Heart },
+  { id: 'gold_crown', name: 'Gold Crown', emoji: '👑', amount: 75, accent: '#fbbf24', bg: 'rgba(251, 191, 36, 0.10)', border: 'rgba(251, 191, 36, 0.35)', icon: Crown },
+  { id: 'sapphire_gem', name: 'Sapphire Gem', emoji: '💎', amount: 100, accent: '#3b82f6', bg: 'rgba(59, 130, 246, 0.10)', border: 'rgba(59, 130, 246, 0.35)', icon: Gem },
+  { id: 'golden_throne', name: 'Golden Throne', emoji: '🪑', amount: 150, accent: '#f59e0b', bg: 'rgba(245, 158, 11, 0.10)', border: 'rgba(245, 158, 11, 0.35)', icon: Crown },
+  { id: 'royal_scepter', name: 'Royal Scepter', emoji: '🪄', amount: 250, accent: '#a855f7', bg: 'rgba(168, 85, 247, 0.10)', border: 'rgba(168, 85, 247, 0.35)', icon: Sparkles },
+  { id: 'royal_ruby', name: 'Royal Ruby', emoji: '❤️‍🔥', amount: 300, accent: '#dc2626', bg: 'rgba(220, 38, 38, 0.10)', border: 'rgba(220, 38, 38, 0.35)', icon: Gem },
+  { id: 'queen_dragon', name: 'Queen Dragon', emoji: '🐉', amount: 400, accent: '#10b981', bg: 'rgba(16, 185, 129, 0.10)', border: 'rgba(16, 185, 129, 0.35)', icon: Trophy },
+  { id: 'crystal_chalice', name: 'Crystal Chalice', emoji: '🏆', amount: 500, accent: '#06b6d4', bg: 'rgba(6, 182, 212, 0.10)', border: 'rgba(6, 182, 212, 0.35)', icon: Trophy },
+  { id: 'eternal_crown', name: 'Eternal Crown', emoji: '👸', amount: 700, accent: '#fbbf24', bg: 'rgba(251, 191, 36, 0.10)', border: 'rgba(251, 191, 36, 0.35)', icon: Award },
+  { id: 'star_of_court', name: 'Star of the Court', emoji: '⭐', amount: 1000, accent: '#facc15', bg: 'rgba(250, 204, 21, 0.10)', border: 'rgba(250, 204, 21, 0.35)', icon: Star },
 ];
 
 export default function GiftModal({
@@ -169,13 +57,17 @@ export default function GiftModal({
   const [currentUser, setCurrentUser] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState('selection');
-  const [paymentMethod, setPaymentMethod] = useState(null); // "wallet" | "card"
+  const [paymentMethod, setPaymentMethod] = useState(null);
   const [error, setError] = useState('');
   const [flutterwaveLoaded, setFlutterwaveLoaded] = useState(false);
 
-  // Wallet
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(true);
+
+  // ---- Currency detection ----
+  const [userCurrency, setUserCurrency] = useState('USD');
+  const [chargeAmount, setChargeAmount] = useState(null);
+  const [fetchingRate, setFetchingRate] = useState(false);
 
   const [paymentError, setPaymentError] = useState({
     show: false,
@@ -255,9 +147,66 @@ export default function GiftModal({
       setPaymentStep('selection');
       setPaymentMethod(null);
       setError('');
+      setUserCurrency('USD');
+      setChargeAmount(null);
+      setFetchingRate(false);
       setPaymentError({ show: false, message: '', suggestion: '' });
     }
   }, [isOpen]);
+
+  // ----- Fetch rate whenever gift + currency + method changes -----
+  useEffect(() => {
+    if (!selectedGift) {
+      setChargeAmount(null);
+      return;
+    }
+    if (paymentMethod !== 'card') {
+      setChargeAmount(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      const currency = getUserCurrency();
+      setUserCurrency(currency);
+
+      if (currency === 'USD') {
+        setChargeAmount(selectedGift.amount);
+        return;
+      }
+
+      setFetchingRate(true);
+      try {
+        const res = await fetch(
+          `/api/get-rate?amount=${selectedGift.amount}&from=${currency}`
+        );
+        const data = await res.json();
+
+        if (cancelled) return;
+
+        if (!res.ok || !data.amount) {
+          throw new Error(data.error || 'Could not fetch exchange rate.');
+        }
+
+        setChargeAmount(data.amount);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('[gift-modal] rate fetch failed:', err);
+        setChargeAmount(null);
+        setError(
+          err?.message ||
+            'Could not fetch exchange rate. Please try another method.'
+        );
+      } finally {
+        if (!cancelled) setFetchingRate(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGift, paymentMethod]);
 
   // ----- Payment method hover helpers -----
   const HOVER_BG =
@@ -290,8 +239,7 @@ export default function GiftModal({
     if (isSelected) return;
     e.currentTarget.style.background = HOVER_BG;
     e.currentTarget.style.borderColor = HOVER_BORDER;
-    e.currentTarget.style.boxShadow =
-      '0 4px 14px rgba(22, 163, 74, 0.35)';
+    e.currentTarget.style.boxShadow = '0 4px 14px rgba(22, 163, 74, 0.35)';
   };
 
   const handleMethodHoverLeave = (e, key, isSelected) => {
@@ -353,8 +301,10 @@ export default function GiftModal({
         provider: 'wallet',
         method: 'wallet',
         amount,
+        currency: 'USD',
         email: currentUser.email,
         name: currentUser.user_metadata?.full_name || 'Member',
+        skipFlutterwaveVerification: true,
       });
     } catch (err) {
       console.error('Gift wallet payment failed:', err);
@@ -391,6 +341,14 @@ export default function GiftModal({
       return;
     }
 
+    // Must have a fetched rate before opening Flutterwave
+    if (chargeAmount == null) {
+      setError('Exchange rate not ready. Please wait a moment.');
+      setProcessing(false);
+      setPaymentStep('selection');
+      return;
+    }
+
     const reference = `GIFT_FLW_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 10)}`;
@@ -399,8 +357,8 @@ export default function GiftModal({
       window.FlutterwaveCheckout({
         public_key: FLW_PUBLIC_KEY,
         tx_ref: reference,
-        amount: selectedGift.amount,
-        currency: 'USD',
+        amount: chargeAmount,
+        currency: userCurrency,
         payment_options: 'card',
         customer: { email, name },
         customizations: {
@@ -423,6 +381,7 @@ export default function GiftModal({
             rawMethod: response.payment_type || null,
             rawResponse: response,
             amount: selectedGift.amount,
+            currency: userCurrency,
             email,
             name,
           });
@@ -450,37 +409,41 @@ export default function GiftModal({
     rawMethod,
     rawResponse,
     amount,
+    currency,
     email,
     name,
+    skipFlutterwaveVerification = false,
   }) => {
     try {
-      const row = {
-        user_id: currentUser?.id ?? null,
-        guest_email: currentUser ? null : email,
-        guest_name: currentUser ? null : name,
-        candidate_id: candidate.id,
-        gift_type: selectedGift.id,
-        gift_name: selectedGift.name,
-        gift_emoji: selectedGift.emoji,
-        amount,
-        currency: 'USD',
-        payment_method: method,
-        payment_provider: provider,
-        payment_id: String(paymentId),
-        reference,
-        status: 'completed',
-        metadata: {
-          amount_usd: amount,
-          raw_payment_method: rawMethod,
-          raw_gateway_response: rawResponse,
-        },
-      };
+      const { data, error: fnError } = await supabase.functions.invoke(
+        'gift-verify',
+        {
+          body: {
+            user_id: currentUser?.id ?? null,
+            guest_email: currentUser ? null : email,
+            guest_name: currentUser ? null : name,
+            candidate_id: candidate.id,
+            gift_type: selectedGift.id,
+            gift_name: selectedGift.name,
+            gift_emoji: selectedGift.emoji,
+            amount,
+            currency: currency || 'USD',
+            tx_ref: reference,
+            transaction_id: paymentId,
+            payment_method: method,
+            raw_payment_method: rawMethod || null,
+            raw_gateway_response: rawResponse || null,
+            skip_verification: skipFlutterwaveVerification,
+          },
+        }
+      );
 
-      const { error: insertError } = await supabase
-        .from('gift_transactions')
-        .insert(row);
-
-      if (insertError) throw insertError;
+      if (fnError) {
+        throw new Error(fnError.message || 'Gift verification failed');
+      }
+      if (!data?.success) {
+        throw new Error(data?.error || 'Gift verification failed');
+      }
 
       setPaymentStep('success');
       setProcessing(false);
@@ -493,7 +456,7 @@ export default function GiftModal({
         handleClose();
       }, 2800);
     } catch (err) {
-      console.error('Gift insert failed:', err);
+      console.error('Gift verification failed:', err);
       if (isNetworkError(err)) {
         reportNetworkError();
         setPaymentStep('selection');
@@ -540,6 +503,12 @@ export default function GiftModal({
         setPaymentStep('selection');
         return;
       }
+      if (fetchingRate || chargeAmount == null) {
+        setError('Fetching exchange rate. Please wait…');
+        setProcessing(false);
+        setPaymentStep('selection');
+        return;
+      }
       processCardPayment();
     }
   };
@@ -556,13 +525,15 @@ export default function GiftModal({
     setPaymentStep('selection');
     setPaymentMethod(null);
     setProcessing(false);
+    setUserCurrency('USD');
+    setChargeAmount(null);
+    setFetchingRate(false);
     setPaymentError({ show: false, message: '', suggestion: '' });
   };
 
   const totalUSD = selectedGift?.amount ?? 0;
   const walletEnough = walletBalance >= totalUSD;
 
-  // ---------- Render ----------
   let view;
   if (paymentStep === 'success') view = 'success';
   else if (paymentStep === 'processing') view = 'processing';
@@ -591,7 +562,6 @@ export default function GiftModal({
               flexDirection: 'column',
             }}
           >
-            {/* Header */}
             <div
               className="p-3 border-b border-[#c9a227]/30 flex items-center justify-between sticky top-0 z-10 flex-shrink-0"
               style={{ background: 'linear-gradient(90deg, #6b4423, #9A7B4F)' }}
@@ -646,7 +616,6 @@ export default function GiftModal({
               </div>
             </div>
 
-            {/* Body */}
             <div className="flex-1 overflow-y-auto min-h-0">
               {view === 'success' && (
                 <div className="p-6 text-center">
@@ -686,7 +655,6 @@ export default function GiftModal({
 
               {view === 'form' && (
                 <>
-                  {/* Gift grid */}
                   <div className="p-3 border-b border-[#c9a227]/20">
                     <label className="block text-xs font-medium text-white/80 mb-2">
                       Choose a gift for{' '}
@@ -737,7 +705,6 @@ export default function GiftModal({
                     </div>
                   </div>
 
-                  {/* Selected summary */}
                   {selectedGift && (
                     <div className="p-3 border-b border-[#c9a227]/20">
                       <div
@@ -748,9 +715,7 @@ export default function GiftModal({
                         }}
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-3xl">
-                            {selectedGift.emoji}
-                          </span>
+                          <span className="text-3xl">{selectedGift.emoji}</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-white truncate">
                               {selectedGift.name}
@@ -764,7 +729,6 @@ export default function GiftModal({
                     </div>
                   )}
 
-                  {/* Guest info */}
                   {selectedGift && !currentUser && (
                     <div className="p-3 border-b border-[#c9a227]/20 space-y-2">
                       <label className="block text-xs font-medium text-white/80">
@@ -791,7 +755,6 @@ export default function GiftModal({
                     </div>
                   )}
 
-                  {/* Payment method selector */}
                   {selectedGift && (
                     <div className="p-3 border-b border-[#c9a227]/20">
                       <label className="block text-xs font-medium text-white/80 mb-2">
@@ -799,7 +762,6 @@ export default function GiftModal({
                       </label>
 
                       <div className="grid grid-cols-2 gap-1.5">
-                        {/* Wallet */}
                         <button
                           type="button"
                           onClick={() => {
@@ -846,7 +808,6 @@ export default function GiftModal({
                           </span>
                         </button>
 
-                        {/* Card (Flutterwave) */}
                         <button
                           type="button"
                           onClick={() => {
@@ -908,19 +869,37 @@ export default function GiftModal({
 
                       {paymentMethod === 'card' && (
                         <div className="mt-2 rounded-lg border border-[#f97316]/30 bg-[#f97316]/8 px-2.5 py-2">
-                          <p className="text-[10px] text-white/75 leading-snug">
-                            Secured card payment, powered by{' '}
-                            <span className="font-semibold text-white/90">
-                              Flutterwave
-                            </span>
-                            .
-                          </p>
+                          {fetchingRate ? (
+                            <p className="text-[10px] text-white/75 leading-snug flex items-center gap-1.5">
+                              <Loader
+                                size={10}
+                                className="animate-spin text-[#fb923c]"
+                              />
+                              Fetching exchange rate…
+                            </p>
+                          ) : chargeAmount != null &&
+                            userCurrency !== 'USD' ? (
+                            <p className="text-[10px] text-white/75 leading-snug">
+                              You&apos;ll be charged{' '}
+                              <span className="font-semibold text-[#fb923c]">
+                                {chargeAmount.toLocaleString()} {userCurrency}
+                              </span>{' '}
+                              ≈ ${selectedGift.amount.toFixed(2)}
+                            </p>
+                          ) : (
+                            <p className="text-[10px] text-white/75 leading-snug">
+                              Secured card payment, powered by{' '}
+                              <span className="font-semibold text-white/90">
+                                Flutterwave
+                              </span>
+                              .
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Error */}
                   {error && (
                     <div className="px-3 py-2">
                       <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
@@ -929,7 +908,6 @@ export default function GiftModal({
                     </div>
                   )}
 
-                  {/* Pay button */}
                   <div className="p-3">
                     <button
                       onClick={handleProceed}
@@ -940,7 +918,9 @@ export default function GiftModal({
                         (paymentMethod === 'wallet' && !walletEnough) ||
                         (paymentMethod === 'card' &&
                           !currentUser &&
-                          !guestInfo.email)
+                          !guestInfo.email) ||
+                        (paymentMethod === 'card' &&
+                          (fetchingRate || chargeAmount == null))
                       }
                       className="w-full py-3 rounded-lg text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 flex items-center justify-center gap-2 text-white"
                       style={{
@@ -964,6 +944,11 @@ export default function GiftModal({
                           <Loader className="w-4 h-4 animate-spin" />
                           Processing…
                         </>
+                      ) : paymentMethod === 'card' && fetchingRate ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Fetching rate…
+                        </>
                       ) : selectedGift ? (
                         `Send Gift · $${totalUSD.toFixed(2)}`
                       ) : (
@@ -980,7 +965,6 @@ export default function GiftModal({
             </div>
           </motion.div>
 
-          {/* Payment error popup */}
           <AnimatePresence>
             {paymentError.show && (
               <motion.div
