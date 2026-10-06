@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
+  Gift,
   Copy,
   Check,
   MessageCircle,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import VoteModal from '@/components/VoteModal';
+import GiftModal from '@/components/GiftModal';
 
 export default function VoteProfileClient() {
   const params = useParams();
@@ -30,6 +32,7 @@ export default function VoteProfileClient() {
   const [notFound, setNotFound] = useState(false);
 
   const [showVoteModal, setShowVoteModal] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
   const [showHowToVote, setShowHowToVote] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -202,14 +205,22 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
         </div>
       </div>
 
-      {/* Action button */}
-      <div className="p-3.5">
+      {/* Action buttons — Vote + Gift */}
+      <div className="p-3.5 space-y-2">
         <button
           onClick={() => setShowVoteModal(true)}
           className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-[#9A7B4F] to-[#6b4423] text-white font-bold text-[13px] shadow-lg hover:brightness-110 transition-all duration-300 hover:-translate-y-0.5"
         >
           <Heart className="w-3.5 h-3.5 fill-current" />
           Click to Vote
+        </button>
+
+        <button
+          onClick={() => setShowGiftModal(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[#c9a227]/50 bg-[#c9a227]/10 text-[#f5d76e] font-bold text-[13px] hover:bg-[#c9a227]/20 transition-all duration-300 hover:-translate-y-0.5"
+        >
+          <Gift className="w-3.5 h-3.5" />
+          Gift Me
         </button>
       </div>
     </motion.div>
@@ -362,7 +373,6 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
           >
             {/* Header with candidate photo */}
             <div className="px-5 py-4 border-b border-[#c9a227]/20 bg-gradient-to-r from-[#6b4423] to-[#9A7B4F] flex items-center gap-3">
-              {/* Candidate photo in gold ring */}
               <div
                 className="rounded-full overflow-hidden flex-shrink-0"
                 style={{
@@ -395,7 +405,6 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
                 </div>
               </div>
 
-              {/* Text */}
               <div className="min-w-0 flex-1">
                 <h2 className="text-base font-bold text-white truncate">
                   How to Vote
@@ -493,6 +502,14 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
         onClose={() => setShowVoteModal(false)}
         candidate={candidate}
         onVoteSuccess={() => {}}
+      />
+
+      {/* ===== Gift modal ===== */}
+      <GiftModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        candidate={candidate}
+        onGiftSuccess={() => {}}
       />
 
       {/* ===== How-to-vote modal ===== */}

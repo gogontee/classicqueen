@@ -16,7 +16,7 @@ import {
   Image as ImageIcon,
   Lock,
   Film,
-  GripVertical,
+  Gift,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -44,6 +44,9 @@ const emptyForm = {
   gallery: [],
   status: "Pending",
   vote_count: 0,
+  gift_count: 0,
+  gift_total_usd: 0,
+  gift_balance_usd: 0,
 };
 
 export default function CandidateManagement() {
@@ -94,14 +97,12 @@ export default function CandidateManagement() {
   const openEdit = (candidate) => {
     setEditing(candidate);
 
-    // Normalize video value — DB may hold a string or { url } object
     let videoUrl = "";
     if (candidate.video) {
       if (typeof candidate.video === "string") videoUrl = candidate.video;
       else if (candidate.video.url) videoUrl = candidate.video.url;
     }
 
-    // Normalize gallery — ensure each item has a stable order value
     const gallery = Array.isArray(candidate.gallery)
       ? [...candidate.gallery].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       : [];
@@ -128,6 +129,9 @@ export default function CandidateManagement() {
       gallery,
       status: candidate.status ?? "Pending",
       vote_count: candidate.vote_count ?? 0,
+      gift_count: candidate.gift_count ?? 0,
+      gift_total_usd: candidate.gift_total_usd ?? 0,
+      gift_balance_usd: candidate.gift_balance_usd ?? 0,
     });
     setFormError("");
     setModalOpen(true);
@@ -153,13 +157,10 @@ export default function CandidateManagement() {
     if (!form.email.trim()) return setFormError("Email is required.");
     if (!form.username.trim()) return setFormError("Username is required.");
 
-    // Pack video back into { url } format for consistency with how the
-    // detail page's pickVideo() helper expects it
     const videoPayload = form.video.trim()
       ? { url: form.video.trim() }
       : null;
 
-    // Normalize gallery — clean empty entries, re-sort order
     const cleanGallery = (form.gallery || [])
       .filter((g) => g && g.url && g.url.trim())
       .map((g, i) => ({
@@ -191,6 +192,9 @@ export default function CandidateManagement() {
       gallery: cleanGallery.length > 0 ? cleanGallery : null,
       status: form.status,
       vote_count: parseInt(form.vote_count, 10) || 0,
+      gift_count: parseInt(form.gift_count, 10) || 0,
+      gift_total_usd: parseFloat(form.gift_total_usd) || 0,
+      gift_balance_usd: parseFloat(form.gift_balance_usd) || 0,
     };
 
     setSaving(true);
@@ -402,10 +406,13 @@ export default function CandidateManagement() {
                   <th className="px-4 py-3 font-semibold hidden md:table-cell">
                     Country
                   </th>
-                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">
-                    Email
-                  </th>
                   <th className="px-4 py-3 font-semibold">Votes</th>
+                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">
+                    Gifts
+                  </th>
+                  <th className="px-4 py-3 font-semibold hidden lg:table-cell">
+                    Gift Value
+                  </th>
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold text-right">
                     Actions
@@ -454,15 +461,28 @@ export default function CandidateManagement() {
                     <td className="px-4 py-3 hidden md:table-cell text-[#6b4423]">
                       {c.country}
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-[#6b4423]">
-                      <span className="truncate block max-w-[200px]">
-                        {c.email}
-                      </span>
-                    </td>
                     <td className="px-4 py-3">
                       <span className="font-bold text-[#2E1503] tabular-nums">
                         {c.vote_count ?? 0}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <div className="flex items-center gap-1.5">
+                        <Gift size={13} className="text-[#c9a227]" />
+                        <span className="font-semibold text-[#2E1503] tabular-nums">
+                          {c.gift_count ?? 0}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      <div className="leading-tight">
+                        <p className="font-bold text-[#c9a227] tabular-nums">
+                          ${Number(c.gift_total_usd ?? 0).toFixed(2)}
+                        </p>
+                        <p className="text-[10px] text-green-600 tabular-nums">
+                          ${Number(c.gift_balance_usd ?? 0).toFixed(2)} convertible
+                        </p>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -609,12 +629,57 @@ export default function CandidateManagement() {
                     value={form.tiktok}
                     onChange={(v) => handleChange("tiktok", v)}
                   />
-                  <Field
-                    label="Vote Count"
-                    type="number"
-                    value={form.vote_count}
-                    onChange={(v) => handleChange("vote_count", v)}
-                  />
+
+                  {/* ===== Stats section ===== */}
+                  <div className="sm:col-span-2 mt-2">
+                    <div
+                      className="rounded-xl border border-[#c9a227]/35 p-4"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(201,162,39,0.08) 0%, rgba(154,123,79,0.04) 100%)",
+                      }}
+                    >
+                      <p className="text-xs font-bold text-[#6b4423] mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Gift size={12} className="text-[#c9a227]" />
+                        Stats & Gifts
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Field
+                          label="Vote Count"
+                          type="number"
+                          value={form.vote_count}
+                          onChange={(v) => handleChange("vote_count", v)}
+                        />
+                        <Field
+                          label="Gift Count"
+                          type="number"
+                          value={form.gift_count}
+                          onChange={(v) => handleChange("gift_count", v)}
+                        />
+                        <Field
+                          label="Total Gift Value (USD)"
+                          type="number"
+                          value={form.gift_total_usd}
+                          onChange={(v) => handleChange("gift_total_usd", v)}
+                        />
+                        <Field
+                          label="Gift Balance (USD) — convertible"
+                          type="number"
+                          value={form.gift_balance_usd}
+                          onChange={(v) => handleChange("gift_balance_usd", v)}
+                        />
+                      </div>
+
+                      <p className="text-[10px] text-[#6b4423]/60 mt-3 leading-relaxed">
+                        <strong>Total Gift Value</strong> is the sum of all
+                        gifts received. <strong>Gift Balance</strong> is what
+                        remains unconverted — everything above this has already
+                        been turned into votes. Editing these values does not
+                        affect the underlying gift transactions.
+                      </p>
+                    </div>
+                  </div>
 
                   {/* Profile photo */}
                   <div className="sm:col-span-2">
@@ -628,7 +693,6 @@ export default function CandidateManagement() {
                     />
                   </div>
 
-                  {/* Mobile hero */}
                   <div className="sm:col-span-2">
                     <ImageUpload
                       label="Mobile Hero"
@@ -640,7 +704,6 @@ export default function CandidateManagement() {
                     />
                   </div>
 
-                  {/* Desktop hero */}
                   <div className="sm:col-span-2">
                     <ImageUpload
                       label="Desktop Hero"
@@ -652,7 +715,6 @@ export default function CandidateManagement() {
                     />
                   </div>
 
-                  {/* Video URL */}
                   <div className="sm:col-span-2">
                     <VideoUrlField
                       label="Video URL (YouTube or direct .mp4)"
@@ -661,7 +723,6 @@ export default function CandidateManagement() {
                     />
                   </div>
 
-                  {/* Gallery manager */}
                   <div className="sm:col-span-2">
                     <GalleryManager
                       gallery={form.gallery}
@@ -671,7 +732,6 @@ export default function CandidateManagement() {
                     />
                   </div>
 
-                  {/* Status */}
                   <div className="sm:col-span-2">
                     <label className="block text-xs font-medium text-[#6b4423] mb-1 ml-1">
                       Status
@@ -765,7 +825,7 @@ export default function CandidateManagement() {
         </div>
       )}
 
-      {/* Delete flow modal */}
+      {/* Delete flow modal — unchanged */}
       {confirmDelete && (
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center p-4"
@@ -915,7 +975,6 @@ function Field({ label, value, onChange, type = "text", placeholder }) {
 /* ---------------- Video URL Field ---------------- */
 
 function VideoUrlField({ label, value, onChange }) {
-  // Detect YouTube
   const youtubeId = (() => {
     if (!value) return null;
     const patterns = [
@@ -1234,7 +1293,6 @@ function GalleryManager({ gallery, onChange, supabase, candidateName }) {
         Gallery ({items.length} {items.length === 1 ? "image" : "images"})
       </label>
 
-      {/* Toolbar: upload + paste URL */}
       <div className="flex flex-col sm:flex-row gap-2 mb-3">
         <button
           type="button"
@@ -1346,12 +1404,10 @@ function GalleryTile({ item, index, isFirst, isLast, onRemove, onMoveUp, onMoveD
         )}
       </div>
 
-      {/* Order badge */}
       <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
         {index + 1}
       </div>
 
-      {/* Move up/down */}
       <div className="absolute top-2 right-2 flex flex-col gap-1">
         {!isFirst && (
           <button
@@ -1375,7 +1431,6 @@ function GalleryTile({ item, index, isFirst, isLast, onRemove, onMoveUp, onMoveD
         )}
       </div>
 
-      {/* Remove button — always visible on hover, always visible on mobile */}
       <button
         type="button"
         onClick={onRemove}

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import CandidateCard from "./CandidateCard";
 import VoteModal from "./VoteModal";
+import VoteCountdown from "./VoteCountdown";
 import { createClient } from "@/utils/supabase/client";
 
 export default function CandidatesView({ candidates: initialCandidates }) {
@@ -36,7 +37,6 @@ export default function CandidatesView({ candidates: initialCandidates }) {
             )
           );
 
-          // If the modal is open for this candidate, sync the selected count too
           setSelectedCandidate((prev) =>
             prev && prev.id === updated.id
               ? { ...prev, vote_count: updated.vote_count ?? prev.vote_count }
@@ -58,7 +58,6 @@ export default function CandidatesView({ candidates: initialCandidates }) {
 
   const handleVoteSuccess = (votes) => {
     if (!selectedCandidate) return;
-    // Optimistic bump; the realtime channel will confirm shortly
     setCandidates((prev) =>
       prev.map((c) =>
         c.id === selectedCandidate.id
@@ -70,9 +69,11 @@ export default function CandidatesView({ candidates: initialCandidates }) {
 
   return (
     <div>
-      {/* Mobile-only view toggle */}
-      <div className="flex justify-end mb-4 sm:hidden">
-        <div className="inline-flex rounded-lg border border-[#9A7B4F] overflow-hidden">
+      {/* Top row — countdown on the left, grid/list toggle on the right (mobile only) */}
+      <div className="flex items-center justify-between gap-3 mb-4 min-h-[36px]">
+        <VoteCountdown variant="pill" />
+
+        <div className="inline-flex rounded-lg border border-[#9A7B4F] overflow-hidden flex-shrink-0 sm:hidden">
           <button
             onClick={() => setView("grid")}
             aria-pressed={view === "grid"}

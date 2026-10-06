@@ -16,13 +16,17 @@ import {
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
-import PayPalButton from "@/components/PayPalButton";
+import { normalizePaymentMethod } from "@/lib/paymentMethods";
+import PaymentMethodSelector from "@/components/vote/PaymentMethodSelector";
+import PoweredByFooter from "@/components/vote/PoweredByFooter";
 
 // Fixed backend conversion. 1 vote = $1 USD = ₦1500 NGN.
-// Paystack is charged in NGN; PayPal is charged in USD.
 const USD_TO_NGN = 1500;
 const PRICE_PER_VOTE_USD = 1;
 const PRICE_PER_VOTE_NGN = PRICE_PER_VOTE_USD * USD_TO_NGN;
+
+// Flutterwave public key (used for card payments)
+const FLW_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
 const quickVotes = [1, 5, 10, 15, 25, 50, 100, 250, 500];
 
@@ -67,10 +71,17 @@ export default function VoteModal({
   const [guestInfo, setGuestInfo] = useState({ email: "", name: "" });
   const [currentUser, setCurrentUser] = useState(null);
   const [paymentStep, setPaymentStep] = useState("selection");
-  const [paymentMethod, setPaymentMethod] = useState(null); // null | "paystack" | "paypal"
+  const [paymentMethod, setPaymentMethod] = useState(null);
   const [error, setError] = useState("");
   const [paystackLoaded, setPaystackLoaded] = useState(false);
+  const [flutterwaveLoaded, setFlutterwaveLoaded] = useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
+  
+
+  // Wallet balance
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletLoading, setWalletLoading] = useState(true);
+
   const [paymentError, setPaymentError] = useState({
     show: false,
     message: "",
@@ -79,6 +90,7 @@ export default function VoteModal({
 
   // Custom email-required popup for guests
   const [emailPrompt, setEmailPrompt] = useState(false);
+  const [guestWalletPrompt, setGuestWalletPrompt] = useState(false);
 
   // Voting window
   const [windowStatus, setWindowStatus] = useState(null);
@@ -89,7 +101,7 @@ export default function VoteModal({
 
   const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
-  // Fetch voting window when modal opens
+  // ---------------- Fetch voting window ----------------
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -136,33 +148,54 @@ export default function VoteModal({
     };
   }, [isOpen, supabase, reportNetworkError]);
 
-  // Load auth user when modal opens
+  // ---------------- Load auth user + wallet balance ----------------
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
+
     (async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        const { data: authData, error: authError } = await supabase.auth.getUser();
         if (cancelled) return;
-        if (error && isNetworkError(error)) {
+
+        if (authError && isNetworkError(authError)) {
           reportNetworkError();
           setCurrentUser(null);
           return;
         }
-        setCurrentUser(data?.user ?? null);
+
+        const user = authData?.user ?? null;
+        setCurrentUser(user);
+
+        if (user?.id) {
+          setWalletLoading(true);
+          const { data: wallet } = await supabase
+            .from("wallets")
+            .select("balance")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (!cancelled) {
+            setWalletBalance(Number(wallet?.balance ?? 0));
+            setWalletLoading(false);
+          }
+        } else {
+          setWalletLoading(false);
+        }
       } catch (err) {
-        if (!cancelled && isNetworkError(err)) {
-          reportNetworkError();
-          setCurrentUser(null);
+        if (!cancelled) {
+          if (isNetworkError(err)) reportNetworkError();
+          setWalletLoading(false);
         }
       }
     })();
+
     return () => {
       cancelled = true;
     };
   }, [isOpen, supabase, reportNetworkError]);
 
-  // Reset state on close
+  // ---------------- Reset on close ----------------
   useEffect(() => {
     if (!isOpen) {
       setVoteCount(1);
@@ -177,11 +210,13 @@ export default function VoteModal({
       setEmailPrompt(false);
       setWindowStatus(null);
       setWindowLoading(true);
+      setWalletBalance(0);
+      setWalletLoading(true);
       if (customTimerRef.current) clearTimeout(customTimerRef.current);
     }
   }, [isOpen]);
 
-  // Load Paystack inline script once — only when the window is open
+  // ---------------- Load Paystack script ----------------
   useEffect(() => {
     if (!isOpen || paystackLoaded) return;
     if (windowStatus?.state !== "open") return;
@@ -195,13 +230,27 @@ export default function VoteModal({
     script.onload = () => {
       if (window.PaystackPop) setPaystackLoaded(true);
     };
-    script.onerror = () => {
-      setError("Failed to load payment system.");
-    };
     document.head.appendChild(script);
   }, [isOpen, paystackLoaded, windowStatus?.state]);
 
-  // Auto-scroll to pay button
+  // ---------------- Load Flutterwave script ----------------
+  useEffect(() => {
+    if (!isOpen || flutterwaveLoaded) return;
+    if (windowStatus?.state !== "open") return;
+    if (window.FlutterwaveCheckout) {
+      setFlutterwaveLoaded(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.flutterwave.com/v3.js";
+    script.async = true;
+    script.onload = () => {
+      if (window.FlutterwaveCheckout) setFlutterwaveLoaded(true);
+    };
+    document.head.appendChild(script);
+  }, [isOpen, flutterwaveLoaded, windowStatus?.state]);
+
+  // ---------------- Auto-scroll ----------------
   useEffect(() => {
     if (shouldScroll && payButtonRef.current) {
       const t = setTimeout(() => {
@@ -234,8 +283,164 @@ export default function VoteModal({
     }
   };
 
-  // ---------- Paystack flow (NGN) ----------
-  const processPaystackPayment = () => {
+  // ---------------- Wallet flow ----------------
+  const processWalletPayment = async () => {
+    const totalUSD = voteCount * PRICE_PER_VOTE_USD;
+
+    if (walletBalance < totalUSD) {
+      setError(
+        `Insufficient wallet balance. You have $${walletBalance.toFixed(
+          2
+        )}, need $${totalUSD.toFixed(2)}. Please fund your wallet first.`
+      );
+      setProcessing(false);
+      setPaymentStep("selection");
+      return;
+    }
+
+    const reference = `VOTE_WALLET_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 10)}`;
+
+    try {
+      const { data: spendResult, error: spendError } = await supabase.rpc(
+        "spend_wallet",
+        {
+          p_user_id: currentUser.id,
+          p_amount: totalUSD,
+          p_reference: reference,
+          p_metadata: {
+            candidate_id: candidate.id,
+            candidate_username: candidate.username,
+            votes: voteCount,
+          },
+        }
+      );
+
+      if (spendError) throw spendError;
+      if (!spendResult?.success) {
+        throw new Error(spendResult?.error || "Failed to debit wallet");
+      }
+
+      const { error: insertError } = await supabase
+        .from("vote_transactions")
+        .insert({
+          user_id: currentUser.id,
+          guest_email: null,
+          guest_name: null,
+          candidate_id: candidate.id,
+          package_name: `${voteCount} Vote${voteCount > 1 ? "s" : ""}`,
+          votes: voteCount,
+          price_per_vote: PRICE_PER_VOTE_USD,
+          total_amount: totalUSD,
+          currency: "USD",
+          payment_method: "wallet",
+          payment_provider: "wallet",
+          payment_id: reference,
+          reference,
+          status: "completed",
+          metadata: {
+            amount_usd: totalUSD,
+            wallet_balance_after: spendResult?.new_balance,
+          },
+        });
+
+      if (insertError) throw insertError;
+
+      setPaymentStep("success");
+      setProcessing(false);
+      if (onVoteSuccess) onVoteSuccess(voteCount, `$${totalUSD.toFixed(2)}`);
+      setTimeout(() => onClose(), 2500);
+    } catch (err) {
+      console.error("Wallet payment failed:", err);
+      if (isNetworkError(err)) {
+        reportNetworkError();
+        setPaymentStep("selection");
+        setProcessing(false);
+        if (onVoteError) onVoteError(err?.message || "Network error");
+        return;
+      }
+      setError(err?.message || "Wallet payment failed.");
+      setPaymentStep("selection");
+      setProcessing(false);
+    }
+  };
+
+  // ---------------- Flutterwave (Card) flow ----------------
+  const processCardPayment = () => {
+    if (!window.FlutterwaveCheckout) {
+      setError("Card payment system not loaded. Please try again.");
+      setProcessing(false);
+      setPaymentStep("selection");
+      return;
+    }
+
+    const email = currentUser?.email || guestInfo.email;
+    const name =
+      currentUser?.user_metadata?.full_name || guestInfo.name || "Voter";
+
+    if (!email) {
+      setError("Please enter your email address.");
+      setProcessing(false);
+      setPaymentStep("selection");
+      return;
+    }
+
+    const totalUSD = voteCount * PRICE_PER_VOTE_USD;
+    const totalNGN = Math.round(voteCount * PRICE_PER_VOTE_NGN);
+    const reference = `VOTE_FLW_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 10)}`;
+
+    try {
+      window.FlutterwaveCheckout({
+        public_key: FLW_PUBLIC_KEY,
+        tx_ref: reference,
+        amount: totalNGN,
+        currency: "NGN",
+        payment_options: "card",
+        customer: { email, name },
+        customizations: {
+          title: "Vote — Classic Queen International",
+          description: `${voteCount} vote${voteCount > 1 ? "s" : ""} for ${
+            candidate?.full_name || candidate?.username
+          }`,
+          logo: "/cqi.png",
+        },
+        callback: (response) => {
+          const normalized = normalizePaymentMethod(
+            response.payment_type,
+            "card"
+          );
+          handleExternalPaymentSuccess({
+            reference: response.tx_ref || reference,
+            paymentId: response.transaction_id,
+            provider: "flutterwave",
+            method: normalized,
+            rawMethod: response.payment_type || null,
+            rawResponse: response,
+            totalUSD,
+            totalNGN,
+            email,
+            name,
+          });
+        },
+        onclose: () => {
+          setProcessing(false);
+          setPaymentStep("selection");
+          setError("Payment cancelled.");
+        },
+      });
+    } catch (err) {
+      console.error("Flutterwave init failed:", err);
+      setError("Failed to initialize card payment.");
+      setProcessing(false);
+      setPaymentStep("selection");
+    }
+  };
+
+  // ---------------- Paystack (Bank / Transfer) flow ----------------
+  const processBankPayment = () => {
     if (!window.PaystackPop) {
       setError("Payment system not loaded.");
       setProcessing(false);
@@ -244,6 +449,9 @@ export default function VoteModal({
     }
 
     const email = currentUser?.email || guestInfo.email;
+    const name =
+      currentUser?.user_metadata?.full_name || guestInfo.name || "Voter";
+
     if (!email) {
       setError("Please enter your email address.");
       setProcessing(false);
@@ -251,12 +459,10 @@ export default function VoteModal({
       return;
     }
 
-    const name =
-      currentUser?.user_metadata?.full_name || guestInfo.name || "Voter";
     const totalUSD = voteCount * PRICE_PER_VOTE_USD;
     const totalNGN = voteCount * PRICE_PER_VOTE_NGN;
     const amountKobo = Math.round(totalNGN * 100);
-    const reference = `VOTE_${Date.now()}_${Math.random()
+    const reference = `VOTE_PS_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 10)}`;
 
@@ -276,8 +482,17 @@ export default function VoteModal({
           ],
         },
         callback: (response) => {
-          handlePaystackSuccess({
+          const normalized = normalizePaymentMethod(
+            response.channel || response.payment_type,
+            "paystack"
+          );
+          handleExternalPaymentSuccess({
             reference: response.reference,
+            paymentId: response.reference,
+            provider: "paystack",
+            method: normalized,
+            rawMethod: response.channel || null,
+            rawResponse: response,
             totalUSD,
             totalNGN,
             email,
@@ -299,8 +514,14 @@ export default function VoteModal({
     }
   };
 
-  const handlePaystackSuccess = async ({
+  // Shared success handler for Flutterwave & Paystack
+  const handleExternalPaymentSuccess = async ({
     reference,
+    paymentId,
+    provider,
+    method,
+    rawMethod,
+    rawResponse,
     totalUSD,
     totalNGN,
     email,
@@ -317,15 +538,17 @@ export default function VoteModal({
         price_per_vote: PRICE_PER_VOTE_USD,
         total_amount: totalUSD,
         currency: "USD",
-        payment_method: "paystack",
-        payment_provider: "paystack",
-        payment_id: reference,
+        payment_method: method,
+        payment_provider: provider,
+        payment_id: String(paymentId),
         reference,
         status: "completed",
         metadata: {
           amount_usd: totalUSD,
           amount_ngn_charged: totalNGN,
           usd_to_ngn_rate: USD_TO_NGN,
+          raw_payment_method: rawMethod,
+          raw_gateway_response: rawResponse,
         },
       };
 
@@ -337,14 +560,8 @@ export default function VoteModal({
 
       setPaymentStep("success");
       setProcessing(false);
-
-      if (onVoteSuccess) {
-        onVoteSuccess(voteCount, `$${totalUSD.toFixed(2)}`);
-      }
-
-      setTimeout(() => {
-        onClose();
-      }, 2500);
+      if (onVoteSuccess) onVoteSuccess(voteCount, `$${totalUSD.toFixed(2)}`);
+      setTimeout(() => onClose(), 2500);
     } catch (err) {
       console.error("Vote insert failed:", err);
 
@@ -363,26 +580,7 @@ export default function VoteModal({
     }
   };
 
-  // ---------- Shared success handler for PayPal ----------
-  const handlePayPalSuccess = (votes, amountLabel) => {
-    setPaymentStep("success");
-    setProcessing(false);
-    if (onVoteSuccess) onVoteSuccess(votes, amountLabel);
-    setTimeout(() => {
-      onClose();
-    }, 2500);
-  };
-
-  const handlePayPalError = (message) => {
-    if (message && message.toLowerCase().includes("cancel")) {
-      setError("Payment cancelled.");
-    } else {
-      setError(message || "PayPal payment failed.");
-    }
-    setProcessing(false);
-  };
-
-  // ---------- Entry point when user clicks the pay button ----------
+  // ---------------- Entry point for pay button ----------------
   const handleProceed = () => {
     if (windowStatus?.state !== "open") {
       setError("Voting is not currently open.");
@@ -397,8 +595,7 @@ export default function VoteModal({
       return;
     }
 
-    // Guest email check — show custom popup instead of inline error
-    if (!currentUser && !guestInfo.email) {
+    if (paymentMethod !== "wallet" && !currentUser && !guestInfo.email) {
       setEmailPrompt(true);
       return;
     }
@@ -406,20 +603,36 @@ export default function VoteModal({
     setError("");
     setProcessing(true);
 
-    if (paymentMethod === "paystack") {
+    if (paymentMethod === "wallet") {
+      if (!currentUser) {
+        setError("Please sign in to use your wallet.");
+        setProcessing(false);
+        return;
+      }
+      setPaymentStep("processing");
+      processWalletPayment();
+    } else if (paymentMethod === "card") {
+      if (!flutterwaveLoaded) {
+        setError("Card payment system is loading. Please wait…");
+        setProcessing(false);
+        return;
+      }
+      setPaymentStep("processing");
+      processCardPayment();
+    } else if (paymentMethod === "bank") {
       if (!paystackLoaded) {
         setError("Payment system is loading. Please wait…");
         setProcessing(false);
         return;
       }
       setPaymentStep("processing");
-      processPaystackPayment();
+      processBankPayment();
     }
-    // For PayPal, no extra step is needed — the button handles its own flow.
   };
 
   const totalUSD = voteCount * PRICE_PER_VOTE_USD;
   const totalNGN = voteCount * PRICE_PER_VOTE_NGN;
+  const walletEnough = walletBalance >= totalUSD;
 
   // Which view to render
   let view;
@@ -645,104 +858,29 @@ export default function VoteModal({
                     </div>
                   )}
 
-                  {/* Payment method selector — Card first, Others second */}
+                  {/* Payment method selector */}
                   <div className="p-3 border-b border-[#9A7B4F]/20">
                     <label className="block text-xs font-medium text-white/80 mb-2">
                       Choose payment method
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Debit/Credit Card — blue, orange on hover */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPaymentMethod("paypal");
-                          setError("");
-                        }}
-                        className={`group p-3 rounded-lg border text-left transition-all ${
-                          paymentMethod === "paypal"
-                            ? "border-[#c9a227] bg-[#c9a227]/15"
-                            : "border-[#9A7B4F]/25 bg-white/5"
-                        }`}
-                        style={{
-                          background:
-                            paymentMethod === "paypal"
-                              ? "rgba(201, 162, 39, 0.15)"
-                              : "#1e3a8a",
-                          borderColor:
-                            paymentMethod === "paypal"
-                              ? "#c9a227"
-                              : "rgba(30, 58, 138, 0.6)",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (paymentMethod !== "paypal") {
-                            e.currentTarget.style.background = "#ea580c";
-                            e.currentTarget.style.borderColor = "#f97316";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (paymentMethod !== "paypal") {
-                            e.currentTarget.style.background = "#1e3a8a";
-                            e.currentTarget.style.borderColor = "rgba(30, 58, 138, 0.6)";
-                          }
-                        }}
-                      >
-                        <span className="block text-sm font-bold text-white">
-                          Debit/Credit Card
-                        </span>
-                        <span className="block text-[10px] text-white/80 mt-0.5">
-                          Pay from anywhere
-                        </span>
-                        <span className="block text-[10px] text-white/70 mt-1">
-                          ${totalUSD.toFixed(2)}
-                        </span>
-                      </button>
 
-                      {/* Other Options — green, darker green on hover */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPaymentMethod("paystack");
-                          setError("");
-                        }}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          paymentMethod === "paystack"
-                            ? "border-[#c9a227] bg-[#c9a227]/15"
-                            : "border-[#9A7B4F]/25 bg-white/5"
-                        }`}
-                        style={{
-                          background:
-                            paymentMethod === "paystack"
-                              ? "rgba(201, 162, 39, 0.15)"
-                              : "#15803d",
-                          borderColor:
-                            paymentMethod === "paystack"
-                              ? "#c9a227"
-                              : "rgba(21, 128, 61, 0.6)",
-                        }}
-                        onMouseEnter={(e) => {
-                          if (paymentMethod !== "paystack") {
-                            e.currentTarget.style.background = "#166534";
-                            e.currentTarget.style.borderColor = "#22c55e";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (paymentMethod !== "paystack") {
-                            e.currentTarget.style.background = "#15803d";
-                            e.currentTarget.style.borderColor = "rgba(21, 128, 61, 0.6)";
-                          }
-                        }}
-                      >
-                        <span className="block text-sm font-bold text-white">
-                          Other Options
-                        </span>
-                        <span className="block text-[10px] text-white/80 mt-0.5">
-                          Transfer, bank/USSD
-                        </span>
-                        <span className="block text-[10px] text-white/70 mt-1">
-                          ₦{totalNGN.toLocaleString()}
-                        </span>
-                      </button>
-                    </div>
+                    <PaymentMethodSelector
+  method={paymentMethod}
+  onChange={(m) => {
+    // Non-auth users can't pick wallet — show a signup popup instead
+    if (m === "wallet" && !currentUser) {
+      setGuestWalletPrompt(true);
+      return;
+    }
+    setPaymentMethod(m);
+    setError("");
+  }}
+  isLoggedIn={!!currentUser}
+  walletBalance={walletBalance}
+  walletLoading={walletLoading}
+  walletEnough={walletEnough}
+  totalUSD={totalUSD}
+/>
                   </div>
 
                   {/* Trust line */}
@@ -764,73 +902,55 @@ export default function VoteModal({
                     </div>
                   )}
 
-                  {/* Pay action — different per method */}
+                  {/* Pay button */}
                   <div ref={payButtonRef} className="p-3">
-                    {paymentMethod === "paypal" ? (
-                      <>
-                        <PayPalButton
-                          amount={totalUSD}
-                          currency="USD"
-                          candidate={candidate}
-                          voteCount={voteCount}
-                          currentUser={currentUser}
-                          guestInfo={guestInfo}
-                          onSuccess={handlePayPalSuccess}
-                          onError={handlePayPalError}
-                        />
-                        <p className="text-[10px] text-white/40 text-center mt-2">
-                          By proceeding, you agree to our Terms of Service
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={handleProceed}
-                          disabled={processing || !paymentMethod}
-                          className="
-                            w-full py-3 text-white rounded-lg text-sm font-semibold
-                            flex items-center justify-center gap-2
-                            transition-all duration-300
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            hover:brightness-110
-                          "
-                          style={{
-                            background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
-                            boxShadow: "0 10px 20px rgba(0,0,0,0.3)",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!processing && paymentMethod) {
-                              e.currentTarget.style.background =
-                                "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background =
-                              "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)";
-                          }}
-                        >
-                          {processing ? (
-                            <>
-                              <Loader className="w-4 h-4 animate-spin" />
-                              Processing…
-                            </>
-                          ) : paymentMethod === "paystack" ? (
-                            <>
-                              Pay ₦{totalNGN.toLocaleString()}
-                              <ChevronRight className="w-4 h-4" />
-                            </>
-                          ) : (
-                            <>
-                              Select a payment method
-                              <ChevronRight className="w-4 h-4" />
-                            </>
-                          )}
-                        </button>
-                        <p className="text-[10px] text-white/40 text-center mt-2">
-                          By proceeding, you agree to our Terms of Service
-                        </p>
-                      </>
-                    )}
+                    <button
+                      onClick={handleProceed}
+                      disabled={
+                        processing ||
+                        !paymentMethod ||
+                        (paymentMethod === "wallet" && !walletEnough)
+                      }
+                      className="
+                        w-full py-3 text-white rounded-lg text-sm font-semibold
+                        flex items-center justify-center gap-2
+                        transition-all duration-300
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        hover:brightness-110
+                      "
+                      style={{
+                        background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
+                        boxShadow: "0 10px 20px rgba(0,0,0,0.3)",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (
+                          !processing &&
+                          paymentMethod &&
+                          !(paymentMethod === "wallet" && !walletEnough)
+                        ) {
+                          e.currentTarget.style.background =
+                            "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background =
+                          "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)";
+                      }}
+                    >
+                      {processing ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          Processing…
+                        </>
+                      ) : (
+                        <>
+                          Click to Pay ${totalUSD.toFixed(2)}
+                          <ChevronRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+
+                    <PoweredByFooter isLoggedIn={!!currentUser} />
                   </div>
                 </>
               )}

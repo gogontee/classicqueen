@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Menu, X, Users, Image as ImageIcon, Info, Phone, Home, UserPlus, Newspaper, LogIn, User as UserIcon, LayoutDashboard, LogOut } from 'lucide-react'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
+import VoteCountdown from '@/components/VoteCountdown'
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -139,7 +140,7 @@ const Header = () => {
       <div className="px-0">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 group ml-4">
+          <Link href="/" className="flex items-center space-x-3 group ml-4 flex-shrink-0">
             <div className="relative">
               <div className="relative w-16 h-16 md:w-20 md:h-20">
                 {!imgError ? (
@@ -165,6 +166,11 @@ const Header = () => {
               </div>
             </div>
           </Link>
+
+          {/* Mobile-only countdown — sits between logo and the right cluster */}
+          <div className="lg:hidden flex-1 flex items-center justify-center px-2 min-w-0">
+            <VoteCountdown variant="dark" />
+          </div>
 
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center space-x-1 mr-4">
@@ -266,7 +272,7 @@ const Header = () => {
           </nav>
 
           {/* Mobile right cluster: user/login + menu button */}
-          <div className="lg:hidden flex items-center gap-2 mr-4">
+          <div className="lg:hidden flex items-center gap-2 mr-4 flex-shrink-0">
             {authLoading ? (
               <div className="w-10 h-10 rounded-full bg-brown-800/50 animate-pulse" />
             ) : profile ? (

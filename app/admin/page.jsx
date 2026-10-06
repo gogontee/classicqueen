@@ -6,7 +6,8 @@ import {
   Database, Image as ImageIcon, Film, BarChart3,
   Globe, Users, Trophy, Eye,
   Newspaper, Lock, LogOut, AlertCircle, CheckCircle,
-  Mail, UserCog, ShieldCheck, Loader2, Calendar
+  Mail, UserCog, ShieldCheck, Loader2, Calendar,
+  Receipt
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
@@ -25,6 +26,7 @@ import CandidateManagement from '../../src/components/CandidateManagement'
 import UsersManagement from '../../src/components/UsersManagement'
 import TrophiesManagement from '../../src/components/TrophiesManagement'
 import VoteScheduleManager from '../../src/components/VoteScheduleManager'
+import TransactionsHub from '../../src/components/admin/TransactionsHub'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -46,6 +48,7 @@ export default function AdminDashboard() {
   const tabs = [
     { id: 'candidates', label: 'Candidates', icon: UserCog },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'transactions', label: 'Transactions', icon: Receipt },
     { id: 'trophies', label: 'Trophies', icon: Trophy },
     { id: 'schedule', label: 'Vote Schedule', icon: Calendar },
     { id: 'hero', label: 'Hero Slider', icon: Film },
@@ -449,6 +452,7 @@ export default function AdminDashboard() {
             {activeTab === 'users' && (
               <UsersManagement currentUserId={currentUserId} />
             )}
+            {activeTab === 'transactions' && <TransactionsHub />}
             {activeTab === 'trophies' && <TrophiesManagement />}
             {activeTab === 'schedule' && <VoteScheduleManager />}
             {activeTab === 'hero' && <HeroManager />}

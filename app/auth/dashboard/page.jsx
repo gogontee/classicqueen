@@ -13,11 +13,20 @@ import {
   Heart,
   Trash2,
   User as UserIcon,
+  Gift,
+  Sparkles,
+  History,
 } from "lucide-react";
 import Link from "next/link";
 import EditProfileModal from "@/components/EditProfileModal";
 import AddFavoriteModal from "@/components/AddFavoriteModal";
 import VoteModal from "@/components/VoteModal";
+import WalletCard from "@/components/WalletCard";
+import TransactionList from "@/components/TransactionList";
+import GiftTransactionsModal from "@/components/GiftTransactionsModal";
+import ConvertGiftModal from "@/components/ConvertGiftModal";
+import ConversionHistoryModal from "@/components/ConversionHistoryModal";
+import { useWallet } from "@/hooks/useWallet";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 
 export default function Dashboard() {
@@ -26,6 +35,7 @@ export default function Dashboard() {
   const { reportNetworkError } = useNetworkError();
 
   const [profile, setProfile] = useState(null);
+  const [candidateSelf, setCandidateSelf] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -37,6 +47,15 @@ export default function Dashboard() {
   const [voteCandidate, setVoteCandidate] = useState(null);
   const [voteOpen, setVoteOpen] = useState(false);
 
+  // Gift modals
+  const [giftModalOpen, setGiftModalOpen] = useState(false);
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+
+  // Wallet
+  const { balance, fetchBalance, ensureWallet } = useWallet(profile?.id);
+
+  // ---------- Load profile + candidate-self ----------
   const loadProfile = useCallback(async () => {
     try {
       const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -44,14 +63,32 @@ export default function Dashboard() {
         router.push("/auth/login");
         return null;
       }
-      const { data, error } = await supabase
+
+      const { data: profileData, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", authData.user.id)
         .single();
       if (error) throw error;
-      setProfile(data);
-      return data;
+
+      setProfile(profileData);
+
+      // If this user has a candidate_code, look up their candidate record
+      if (profileData?.candidate_code) {
+        const { data: candidateData } = await supabase
+          .from("candidates")
+          .select(
+            "id, username, full_name, photo, vote_count, gift_count, gift_total_usd, gift_balance_usd, status"
+          )
+          .eq("candidate_code", profileData.candidate_code)
+          .maybeSingle();
+
+        setCandidateSelf(candidateData ?? null);
+      } else {
+        setCandidateSelf(null);
+      }
+
+      return profileData;
     } catch (err) {
       if (isNetworkError(err)) {
         reportNetworkError();
@@ -61,6 +98,23 @@ export default function Dashboard() {
       return null;
     }
   }, [router, supabase, reportNetworkError]);
+
+  // Reload only the candidate stats — used after conversions
+  const reloadCandidateSelf = useCallback(async () => {
+    if (!profile?.candidate_code) return;
+    try {
+      const { data } = await supabase
+        .from("candidates")
+        .select(
+          "id, username, full_name, photo, vote_count, gift_count, gift_total_usd, gift_balance_usd, status"
+        )
+        .eq("candidate_code", profile.candidate_code)
+        .maybeSingle();
+      setCandidateSelf(data ?? null);
+    } catch (err) {
+      if (isNetworkError(err)) reportNetworkError();
+    }
+  }, [profile?.candidate_code, supabase, reportNetworkError]);
 
   const loadFavorites = useCallback(
     async (userId) => {
@@ -113,6 +167,11 @@ export default function Dashboard() {
     };
   }, [loadProfile, loadFavorites]);
 
+  // Ensure wallet row exists once profile is loaded
+  useEffect(() => {
+    if (profile?.id) ensureWallet();
+  }, [profile?.id, ensureWallet]);
+
   useEffect(() => {
     setAvatarError(false);
   }, [profile?.avatar_url]);
@@ -146,7 +205,6 @@ export default function Dashboard() {
       } else {
         console.error("Remove favorite failed:", err?.message);
       }
-      // Roll back optimistic update on any failure
       setFavorites(prev);
     }
   };
@@ -179,6 +237,7 @@ export default function Dashboard() {
           : fav
       )
     );
+    fetchBalance();
   };
 
   if (loading) {
@@ -210,6 +269,9 @@ export default function Dashboard() {
     profile.first_name && profile.last_name
       ? `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase()
       : profile.email?.[0]?.toUpperCase() || "?";
+
+  const giftBalance = Number(candidateSelf?.gift_balance_usd ?? 0);
+  const canConvert = giftBalance >= 1;
 
   return (
     <section
@@ -367,6 +429,113 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+
+          {/* ===== Candidate-self stats + gift actions ===== */}
+          {candidateSelf && (
+            <div className="mt-6 pt-6 border-t border-[#9A7B4F]/20">
+              <div
+                className="rounded-xl border border-[#c9a227]/35 p-4"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(201,162,39,0.10) 0%, rgba(154,123,79,0.05) 100%)",
+                }}
+              >
+                <p className="text-[10px] uppercase tracking-wider font-bold text-[#6b4423] mb-3 flex items-center gap-1.5">
+                  <Sparkles size={11} className="text-[#c9a227]" />
+                  Your Candidate Stats
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                  <div>
+                    <p className="text-xl font-bold text-[#2E1503] leading-tight">
+                      {candidateSelf.vote_count ?? 0}
+                    </p>
+                    <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
+                      Votes
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-[#2E1503] leading-tight">
+                      {candidateSelf.gift_count ?? 0}
+                    </p>
+                    <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
+                      Gifts
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-[#c9a227] leading-tight">
+                      ${Number(candidateSelf.gift_total_usd ?? 0).toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
+                      Total Value
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xl font-bold text-green-600 leading-tight">
+                      ${Number(candidateSelf.gift_balance_usd ?? 0).toFixed(2)}
+                    </p>
+                    <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
+                      Convertible
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setGiftModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold shadow-sm hover:brightness-110 transition"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
+                    }}
+                  >
+                    <Gift size={14} />
+                    See Who Sent You Gifts
+                  </button>
+
+                  <button
+                    onClick={() => setConvertModalOpen(true)}
+                    disabled={!canConvert}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[#1a0d02] text-sm font-bold shadow-sm hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #f5d76e 0%, #c9a227 100%)",
+                    }}
+                  >
+                    <Sparkles size={14} />
+                    {canConvert
+                      ? "Convert Gift Balance to Votes"
+                      : "No Gift Balance Yet"}
+                  </button>
+                </div>
+
+                {/* Conversion history button */}
+                <div className="mt-2">
+                  <button
+                    onClick={() => setHistoryModalOpen(true)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold border border-[#c9a227]/40 bg-[#c9a227]/10 hover:bg-[#c9a227]/20 transition"
+                  >
+                    <History size={14} />
+                    View Conversion History
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ===== Wallet + Transactions ===== */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <WalletCard
+            balance={balance}
+            userId={profile.id}
+            email={profile.email}
+            name={`${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim()}
+            onFunded={fetchBalance}
+          />
+          <div className="hidden md:block">
+            <TransactionList userId={profile.id} visibleCount={4} />
+          </div>
         </div>
 
         {/* Favorites */}
@@ -449,6 +618,31 @@ export default function Dashboard() {
         candidate={voteCandidate}
         onVoteSuccess={handleVoteSuccess}
       />
+
+      {/* Gift transactions modal */}
+      <GiftTransactionsModal
+        isOpen={giftModalOpen}
+        onClose={() => setGiftModalOpen(false)}
+        candidate={candidateSelf}
+        onConverted={() => setConvertModalOpen(true)}
+      />
+
+      {/* Convert gift modal */}
+      <ConvertGiftModal
+        isOpen={convertModalOpen}
+        onClose={() => setConvertModalOpen(false)}
+        candidate={candidateSelf}
+        onConverted={async () => {
+          await reloadCandidateSelf();
+        }}
+      />
+
+      {/* Conversion history modal */}
+      <ConversionHistoryModal
+        isOpen={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+        candidate={candidateSelf}
+      />
     </section>
   );
 }
@@ -466,7 +660,6 @@ function FavoriteCard({ favorite, onRemove, onVote }) {
       }}
     >
       <div className="rounded-2xl bg-white overflow-hidden flex flex-col">
-        {/* Clickable top — navigates to /[username] */}
         <Link href={`/${c.username}`} className="block">
           <div
             style={{
@@ -506,7 +699,6 @@ function FavoriteCard({ favorite, onRemove, onVote }) {
           </div>
         </Link>
 
-        {/* Vote button — under the card */}
         <button
           type="button"
           onClick={(e) => {
@@ -523,7 +715,6 @@ function FavoriteCard({ favorite, onRemove, onVote }) {
           Vote
         </button>
 
-        {/* Remove button */}
         <button
           onClick={(e) => {
             e.preventDefault();

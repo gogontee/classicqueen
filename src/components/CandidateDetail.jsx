@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Heart,
+  Gift,
   Trophy,
   LayoutGrid,
   List,
@@ -16,6 +17,8 @@ import {
 } from "lucide-react";
 import TrophyList from "@/components/TrophyList";
 import VoteModal from "@/components/VoteModal";
+import GiftModal from "@/components/GiftModal";
+import VoteCountdown from "@/components/VoteCountdown";
 import { createClient } from "@/utils/supabase/client";
 
 export default function CandidateDetail({ candidate }) {
@@ -25,6 +28,7 @@ export default function CandidateDetail({ candidate }) {
   const [galleryView, setGalleryView] = useState("grid");
   const [isHovered, setIsHovered] = useState(false);
   const [voteOpen, setVoteOpen] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   const [displayedVoteCount, setDisplayedVoteCount] = useState(
     candidate.vote_count ?? 0
   );
@@ -215,7 +219,8 @@ export default function CandidateDetail({ candidate }) {
           bg-[linear-gradient(135deg,#2E1503_0%,#362511_60%,#0a0703_100%)]
         "
       >
-        <div className="mx-auto max-w-5xl flex items-center justify-center gap-8 sm:gap-12 px-3 sm:px-6 py-1.5 sm:py-2">
+        <div className="mx-auto max-w-5xl flex items-center justify-center gap-3 sm:gap-4 px-3 sm:px-6 py-1.5 sm:py-2 flex-wrap">
+          {/* ---- Vote button ---- */}
           <div className="relative shrink-0">
             <motion.div
               className="absolute inset-0 rounded-xl"
@@ -309,6 +314,26 @@ export default function CandidateDetail({ candidate }) {
             </motion.button>
           </div>
 
+          {/* ---- Gift Me button ---- */}
+          <motion.button
+            onClick={() => setGiftOpen(true)}
+            whileTap={{ scale: 0.95 }}
+            className="
+              inline-flex items-center justify-center gap-1.5 sm:gap-2
+              px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl
+              border border-[#c9a227]/60 bg-[#c9a227]/10
+              text-[#f5d76e]
+              hover:bg-[#c9a227]/20 hover:border-[#c9a227]
+              transition-all hover:scale-105 shadow-lg shrink-0
+            "
+          >
+            <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="text-[11px] sm:text-sm font-bold whitespace-nowrap">
+              Gift Me
+            </span>
+          </motion.button>
+
+          {/* ---- Vote count ---- */}
           <div className="flex items-center px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl border border-[#9A7B4F] bg-black/40 shrink-0">
             <span className="text-sm sm:text-base font-bold tabular-nums text-yellow-400 whitespace-nowrap">
               Vote: {displayedVoteCount}
@@ -391,30 +416,38 @@ export default function CandidateDetail({ candidate }) {
             </button>
           </div>
 
-          {tab === "gallery" && (
-            <button
-              onClick={toggleGalleryView}
-              aria-label={
-                galleryView === "grid"
-                  ? "Switch to list view"
-                  : "Switch to grid view"
-              }
-              className="
-                inline-flex items-center justify-center
-                w-10 h-10 rounded-lg
-                border border-[#9A7B4F] bg-transparent
-                text-[#9A7B4F]
-                hover:bg-[#6b4423] hover:text-white
-                transition
-              "
-            >
-              {galleryView === "grid" ? (
-                <List className="w-5 h-5" />
-              ) : (
-                <LayoutGrid className="w-5 h-5" />
-              )}
-            </button>
-          )}
+          {/* Right side of the row: desktop countdown + mobile grid toggle */}
+          <div className="flex items-center gap-3">
+            {/* Desktop-only countdown */}
+            <div className="hidden sm:block">
+              <VoteCountdown variant="pill" />
+            </div>
+
+            {tab === "gallery" && (
+              <button
+                onClick={toggleGalleryView}
+                aria-label={
+                  galleryView === "grid"
+                    ? "Switch to list view"
+                    : "Switch to grid view"
+                }
+                className="
+                  inline-flex items-center justify-center
+                  w-10 h-10 rounded-lg
+                  border border-[#9A7B4F] bg-transparent
+                  text-[#9A7B4F]
+                  hover:bg-[#6b4423] hover:text-white
+                  transition
+                "
+              >
+                {galleryView === "grid" ? (
+                  <List className="w-5 h-5" />
+                ) : (
+                  <LayoutGrid className="w-5 h-5" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {tab === "gallery" && (
@@ -440,6 +473,14 @@ export default function CandidateDetail({ candidate }) {
         onClose={() => setVoteOpen(false)}
         candidate={candidate}
         onVoteSuccess={handleVoteSuccess}
+      />
+
+      <GiftModal
+        isOpen={giftOpen}
+        onClose={() => setGiftOpen(false)}
+        candidate={candidate}
+        onGiftSuccess={() => {}}
+        onGiftError={() => {}}
       />
     </main>
   );
@@ -630,8 +671,10 @@ function getYouTubeId(url) {
 
 function VideoPane({ video, name }) {
   const videoRef = useRef(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(0.2);
+  // Videos start muted — user unmutes with the speaker button.
+  const [isMuted, setIsMuted] = useState(true);
+  // Volume starts at 30%; will be applied when the user unmutes.
+  const [volume, setVolume] = useState(0.3);
   const [showVolume, setShowVolume] = useState(false);
   const [progress, setProgress] = useState(0);
   const volumeHideTimer = useRef(null);
@@ -643,16 +686,16 @@ function VideoPane({ video, name }) {
     const v = videoRef.current;
     if (!v || !video?.url) return;
 
-    v.volume = 0.2;
-    v.muted = false;
-    setIsMuted(false);
+    // Ensure muted autoplay so browsers never block it
+    v.muted = true;
+    v.volume = 0.3;
+    setIsMuted(true);
 
     const attempt = v.play();
-    if (attempt && typeof attempt.then === "function") {
+    if (attempt && typeof attempt.catch === "function") {
       attempt.catch(() => {
-        v.muted = true;
-        setIsMuted(true);
-        v.play().catch(() => {});
+        // If even muted autoplay is blocked, leave it paused.
+        // User can tap the video to play.
       });
     }
   }, [video?.url, youtubeId]);
@@ -660,8 +703,13 @@ function VideoPane({ video, name }) {
   const toggleMute = () => {
     const v = videoRef.current;
     if (!v) return;
-    v.muted = !v.muted;
-    setIsMuted(v.muted);
+    const next = !v.muted;
+    v.muted = next;
+    setIsMuted(next);
+    // When unmuting, apply the saved volume
+    if (!next) {
+      v.volume = volume;
+    }
     flashVolume();
   };
 
@@ -708,7 +756,8 @@ function VideoPane({ video, name }) {
   }
 
   if (youtubeId) {
-    const embedUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&rel=0&modestbranding=1&playsinline=1`;
+    // YouTube: start muted (mute=1). User unmutes in the YT player.
+    const embedUrl = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1`;
     return (
       <div className="h-[300px]">
         <div className="relative h-full w-full rounded-2xl overflow-hidden bg-black">
@@ -735,6 +784,7 @@ function VideoPane({ video, name }) {
           autoPlay
           loop
           playsInline
+          muted
           preload="metadata"
           onTimeUpdate={onTimeUpdate}
           className="absolute inset-0 w-full h-full object-cover"
