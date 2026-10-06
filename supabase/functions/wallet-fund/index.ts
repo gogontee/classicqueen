@@ -17,7 +17,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Read env vars INSIDE the handler so they're resolved after injection
     const FLW_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -38,13 +37,16 @@ serve(async (req: Request) => {
     const body = await req.json();
     console.log("[wallet-fund] body:", JSON.stringify(body));
 
-    const { user_id, amount, tx_ref, transaction_id } = body;
+    const { user_id, amount, currency, tx_ref, transaction_id } = body;
 
     if (!user_id || !amount || !tx_ref || !transaction_id) {
       throw new Error(
         `Missing required fields: user_id=${!!user_id} amount=${!!amount} tx_ref=${!!tx_ref} transaction_id=${!!transaction_id}`
       );
     }
+
+    const expectedCurrency = currency || "USD";
+    const amountUSD = Number(amount);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -77,7 +79,6 @@ serve(async (req: Request) => {
 
     const verifyData = await verifyRes.json();
 
-    const amountUSD = Number(amount);
     const flwAmount = Number(verifyData?.data?.amount);
     const flwCurrency = verifyData?.data?.currency;
 
@@ -85,7 +86,8 @@ serve(async (req: Request) => {
     console.log("[wallet-fund] FLW data status:", verifyData?.data?.status);
     console.log("[wallet-fund] FLW currency:", flwCurrency);
     console.log("[wallet-fund] FLW amount:", flwAmount);
-    console.log("[wallet-fund] expected USD:", amountUSD);
+    console.log("[wallet-fund] expected currency:", expectedCurrency);
+    console.log("[wallet-fund] wallet credit (USD):", amountUSD);
 
     if (
       verifyData.status !== "success" ||
@@ -96,22 +98,58 @@ serve(async (req: Request) => {
       );
     }
 
-    if (flwCurrency && flwCurrency !== "USD") {
+    // 3. Ensure the currency Flutterwave charged matches what the client said
+    if (flwCurrency && flwCurrency !== expectedCurrency) {
       throw new Error(
-        `Unexpected currency from FLW: ${flwCurrency}. Expected USD.`
+        `Currency mismatch. Client sent ${expectedCurrency}, FLW returned ${flwCurrency}.`
       );
     }
 
-    // Allow a small tolerance in case of rounding at Flutterwave's end
-    if (flwAmount < amountUSD - 0.01) {
-      throw new Error(
-        `Payment amount too low. Expected $${amountUSD.toFixed(
-          2
-        )}, got $${flwAmount.toFixed(2)}`
+    // 4. Server-side amount verification
+    if (expectedCurrency === "USD") {
+      // For USD, verify the charged amount covers the expected wallet credit
+      if (flwAmount < amountUSD - 0.01) {
+        throw new Error(
+          `Payment amount too low. Expected $${amountUSD.toFixed(
+            2
+          )}, got $${flwAmount.toFixed(2)}`
+        );
+      }
+    } else {
+      // For non-USD, fetch the rate again server-side and confirm the
+      // amount Flutterwave charged matches what the server computes.
+      // This prevents a client from sending a larger `amount` than what
+      // they actually paid for.
+      console.log("[wallet-fund] verifying rate for:", expectedCurrency);
+
+      const rateRes = await fetch(
+        `https://api.flutterwave.com/v3/transfers/rates?amount=${amountUSD}&destination_currency=USD&source_currency=${expectedCurrency}`,
+        { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } }
       );
+      const rateData = await rateRes.json();
+
+      const expectedLocalAmount = Number(rateData?.data?.source?.amount);
+
+      console.log("[wallet-fund] expected local amount:", expectedLocalAmount);
+      console.log("[wallet-fund] FLW charged amount:", flwAmount);
+
+      if (!expectedLocalAmount || Number.isNaN(expectedLocalAmount)) {
+        throw new Error(
+          `Could not verify rate for ${expectedCurrency}. FLW rate endpoint returned: ${JSON.stringify(
+            rateData
+          )}`
+        );
+      }
+
+      // Allow 1-unit tolerance for rounding on Flutterwave's side
+      if (flwAmount < expectedLocalAmount - 1) {
+        throw new Error(
+          `Amount too low for ${expectedCurrency}. Expected ${expectedLocalAmount}, got ${flwAmount}`
+        );
+      }
     }
 
-    // 3. Credit wallet atomically (in USD)
+    // 5. Credit wallet atomically (always in USD)
     console.log("[wallet-fund] crediting wallet for user:", user_id);
     const { data: creditResult, error } = await supabase.rpc("credit_wallet", {
       p_user_id: user_id,
@@ -120,7 +158,8 @@ serve(async (req: Request) => {
       p_metadata: {
         flw_transaction_id: transaction_id,
         flw_amount: flwAmount,
-        flw_currency: flwCurrency || "USD",
+        flw_currency: flwCurrency || expectedCurrency,
+        wallet_credit_usd: amountUSD,
       },
     });
 
