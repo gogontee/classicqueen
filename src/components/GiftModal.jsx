@@ -24,9 +24,6 @@ import { createClient } from '@/utils/supabase/client';
 import { useNetworkError, isNetworkError } from '@/contexts/NetworkErrorContext';
 import { normalizePaymentMethod } from '@/lib/paymentMethods';
 
-// USD → NGN conversion — must match VoteModal, FundWalletModal, and wallet-fund edge function
-const USD_TO_NGN = 1500;
-
 const FLW_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
 /**
@@ -394,7 +391,6 @@ export default function GiftModal({
       return;
     }
 
-    const totalNGN = Math.round(selectedGift.amount * USD_TO_NGN);
     const reference = `GIFT_FLW_${Date.now()}_${Math.random()
       .toString(36)
       .substring(2, 10)}`;
@@ -403,8 +399,8 @@ export default function GiftModal({
       window.FlutterwaveCheckout({
         public_key: FLW_PUBLIC_KEY,
         tx_ref: reference,
-        amount: totalNGN,
-        currency: 'NGN',
+        amount: selectedGift.amount,
+        currency: 'USD',
         payment_options: 'card',
         customer: { email, name },
         customizations: {
@@ -458,8 +454,6 @@ export default function GiftModal({
     name,
   }) => {
     try {
-      const totalNGN = Math.round(amount * USD_TO_NGN);
-
       const row = {
         user_id: currentUser?.id ?? null,
         guest_email: currentUser ? null : email,
@@ -477,8 +471,6 @@ export default function GiftModal({
         status: 'completed',
         metadata: {
           amount_usd: amount,
-          amount_ngn_charged: totalNGN,
-          usd_to_ngn_rate: USD_TO_NGN,
           raw_payment_method: rawMethod,
           raw_gateway_response: rawResponse,
         },
@@ -568,7 +560,6 @@ export default function GiftModal({
   };
 
   const totalUSD = selectedGift?.amount ?? 0;
-  const totalNGN = selectedGift ? selectedGift.amount * USD_TO_NGN : 0;
   const walletEnough = walletBalance >= totalUSD;
 
   // ---------- Render ----------
@@ -979,12 +970,6 @@ export default function GiftModal({
                         'Select a Gift'
                       )}
                     </button>
-
-                    {paymentMethod === 'card' && totalNGN > 0 && (
-                      <p className="text-[10px] text-white/40 text-center mt-2">
-                        Charged as ₦{totalNGN.toLocaleString()} to your card
-                      </p>
-                    )}
 
                     <p className="text-[10px] text-white/40 text-center mt-2">
                       By proceeding, you agree to our Terms of Service

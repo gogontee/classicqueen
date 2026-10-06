@@ -3,9 +3,6 @@ import { useState } from "react";
 import { FlutterWaveButton, closePaymentModal } from "flutterwave-react-v3";
 import { createClient } from "@/utils/supabase/client";
 
-// Must match the value in wallet-fund/index.ts
-const USD_TO_NGN = 1500;
-
 export default function FundWalletModal({
   isOpen,
   onClose,
@@ -22,13 +19,12 @@ export default function FundWalletModal({
   if (!isOpen) return null;
 
   const amountUSD = Number(amount) || 0;
-  const amountNGN = Math.round(amountUSD * USD_TO_NGN);
 
   const config = {
     public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY,
     tx_ref: `WALLET_${userId}_${Date.now()}`,
-    amount: amountNGN,
-    currency: "NGN",
+    amount: amountUSD,
+    currency: "USD",
     payment_options:
       "card, mobilemoneyghana, mobilemoneyuganda, mobilemoneykenya, ussd, banktransfer",
     customer: {

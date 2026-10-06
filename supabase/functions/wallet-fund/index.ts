@@ -2,9 +2,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Must match USD_TO_NGN in FundWalletModal.jsx and VoteModal.jsx
-const USD_TO_NGN = 1500;
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -80,35 +77,37 @@ serve(async (req: Request) => {
 
     const verifyData = await verifyRes.json();
 
-    // Flutterwave returns the amount in the charge currency (NGN).
-    // We compare it against the expected NGN amount derived from the USD amount.
     const amountUSD = Number(amount);
-    const expectedNGN = Math.round(amountUSD * USD_TO_NGN);
-    const flwAmountNGN = Number(verifyData?.data?.amount);
+    const flwAmount = Number(verifyData?.data?.amount);
+    const flwCurrency = verifyData?.data?.currency;
 
     console.log("[wallet-fund] FLW status:", verifyData?.status);
     console.log("[wallet-fund] FLW data status:", verifyData?.data?.status);
-    console.log("[wallet-fund] FLW currency:", verifyData?.data?.currency);
-    console.log("[wallet-fund] FLW amount (NGN):", flwAmountNGN);
-    console.log("[wallet-fund] expected NGN:", expectedNGN);
-    console.log("[wallet-fund] wallet credit (USD):", amountUSD);
+    console.log("[wallet-fund] FLW currency:", flwCurrency);
+    console.log("[wallet-fund] FLW amount:", flwAmount);
+    console.log("[wallet-fund] expected USD:", amountUSD);
 
-    if (verifyData.status !== "success" || verifyData.data?.status !== "successful") {
+    if (
+      verifyData.status !== "success" ||
+      verifyData.data?.status !== "successful"
+    ) {
       throw new Error(
         `Payment verification failed. FLW returned: ${JSON.stringify(verifyData)}`
       );
     }
 
-    if (verifyData.data?.currency && verifyData.data.currency !== "NGN") {
+    if (flwCurrency && flwCurrency !== "USD") {
       throw new Error(
-        `Unexpected currency from FLW: ${verifyData.data.currency}. Expected NGN.`
+        `Unexpected currency from FLW: ${flwCurrency}. Expected USD.`
       );
     }
 
     // Allow a small tolerance in case of rounding at Flutterwave's end
-    if (flwAmountNGN < expectedNGN - 1) {
+    if (flwAmount < amountUSD - 0.01) {
       throw new Error(
-        `Payment amount too low. Expected ₦${expectedNGN}, got ₦${flwAmountNGN}`
+        `Payment amount too low. Expected $${amountUSD.toFixed(
+          2
+        )}, got $${flwAmount.toFixed(2)}`
       );
     }
 
@@ -120,9 +119,8 @@ serve(async (req: Request) => {
       p_reference: tx_ref,
       p_metadata: {
         flw_transaction_id: transaction_id,
-        flw_amount_ngn: flwAmountNGN,
-        flw_currency: verifyData.data?.currency || "NGN",
-        usd_to_ngn_rate: USD_TO_NGN,
+        flw_amount: flwAmount,
+        flw_currency: flwCurrency || "USD",
       },
     });
 
