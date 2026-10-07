@@ -10,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 import { normalizePaymentMethod } from "@/lib/paymentMethods";
 import { getUserCurrency } from "@/lib/currency";
+import { formatPoints } from "@/lib/points";
 import PaymentMethodSelector from "@/components/vote/PaymentMethodSelector";
 import PoweredByFooter from "@/components/vote/PoweredByFooter";
 
@@ -214,14 +215,20 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   const processWalletPayment = async () => {
     const totalUSD = voteCount * PRICE_PER_VOTE_USD;
     if (walletBalance < totalUSD) {
-      setError(`Insufficient wallet balance. You have $${walletBalance.toFixed(2)}, need $${totalUSD.toFixed(2)}.`);
+      setError(`Insufficient points balance. You have ${formatPoints(walletBalance)}, need ${formatPoints(totalUSD)}.`);
       setProcessing(false); setPaymentStep("selection"); return;
     }
     const reference = `VOTE_WALLET_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
     try {
       const { data: spendResult, error: spendError } = await supabase.rpc("spend_wallet", {
         p_user_id: currentUser.id, p_amount: totalUSD, p_reference: reference,
-        p_metadata: { candidate_id: candidate.id, candidate_username: candidate.username, votes: voteCount },
+        p_metadata: {
+          source: "vote",
+          candidate_id: candidate.id,
+          candidate_username: candidate.username,
+          candidate_name: candidate.full_name || candidate.username,
+          votes: voteCount,
+        },
       });
       if (spendError) throw spendError;
       if (!spendResult?.success) throw new Error(spendResult?.error || "Failed to debit wallet");
@@ -335,7 +342,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
 
       setPaymentStep("success");
       setProcessing(false);
-      if (onVoteSuccess) onVoteSuccess(voteCount, `$${totalUSD.toFixed(2)}`);
+      if (onVoteSuccess) onVoteSuccess(voteCount, formatPoints(totalUSD));
       setTimeout(() => onClose(), 2500);
     } catch (err) {
       console.error("Vote verification failed:", err);
@@ -437,7 +444,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                     You&apos;ve cast {voteCount} vote{voteCount > 1 ? "s" : ""} for {candidate?.full_name || `@${candidate?.username}`}
                   </p>
                   <div className="bg-white/5 rounded-lg p-3">
-                    <p className="text-yellow-400 font-semibold text-base">Total: ${totalUSD.toFixed(2)}</p>
+                    <p className="text-yellow-400 font-semibold text-base">Total: {formatPoints(totalUSD)}</p>
                   </div>
                 </div>
               )}
@@ -460,8 +467,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                       {quickVotes.map((votes) => (
                         <button key={votes} onClick={() => handleQuickVoteSelect(votes)}
                           className={`p-2 rounded-lg border transition-all ${voteCount === votes && !customVotes ? "border-[#c9a227] bg-[#c9a227]/15" : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"}`}>
-                          <span className="block text-base font-bold text-white">{votes}</span>
-                          <span className="text-[10px] text-[#c9a227]">${votes}</span>
+                          <span className="block text-sm font-bold text-white">{votes} vote{votes > 1 ? "s" : ""}</span>
                         </button>
                       ))}
                     </div>
@@ -471,7 +477,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                     <input type="text" inputMode="numeric" value={customVotes} onChange={handleCustomVoteChange}
                       placeholder="Enter number of votes"
                       className="w-full px-3 py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-base text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none text-center" />
-                    <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">$1 = 1 vote</p>
+                    <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">1 vote = 1 pt</p>
                   </div>
                   <div className="p-3 border-b border-[#9A7B4F]/20">
                     <div className="bg-white/5 rounded-lg p-3 border border-[#9A7B4F]/20">
@@ -481,7 +487,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-white/60">Total:</span>
-                        <span className="text-lg font-bold text-[#c9a227]">${totalUSD.toFixed(2)}</span>
+                        <span className="text-lg font-bold text-[#c9a227]">{formatPoints(totalUSD)}</span>
                       </div>
                     </div>
                   </div>
@@ -524,8 +530,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                             You&apos;ll be charged{" "}
                             <span className="font-semibold text-[#fb923c]">
                               {chargeAmount.toLocaleString()} {userCurrency}
-                            </span>{" "}
-                            ≈ ${totalUSD.toFixed(2)}
+                            </span>
                           </p>
                         ) : (
                           <p className="text-[10px] text-white/75 leading-snug">
@@ -568,7 +573,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                     >
                       {processing ? (<><Loader className="w-4 h-4 animate-spin" />Processing…</>) :
                         paymentMethod === "card" && fetchingRate ? (<><Loader className="w-4 h-4 animate-spin" />Fetching rate…</>) :
-                        (<>Click to Pay ${totalUSD.toFixed(2)}<ChevronRight className="w-4 h-4" /></>)
+                        (<>Click to Pay {formatPoints(totalUSD)}<ChevronRight className="w-4 h-4" /></>)
                       }
                     </button>
                     <PoweredByFooter isLoggedIn={!!currentUser} />
@@ -643,7 +648,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                       Sign Up to Use Your Wallet
                     </h3>
                     <p className="text-xs text-white/75 leading-relaxed mb-1">
-                      Sign up free, fund once, and vote in one tap — no cards or transfers needed.
+                      Sign up free, buy points once, and vote in one tap — no cards or transfers needed.
                     </p>
                     <p className="text-[11px] text-[#c9a227] font-semibold mb-5">Fast. Easy. Secure.</p>
                     <div className="space-y-2">

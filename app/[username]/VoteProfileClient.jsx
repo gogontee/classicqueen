@@ -89,7 +89,7 @@ Please help vote for me — I need your votes to qualify.
 HOW TO VOTE:
 1. Click this link to vote: ${getShareUrl()}
 2. Click on the VOTE button
-3. Each vote is $1 — cast as many as you can to support me
+3. Each vote is 1 pt — cast as many as you can to support me
 
 I deeply appreciate your support and hope it helps me emerge as Classic Queen International 2026.`;
   };
@@ -432,7 +432,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
                 </div>
                 <p className="text-sm text-white/80 leading-relaxed pt-0.5">
                   Choose how many votes you want to cast. Each vote is{' '}
-                  <strong className="text-white">$1</strong>.
+                  <strong className="text-white">1 pt</strong>.
                 </p>
               </div>
               <div className="flex items-start gap-3">

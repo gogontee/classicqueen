@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Gift, Loader, ArrowRightCircle, Info } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import { formatPoints } from "@/lib/points";
 
 export default function GiftTransactionsModal({
   isOpen,
@@ -90,7 +91,6 @@ export default function GiftTransactionsModal({
   };
 
   // Authoritative figures come from the candidate row, NOT the fetched list.
-  // This keeps the totals correct even if the fetch is slow, empty, or fails.
   const totalUSD = Number(candidate?.gift_total_usd ?? 0);
   const giftCount = Number(candidate?.gift_count ?? 0);
   const balance = Number(candidate?.gift_balance_usd ?? 0);
@@ -154,7 +154,7 @@ export default function GiftTransactionsModal({
                       Total Received
                     </p>
                     <p className="text-xl font-bold text-[#f5d76e] leading-tight">
-                      ${totalUSD.toFixed(2)}
+                      {formatPoints(totalUSD)}
                     </p>
                   </div>
                   <div className="text-right">
@@ -162,7 +162,7 @@ export default function GiftTransactionsModal({
                       Convertible
                     </p>
                     <p className="text-xl font-bold text-green-400 leading-tight">
-                      ${balance.toFixed(2)}
+                      {formatPoints(balance)}
                     </p>
                   </div>
                   <div className="col-span-2 pt-2 border-t border-[#c9a227]/20">
@@ -268,7 +268,7 @@ export default function GiftTransactionsModal({
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-sm font-bold text-[#f5d76e]">
-                            ${Number(g.amount).toFixed(2)}
+                            {formatPoints(Number(g.amount))}
                           </p>
                         </div>
                       </div>
@@ -297,12 +297,12 @@ export default function GiftTransactionsModal({
               >
                 <ArrowRightCircle size={14} />
                 {canConvert
-                  ? `Convert Gift Balance · $${balance.toFixed(2)}`
-                  : "No Gift Balance to Convert"}
+                  ? `Convert to Votes · ${formatPoints(balance)}`
+                  : "No Points to Convert"}
               </button>
               <p className="text-[9px] text-white/40 text-center mt-2">
                 {canConvert
-                  ? "Choose any amount — from $1 up to your full balance."
+                  ? "Choose any amount — from 1 pt up to your full balance."
                   : "Keep receiving gifts to unlock conversions."}
               </p>
             </div>

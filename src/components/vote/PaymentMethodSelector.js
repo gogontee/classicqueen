@@ -1,6 +1,7 @@
 "use client";
 
 import { Wallet, CreditCard, ShieldCheck, Zap } from "lucide-react";
+import { formatPoints } from "@/lib/points";
 
 export default function PaymentMethodSelector({
   method,
@@ -91,7 +92,7 @@ export default function PaymentMethodSelector({
               ? "Sign up free"
               : walletLoading
               ? "…"
-              : `$${walletBalance.toFixed(2)}`}
+              : formatPoints(walletBalance)}
           </span>
         </button>
 
@@ -126,9 +127,9 @@ export default function PaymentMethodSelector({
           <Zap size={12} className="text-[#c9a227] flex-shrink-0 mt-0.5" />
           <p className="text-[10px] text-white/75 leading-snug">
             <span className="font-semibold text-[#c9a227]">
-              ${totalUSD.toFixed(2)}
+              {formatPoints(totalUSD)}
             </span>{" "}
-            will be deducted from your Classic Queen wallet.
+            will be deducted from your points balance.
             <span className="block text-white/55 mt-0.5">
               Fast, easy, one-tap voting — no cards or transfers needed.
             </span>
@@ -138,7 +139,7 @@ export default function PaymentMethodSelector({
 
       {method === "wallet" && isLoggedIn && !walletEnough && (
         <p className="text-[10px] text-red-400 mt-2 text-center">
-          Insufficient balance — fund your wallet from the dashboard.
+          Insufficient balance — buy points from the dashboard.
         </p>
       )}
 

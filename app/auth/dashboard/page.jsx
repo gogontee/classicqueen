@@ -16,6 +16,9 @@ import {
   Gift,
   Sparkles,
   History,
+  Wallet,
+  Star,
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
 import EditProfileModal from "@/components/EditProfileModal";
@@ -26,8 +29,10 @@ import TransactionList from "@/components/TransactionList";
 import GiftTransactionsModal from "@/components/GiftTransactionsModal";
 import ConvertGiftModal from "@/components/ConvertGiftModal";
 import ConversionHistoryModal from "@/components/ConversionHistoryModal";
+import HowModal from "@/components/how/HowModal";
 import { useWallet } from "@/hooks/useWallet";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import { formatPoints } from "@/lib/points";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -51,6 +56,9 @@ export default function Dashboard() {
   const [giftModalOpen, setGiftModalOpen] = useState(false);
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+
+  // How-to guide modal
+  const [howGuide, setHowGuide] = useState(null); // 'vote' | 'gift' | 'fund' | 'favorite' | null
 
   // Wallet
   const { balance, fetchBalance, ensureWallet } = useWallet(profile?.id);
@@ -273,6 +281,14 @@ export default function Dashboard() {
   const giftBalance = Number(candidateSelf?.gift_balance_usd ?? 0);
   const canConvert = giftBalance >= 1;
 
+  // How-to guide definitions
+  const howGuides = [
+    { key: "vote", label: "How to Vote", icon: Heart },
+    { key: "gift", label: "How to Gift", icon: Gift },
+    { key: "fund", label: "How to Buy Points", icon: Wallet },
+    { key: "favorite", label: "Add Favorite", icon: Star },
+  ];
+
   return (
     <section
       className="min-h-screen"
@@ -464,7 +480,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-xl font-bold text-[#c9a227] leading-tight">
-                      ${Number(candidateSelf.gift_total_usd ?? 0).toFixed(2)}
+                      {formatPoints(candidateSelf.gift_total_usd ?? 0)}
                     </p>
                     <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
                       Total Value
@@ -472,7 +488,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-xl font-bold text-green-600 leading-tight">
-                      ${Number(candidateSelf.gift_balance_usd ?? 0).toFixed(2)}
+                      {formatPoints(candidateSelf.gift_balance_usd ?? 0)}
                     </p>
                     <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
                       Convertible
@@ -535,6 +551,32 @@ export default function Dashboard() {
           />
           <div className="hidden md:block">
             <TransactionList userId={profile.id} visibleCount={4} />
+          </div>
+        </div>
+
+        {/* ===== How-to guides ===== */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-3">
+            <HelpCircle size={14} className="text-[#9A7B4F]" />
+            <h3 className="text-sm font-bold text-[#2E1503]">
+              Need help? Quick guides
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {howGuides.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setHowGuide(key)}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-[#9A7B4F]/25 bg-white hover:bg-[#faf6ee] hover:border-[#9A7B4F]/50 transition text-center"
+              >
+                <div className="w-8 h-8 rounded-full bg-[#9A7B4F]/10 flex items-center justify-center">
+                  <Icon size={14} className="text-[#9A7B4F]" />
+                </div>
+                <span className="text-[10px] font-semibold text-[#6b4423] leading-tight">
+                  {label}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -642,6 +684,13 @@ export default function Dashboard() {
         isOpen={historyModalOpen}
         onClose={() => setHistoryModalOpen(false)}
         candidate={candidateSelf}
+      />
+
+      {/* How-to guide modal */}
+      <HowModal
+        isOpen={!!howGuide}
+        onClose={() => setHowGuide(null)}
+        guide={howGuide}
       />
     </section>
   );

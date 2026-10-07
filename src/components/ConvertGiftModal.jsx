@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import { formatPoints } from "@/lib/points";
 
 export default function ConvertGiftModal({
   isOpen,
@@ -121,9 +122,9 @@ export default function ConvertGiftModal({
       const { data, error: rpcError } = await supabase.rpc(
         "convert_gift_to_votes",
         {
-          p_candidate_id: candidate.id, // source: whose balance is debited
+          p_candidate_id: candidate.id,
           p_amount_usd: amountNum,
-          p_target_candidate_id: targetCandidate?.id ?? candidate.id, // target
+          p_target_candidate_id: targetCandidate?.id ?? candidate.id,
           p_user_id: null,
         }
       );
@@ -133,7 +134,6 @@ export default function ConvertGiftModal({
         throw new Error(data?.error || "Conversion failed");
       }
 
-      // Attach target info for the success screen
       setResult({
         ...data,
         target_full_name:
@@ -202,7 +202,7 @@ export default function ConvertGiftModal({
                 </h3>
                 <p className="text-xs text-white/60 mb-5">
                   {result?.is_self
-                    ? "Your gift balance was converted into votes"
+                    ? "Your gift points were converted into votes"
                     : `Votes sent to ${result?.target_full_name}`}
                 </p>
 
@@ -231,14 +231,14 @@ export default function ConvertGiftModal({
                     <span>
                       Converted:{" "}
                       <span className="text-white font-semibold">
-                        ${Number(result?.amount_usd ?? 0).toFixed(2)}
+                        {formatPoints(Number(result?.amount_usd ?? 0))}
                       </span>
                     </span>
                     <span className="text-white/20">·</span>
                     <span>
                       Remaining:{" "}
                       <span className="text-white font-semibold">
-                        ${Number(result?.balance_after ?? 0).toFixed(2)}
+                        {formatPoints(Number(result?.balance_after ?? 0))}
                       </span>
                     </span>
                   </div>
@@ -277,10 +277,10 @@ export default function ConvertGiftModal({
                     }}
                   >
                     <p className="text-[10px] uppercase tracking-wider text-[#c9a227] font-semibold mb-1 flex items-center gap-1.5">
-                      <Coins size={11} /> Gift Balance Available
+                      <Coins size={11} /> Gift Points Available
                     </p>
                     <p className="text-2xl font-bold text-[#f5d76e] leading-tight">
-                      ${balance.toFixed(2)}
+                      {formatPoints(balance)}
                     </p>
                     <p className="text-[10px] text-white/50 mt-1">
                       Unconverted gifts ready to be turned into votes.
@@ -290,7 +290,7 @@ export default function ConvertGiftModal({
                   {balance < 1 ? (
                     <div className="rounded-lg border border-red-500/25 bg-red-500/10 p-3 text-center">
                       <p className="text-xs text-red-300">
-                        You need at least $1 in your gift balance to convert.
+                        You need at least 1 pt in your gift balance to convert.
                         Keep receiving gifts — you&apos;ll be able to convert
                         soon.
                       </p>
@@ -483,7 +483,7 @@ export default function ConvertGiftModal({
                                 }}
                               >
                                 <span className="block text-[11px] font-bold text-white">
-                                  ${p}
+                                  {p} pts
                                 </span>
                               </button>
                             ))}
@@ -498,7 +498,7 @@ export default function ConvertGiftModal({
                             Amount to convert
                           </p>
                           <p className="text-[10px] text-white/40">
-                            Max: ${balance.toFixed(2)}
+                            Max: {formatPoints(balance)}
                           </p>
                         </div>
                         <input
@@ -522,8 +522,8 @@ export default function ConvertGiftModal({
                       {/* Numeric input */}
                       <div>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#c9a227] font-bold text-base">
-                            $
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#c9a227] font-bold text-sm">
+                            pts
                           </span>
                           <input
                             type="number"
@@ -533,13 +533,13 @@ export default function ConvertGiftModal({
                             value={amount}
                             onChange={(e) => setAmount(e.target.value)}
                             placeholder="Enter amount"
-                            className="w-full pl-8 pr-3 py-3 bg-white/5 border border-[#c9a227]/30 rounded-lg text-lg text-white placeholder-white/30 focus:border-[#c9a227] focus:outline-none text-center font-bold"
+                            className="w-full pl-12 pr-3 py-3 bg-white/5 border border-[#c9a227]/30 rounded-lg text-lg text-white placeholder-white/30 focus:border-[#c9a227] focus:outline-none text-center font-bold"
                           />
                         </div>
                         {amountNum > balance && (
                           <p className="text-[10px] text-red-400 mt-1.5 text-center">
-                            Amount exceeds your gift balance of $
-                            {balance.toFixed(2)}.
+                            Amount exceeds your gift balance of{" "}
+                            {formatPoints(balance)}.
                           </p>
                         )}
                       </div>
@@ -561,7 +561,7 @@ export default function ConvertGiftModal({
                               Remaining balance
                             </span>
                             <span className="text-sm font-semibold text-white">
-                              ${remaining.toFixed(2)}
+                              {formatPoints(remaining)}
                             </span>
                           </div>
                         </div>

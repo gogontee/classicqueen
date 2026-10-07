@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { FlutterWaveButton, closePaymentModal } from "flutterwave-react-v3";
 import { createClient } from "@/utils/supabase/client";
 import { getUserCurrency } from "@/lib/currency";
+import { formatPoints } from "@/lib/points";
 
 export default function FundWalletModal({
   isOpen,
@@ -16,7 +17,7 @@ export default function FundWalletModal({
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState(""); // "", "fetching-rate", "processing", "error"
   const [errorMsg, setErrorMsg] = useState("");
-  const [chargeAmount, setChargeAmount] = useState(null); // amount in user's local currency
+  const [chargeAmount, setChargeAmount] = useState(null);
   const [userCurrency, setUserCurrency] = useState("USD");
 
   // Reset when closed
@@ -32,11 +33,14 @@ export default function FundWalletModal({
 
   if (!isOpen) return null;
 
-  const amountUSD = Number(amount) || 0;
+  // `amount` is the number of points the user wants to buy.
+  // 1 pt = 1 USD in the backend.
+  const amountPoints = Number(amount) || 0;
+  const amountUSD = amountPoints; // 1:1
 
   const handleFund = async () => {
-    if (amountUSD < 1) {
-      setErrorMsg("Please enter an amount of at least $1.");
+    if (amountPoints < 1) {
+      setErrorMsg("Please enter at least 1 point.");
       return;
     }
 
@@ -85,15 +89,15 @@ export default function FundWalletModal({
       name: name || "",
     },
     customizations: {
-      title: "Fund Your Wallet",
-      description: `Add $${amountUSD.toFixed(2)} to vote for your favorite queen`,
+      title: "Buy Points",
+      description: `Add ${formatPoints(amountPoints)} to vote for your favorite queen`,
       logo: "/cqi.png",
     },
   };
 
   const fwConfig = {
     ...config,
-    text: `Fund $${amountUSD.toFixed(2)}`,
+    text: `Buy ${formatPoints(amountPoints)}`,
     callback: async (response) => {
       setStatus("processing");
       setErrorMsg("");
@@ -140,13 +144,15 @@ export default function FundWalletModal({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-        <h3 className="text-lg font-bold text-[#2E1503] mb-4">Fund Wallet</h3>
+        <h3 className="text-lg font-bold text-[#2E1503] mb-4">
+          Buy Points
+        </h3>
 
         <input
           type="number"
           min="1"
           step="1"
-          placeholder="Amount in USD"
+          placeholder="Number of points"
           value={amount}
           onChange={(e) => {
             setAmount(e.target.value);
@@ -163,8 +169,7 @@ export default function FundWalletModal({
             You&apos;ll be charged{" "}
             <span className="font-semibold">
               {chargeAmount} {userCurrency}
-            </span>{" "}
-            ≈ ${amountUSD.toFixed(2)}
+            </span>
           </p>
         )}
 
@@ -176,7 +181,7 @@ export default function FundWalletModal({
 
         {status === "processing" && (
           <p className="text-xs text-center text-[#6b4423] mb-3">
-            Crediting your wallet…
+            Adding points to your wallet…
           </p>
         )}
 
@@ -191,7 +196,7 @@ export default function FundWalletModal({
           <button
             onClick={handleFund}
             disabled={
-              amountUSD < 1 ||
+              amountPoints < 1 ||
               status === "processing" ||
               status === "fetching-rate"
             }

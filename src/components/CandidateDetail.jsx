@@ -14,11 +14,15 @@ import {
   VolumeX,
   Maximize2,
   Share2,
+  Wallet,
+  Star,
+  HelpCircle,
 } from "lucide-react";
 import TrophyList from "@/components/TrophyList";
 import VoteModal from "@/components/VoteModal";
 import GiftModal from "@/components/GiftModal";
 import VoteCountdown from "@/components/VoteCountdown";
+import HowModal from "@/components/how/HowModal";
 import { createClient } from "@/utils/supabase/client";
 
 export default function CandidateDetail({ candidate }) {
@@ -29,6 +33,7 @@ export default function CandidateDetail({ candidate }) {
   const [isHovered, setIsHovered] = useState(false);
   const [voteOpen, setVoteOpen] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [howGuide, setHowGuide] = useState(null); // 'vote' | 'gift' | 'fund' | 'favorite' | null
   const [displayedVoteCount, setDisplayedVoteCount] = useState(
     candidate.vote_count ?? 0
   );
@@ -74,6 +79,14 @@ export default function CandidateDetail({ candidate }) {
 
   const hasDesktopHero = !!candidate.desktop_hero;
   const hasMobileHero = !!candidate.mobile_hero;
+
+  // How-to guide definitions
+  const howGuides = [
+    { key: "vote", label: "How to Vote", icon: Heart },
+    { key: "gift", label: "How to Gift", icon: Gift },
+    { key: "fund", label: "How to Buy Points", icon: Wallet },
+    { key: "favorite", label: "Add Favorite", icon: Star },
+  ];
 
   return (
     <main className="min-h-screen bg-white -mt-2">
@@ -468,6 +481,34 @@ export default function CandidateDetail({ candidate }) {
         {tab === "trophy" && <TrophyList candidateId={candidate.id} />}
       </section>
 
+      {/* ============ HOW-TO GUIDES ============ */}
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 pb-8">
+        <div className="rounded-2xl border border-[#9A7B4F]/30 bg-[#faf6ee] p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <HelpCircle size={15} className="text-[#9A7B4F]" />
+            <h3 className="text-sm sm:text-base font-bold text-[#2E1503]">
+              Need help? Quick guides
+            </h3>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {howGuides.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setHowGuide(key)}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-[#9A7B4F]/25 bg-white hover:bg-[#f3ead8] hover:border-[#9A7B4F]/60 transition text-center"
+              >
+                <div className="w-9 h-9 rounded-full bg-[#9A7B4F]/10 flex items-center justify-center">
+                  <Icon size={15} className="text-[#9A7B4F]" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-[#6b4423] leading-tight">
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <VoteModal
         isOpen={voteOpen}
         onClose={() => setVoteOpen(false)}
@@ -481,6 +522,13 @@ export default function CandidateDetail({ candidate }) {
         candidate={candidate}
         onGiftSuccess={() => {}}
         onGiftError={() => {}}
+      />
+
+      {/* How-to guide modal */}
+      <HowModal
+        isOpen={!!howGuide}
+        onClose={() => setHowGuide(null)}
+        guide={howGuide}
       />
     </main>
   );

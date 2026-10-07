@@ -5,6 +5,7 @@ import { Wallet, Plus, ListOrdered, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import FundWalletModal from "./FundWalletModal";
 import TransactionList from "./TransactionList";
+import { formatPoints } from "@/lib/points";
 
 export default function WalletCard({
   balance,
@@ -21,9 +22,9 @@ export default function WalletCard({
       <div className="bg-gradient-to-br from-[#2E1503] to-[#6b4423] rounded-2xl p-5 text-white">
         <div className="flex items-center gap-3 mb-3">
           <Wallet size={20} />
-          <span className="text-sm opacity-80">Wallet Balance</span>
+          <span className="text-sm opacity-80">Points Balance</span>
         </div>
-        <p className="text-3xl font-bold">${balance.toFixed(2)}</p>
+        <p className="text-3xl font-bold">{formatPoints(balance)}</p>
 
         {/* Buttons: Fund (always), View Transactions (mobile only) */}
         <div className="mt-4 flex items-center gap-2">
@@ -31,7 +32,7 @@ export default function WalletCard({
             onClick={() => setFundOpen(true)}
             className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/30 text-sm font-semibold flex items-center justify-center gap-2 transition"
           >
-            <Plus size={14} /> Fund Wallet
+            <Plus size={14} /> Buy Points
           </button>
 
           {/* Mobile-only: view transactions */}

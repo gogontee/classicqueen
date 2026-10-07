@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { ArrowDownLeft, ArrowUpRight, Loader, Filter } from "lucide-react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { ArrowDownLeft, ArrowUpRight, Loader } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import { formatPoints } from "@/lib/points";
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -33,6 +34,10 @@ export default function TransactionList({
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
+  // Map of candidate_id → display name (full_name || username)
+  // Populated by a follow-up fetch for any rows missing metadata.candidate_name
+  const [candidateNames, setCandidateNames] = useState({});
+
   const fetchTransactions = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
@@ -48,6 +53,35 @@ export default function TransactionList({
       const rows = data ?? [];
       setTransactions(rows);
       onTransactionsLoaded?.(rows.length);
+
+      // ---- Resolve candidate names for rows that don't have them inline ----
+      // Collect every candidate_id referenced in metadata
+      const idsToFetch = new Set();
+      for (const t of rows) {
+        const meta = t.metadata || {};
+        const id = meta.candidate_id || meta.target_candidate_id;
+        // Skip if we already have a stored name for this row
+        const hasInlineName = !!meta.candidate_name;
+        if (id && !hasInlineName) idsToFetch.add(id);
+      }
+
+      if (idsToFetch.size > 0) {
+        const { data: cands, error: candErr } = await supabase
+          .from("candidates")
+          .select("id, full_name, username")
+          .in("id", Array.from(idsToFetch));
+
+        if (candErr) {
+          // Non-fatal — rows just fall back to generic labels
+          console.error("Candidate name lookup failed:", candErr.message);
+        } else {
+          const map = {};
+          for (const c of cands ?? []) {
+            map[c.id] = c.full_name || c.username || null;
+          }
+          setCandidateNames(map);
+        }
+      }
     } catch (err) {
       if (isNetworkError(err)) {
         reportNetworkError();
@@ -64,12 +98,16 @@ export default function TransactionList({
   }, [fetchTransactions]);
 
   // Filter
-  const filtered = transactions.filter((t) => {
-    if (filter === "all") return true;
-    if (filter === "inflow") return t.type === "credit";
-    if (filter === "outflow") return t.type === "debit";
-    return true;
-  });
+  const filtered = useMemo(
+    () =>
+      transactions.filter((t) => {
+        if (filter === "all") return true;
+        if (filter === "inflow") return t.type === "credit";
+        if (filter === "outflow") return t.type === "debit";
+        return true;
+      }),
+    [transactions, filter]
+  );
 
   // Rows visible at a glance before scrolling
   const rowHeight = 52; // px — keep in sync with the row markup
@@ -122,7 +160,11 @@ export default function TransactionList({
           style={{ maxHeight }}
         >
           {filtered.map((t) => (
-            <TransactionRow key={t.id} t={t} />
+            <TransactionRow
+              key={t.id}
+              t={t}
+              candidateNames={candidateNames}
+            />
           ))}
         </div>
       )}
@@ -147,8 +189,50 @@ export default function TransactionList({
   );
 }
 
-function TransactionRow({ t }) {
+function TransactionRow({ t, candidateNames = {} }) {
   const isCredit = t.type === "credit";
+  const meta = t.metadata || {};
+  const source = meta.source || t.payment_method;
+
+  // ---- Resolve the recipient name ----
+  // Prefer the inline name stored in metadata (new rows)
+  // Fall back to the fetched lookup keyed by candidate_id (old rows)
+  const recipientId = meta.candidate_id || meta.target_candidate_id;
+  const recipientName =
+    meta.candidate_name ||
+    meta.target_candidate_name ||
+    (recipientId ? candidateNames[recipientId] : null) ||
+    null;
+
+  // ---- Build the label ----
+  let label;
+  let sublabel = null;
+
+  if (isCredit) {
+    label = "Points Purchased";
+  } else if (source === "gift") {
+    // Gift Sent — show recipient AND gift name
+    const giftName = meta.gift_name;
+    if (recipientName && giftName) {
+      label = `Gift Sent`;
+      sublabel = `${giftName} to ${recipientName}`;
+    } else if (recipientName) {
+      label = `Gift Sent to ${recipientName}`;
+    } else if (giftName) {
+      label = `Sent ${giftName}`;
+    } else {
+      label = "Gift Sent";
+    }
+  } else if (source === "conversion") {
+    // Gift to Votes
+    label = recipientName
+      ? `Gift to Votes for ${recipientName}`
+      : "Gift to Votes";
+  } else {
+    // Vote Cast
+    label = recipientName ? `Vote Cast for ${recipientName}` : "Vote Cast";
+  }
+
   return (
     <div
       className="flex justify-between items-center gap-3 rounded-lg px-2.5 border border-[#9A7B4F]/10"
@@ -168,25 +252,44 @@ function TransactionRow({ t }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold text-[#2E1503] truncate">
-            {isCredit ? "Wallet Funded" : "Vote Cast"}
+            {label}
           </p>
-          <p className="text-[9px] text-[#6b4423]/60 truncate">
+          {sublabel ? (
+            <p className="text-[9px] text-[#6b4423]/70 truncate">
+              {sublabel}
+            </p>
+          ) : (
+            <p className="text-[9px] text-[#6b4423]/60 truncate">
+              {new Date(t.created_at).toLocaleString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col items-end flex-shrink-0">
+        <span
+          className={`text-xs font-bold ${
+            isCredit ? "text-green-600" : "text-red-500"
+          }`}
+        >
+          {isCredit ? "+" : "-"}
+          {formatPoints(Math.abs(Number(t.amount)))}
+        </span>
+        {sublabel && (
+          <span className="text-[9px] text-[#6b4423]/60">
             {new Date(t.created_at).toLocaleString(undefined, {
               month: "short",
               day: "numeric",
               hour: "numeric",
               minute: "2-digit",
             })}
-          </p>
-        </div>
+          </span>
+        )}
       </div>
-      <span
-        className={`text-xs font-bold flex-shrink-0 ${
-          isCredit ? "text-green-600" : "text-red-500"
-        }`}
-      >
-        {isCredit ? "+" : "-"}${Number(t.amount).toFixed(2)}
-      </span>
     </div>
   );
 }

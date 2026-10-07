@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, X, Users, Image as ImageIcon, Info, Phone, Home, UserPlus, Newspaper, LogIn, User as UserIcon, LayoutDashboard, LogOut } from 'lucide-react'
+import { Menu, X, Users, Image as ImageIcon, Info, Phone, Home, UserPlus, Newspaper, LogIn, User as UserIcon, LayoutDashboard, LogOut, ChevronDown } from 'lucide-react'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import VoteCountdown from '@/components/VoteCountdown'
@@ -207,27 +207,45 @@ const Header = () => {
               <div className="relative ml-4" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen((v) => !v)}
-                  className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gold-500/60 hover:border-gold-400 transition"
+                  className="group relative flex items-center gap-1.5 pl-1 pr-2 py-1 rounded-full border border-gold-500/40 hover:border-gold-400 bg-brown-800/40 hover:bg-brown-800/70 transition-all duration-200 cursor-pointer"
                   aria-label="Open user menu"
+                  aria-expanded={isDropdownOpen}
                 >
-                  {profile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.avatar_url}
-                      alt={`${profile.first_name} ${profile.last_name}`}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
+                  {/* Avatar with subtle hover ring */}
+                  <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-gold-500/60 group-hover:border-gold-400 transition">
+                    {profile.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={profile.avatar_url}
+                        alt={`${profile.first_name} ${profile.last_name}`}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-brown-700 flex items-center justify-center text-gold-300 text-xs font-bold">
+                        {initials}
+                      </div>
+                    )}
+
+                    {/* Gold hover ring overlay */}
+                    <div className="absolute inset-0 rounded-full ring-2 ring-gold-400/0 group-hover:ring-gold-400/60 transition-all duration-200" />
+                  </div>
+
+                  {/* Chevron badge — clearly signals "click for menu" */}
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gold-500 text-brown-900 shadow-sm group-hover:bg-gold-400 transition-colors">
+                    <ChevronDown
+                      size={12}
+                      strokeWidth={3}
+                      className={`transition-transform duration-200 ${
+                        isDropdownOpen ? 'rotate-180' : ''
+                      }`}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-brown-700 flex items-center justify-center text-gold-300 text-xs font-bold">
-                      {initials}
-                    </div>
-                  )}
+                  </div>
                 </button>
 
                 {isDropdownOpen && (
@@ -279,27 +297,40 @@ const Header = () => {
               <div className="relative" ref={mobileUserRef}>
                 <button
                   onClick={() => setIsMobileUserMenuOpen((v) => !v)}
-                  className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gold-500/60 hover:border-gold-400 transition"
+                  className="group relative flex items-center gap-1 pl-0.5 pr-1.5 py-0.5 rounded-full border border-gold-500/40 hover:border-gold-400 bg-brown-800/40 transition-all duration-200 cursor-pointer"
                   aria-label="Open user menu"
+                  aria-expanded={isMobileUserMenuOpen}
                 >
-                  {profile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.avatar_url}
-                      alt={`${profile.first_name} ${profile.last_name}`}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
+                  <div className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-gold-500/60 group-hover:border-gold-400 transition">
+                    {profile.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={profile.avatar_url}
+                        alt={`${profile.first_name} ${profile.last_name}`}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-brown-700 flex items-center justify-center text-gold-300 text-xs font-bold">
+                        {initials}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gold-500 text-brown-900 shadow-sm group-hover:bg-gold-400 transition-colors">
+                    <ChevronDown
+                      size={10}
+                      strokeWidth={3}
+                      className={`transition-transform duration-200 ${
+                        isMobileUserMenuOpen ? 'rotate-180' : ''
+                      }`}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-brown-700 flex items-center justify-center text-gold-300 text-xs font-bold">
-                      {initials}
-                    </div>
-                  )}
+                  </div>
                 </button>
 
                 {isMobileUserMenuOpen && (

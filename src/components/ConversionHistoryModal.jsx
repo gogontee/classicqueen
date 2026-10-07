@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
+import { formatPoints } from "@/lib/points";
 
 export default function ConversionHistoryModal({
   isOpen,
@@ -95,9 +96,9 @@ export default function ConversionHistoryModal({
       return "self";
     }
     if (row.candidate_id === candidate.id) {
-      return "sent"; // they converted gift balance to votes for someone else
+      return "sent";
     }
-    return "received"; // someone converted their gift balance to votes for this candidate
+    return "received";
   };
 
   return (
@@ -168,7 +169,7 @@ export default function ConversionHistoryModal({
                     No conversions yet
                   </p>
                   <p className="text-xs text-white/50 mt-1">
-                    When you convert gift balance to votes, it shows here.
+                    When you convert gift points to votes, it shows here.
                   </p>
                 </div>
               ) : (
@@ -179,6 +180,7 @@ export default function ConversionHistoryModal({
                       row.target?.full_name || row.target?.username || "Unknown";
                     const sourceName =
                       row.source?.full_name || row.source?.username || "Unknown";
+                    const amountPts = Number(row.amount_usd);
 
                     return (
                       <div
@@ -207,9 +209,9 @@ export default function ConversionHistoryModal({
                               <p className="text-[12px] font-semibold text-white">
                                 {role === "received"
                                   ? `+${row.votes_awarded} votes received`
-                                  : `Converted $${Number(
-                                      row.amount_usd
-                                    ).toFixed(2)} to ${row.votes_awarded} votes`}
+                                  : `Converted ${formatPoints(
+                                      amountPts
+                                    )} to ${row.votes_awarded} votes`}
                               </p>
                               <p className="text-[10px] text-white/55 truncate mt-0.5">
                                 {role === "self" && (
@@ -219,7 +221,7 @@ export default function ConversionHistoryModal({
                                   <>To {targetName}</>
                                 )}
                                 {role === "received" && (
-                                  <>From {sourceName}&apos;s gift balance</>
+                                  <>From {sourceName}&apos;s gift points</>
                                 )}
                               </p>
                               <p className="text-[9px] text-white/35 mt-0.5">
@@ -237,7 +239,7 @@ export default function ConversionHistoryModal({
                             >
                               {role === "received"
                                 ? `+${row.votes_awarded}`
-                                : `-$${Number(row.amount_usd).toFixed(2)}`}
+                                : `-${formatPoints(amountPts)}`}
                             </p>
                           </div>
                         </div>
@@ -245,8 +247,8 @@ export default function ConversionHistoryModal({
                         {/* Balance trail */}
                         <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-[9px] text-white/40">
                           <span>
-                            Balance: ${Number(row.balance_before).toFixed(2)} →{" "}
-                            ${Number(row.balance_after).toFixed(2)}
+                            Balance: {formatPoints(Number(row.balance_before))}{" "}
+                            → {formatPoints(Number(row.balance_after))}
                           </span>
                           <span className="font-mono">
                             {row.reference?.slice(-8)}

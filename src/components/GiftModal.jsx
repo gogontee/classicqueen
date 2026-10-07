@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -24,6 +24,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useNetworkError, isNetworkError } from '@/contexts/NetworkErrorContext';
 import { normalizePaymentMethod } from '@/lib/paymentMethods';
 import { getUserCurrency } from '@/lib/currency';
+import { formatPoints } from '@/lib/points';
 
 const FLW_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
@@ -74,6 +75,10 @@ export default function GiftModal({
     message: '',
     suggestion: '',
   });
+
+  // ---- Auto-scroll state ----
+  const [shouldScroll, setShouldScroll] = useState(false);
+  const paymentMethodRef = useRef(null);
 
   // ----- Auth + wallet balance -----
   useEffect(() => {
@@ -150,9 +155,23 @@ export default function GiftModal({
       setUserCurrency('USD');
       setChargeAmount(null);
       setFetchingRate(false);
+      setShouldScroll(false);
       setPaymentError({ show: false, message: '', suggestion: '' });
     }
   }, [isOpen]);
+
+  // ----- Auto-scroll to payment method when a gift is selected -----
+  useEffect(() => {
+    if (!shouldScroll || !paymentMethodRef.current) return;
+    const t = setTimeout(() => {
+      paymentMethodRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      setShouldScroll(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [shouldScroll]);
 
   // ----- Fetch rate whenever gift + currency + method changes -----
   useEffect(() => {
@@ -262,9 +281,7 @@ export default function GiftModal({
 
     if (walletBalance < amount) {
       setError(
-        `Insufficient wallet balance. You have $${walletBalance.toFixed(
-          2
-        )}, need $${amount.toFixed(2)}.`
+        `Insufficient points balance. You have ${formatPoints(walletBalance)}, need ${formatPoints(amount)}.`
       );
       setProcessing(false);
       setPaymentStep('selection');
@@ -283,9 +300,13 @@ export default function GiftModal({
           p_amount: amount,
           p_reference: reference,
           p_metadata: {
+            source: 'gift',
             candidate_id: candidate.id,
+            candidate_username: candidate.username,
+            candidate_name: candidate.full_name || candidate.username,
             gift_id: selectedGift.id,
             gift_name: selectedGift.name,
+            gift_emoji: selectedGift.emoji,
           },
         }
       );
@@ -341,7 +362,6 @@ export default function GiftModal({
       return;
     }
 
-    // Must have a fetched rate before opening Flutterwave
     if (chargeAmount == null) {
       setError('Exchange rate not ready. Please wait a moment.');
       setProcessing(false);
@@ -449,7 +469,7 @@ export default function GiftModal({
       setProcessing(false);
 
       if (onGiftSuccess) {
-        onGiftSuccess(selectedGift, `$${amount.toFixed(2)}`);
+        onGiftSuccess(selectedGift, formatPoints(amount));
       }
 
       setTimeout(() => {
@@ -528,6 +548,7 @@ export default function GiftModal({
     setUserCurrency('USD');
     setChargeAmount(null);
     setFetchingRate(false);
+    setShouldScroll(false);
     setPaymentError({ show: false, message: '', suggestion: '' });
   };
 
@@ -635,7 +656,7 @@ export default function GiftModal({
                   </p>
                   <div className="bg-white/5 rounded-lg p-3">
                     <p className="text-[#f5d76e] font-semibold text-base">
-                      Total: ${totalUSD.toFixed(2)}
+                      Total: {formatPoints(totalUSD)}
                     </p>
                   </div>
                 </div>
@@ -670,6 +691,7 @@ export default function GiftModal({
                             onClick={() => {
                               setSelectedGift(gift);
                               setError('');
+                              setShouldScroll(true);
                             }}
                             className="p-2 rounded-lg border text-center transition-all relative"
                             style={{
@@ -692,7 +714,7 @@ export default function GiftModal({
                               className="text-[9px] font-bold mt-0.5"
                               style={{ color: gift.accent }}
                             >
-                              ${gift.amount}
+                              {gift.amount} pts
                             </div>
                             {isSelected && (
                               <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#c9a227] flex items-center justify-center">
@@ -721,7 +743,7 @@ export default function GiftModal({
                               {selectedGift.name}
                             </p>
                             <p className="text-xs text-white/60">
-                              Amount: ${selectedGift.amount}
+                              Amount: {selectedGift.amount} pts
                             </p>
                           </div>
                         </div>
@@ -756,7 +778,10 @@ export default function GiftModal({
                   )}
 
                   {selectedGift && (
-                    <div className="p-3 border-b border-[#c9a227]/20">
+                    <div
+                      ref={paymentMethodRef}
+                      className="p-3 border-b border-[#c9a227]/20"
+                    >
                       <label className="block text-xs font-medium text-white/80 mb-2">
                         Choose payment method
                       </label>
@@ -804,7 +829,7 @@ export default function GiftModal({
                               ? 'Sign in required'
                               : walletLoading
                               ? '…'
-                              : `$${walletBalance.toFixed(2)}`}
+                              : formatPoints(walletBalance)}
                           </span>
                         </button>
 
@@ -851,9 +876,9 @@ export default function GiftModal({
                         <div className="mt-2 rounded-lg border border-[#c9a227]/30 bg-[#c9a227]/8 px-2.5 py-2">
                           <p className="text-[10px] text-white/75 leading-snug">
                             <span className="font-semibold text-[#c9a227]">
-                              ${totalUSD.toFixed(2)}
+                              {formatPoints(totalUSD)}
                             </span>{' '}
-                            will be deducted from your Classic Queen wallet.
+                            will be deducted from your points balance.
                           </p>
                         </div>
                       )}
@@ -862,7 +887,7 @@ export default function GiftModal({
                         !walletEnough &&
                         currentUser && (
                           <p className="text-[10px] text-red-400 mt-2 text-center">
-                            Insufficient balance — fund your wallet from the
+                            Insufficient balance — buy points from the
                             dashboard.
                           </p>
                         )}
@@ -883,8 +908,7 @@ export default function GiftModal({
                               You&apos;ll be charged{' '}
                               <span className="font-semibold text-[#fb923c]">
                                 {chargeAmount.toLocaleString()} {userCurrency}
-                              </span>{' '}
-                              ≈ ${selectedGift.amount.toFixed(2)}
+                              </span>
                             </p>
                           ) : (
                             <p className="text-[10px] text-white/75 leading-snug">
@@ -950,7 +974,7 @@ export default function GiftModal({
                           Fetching rate…
                         </>
                       ) : selectedGift ? (
-                        `Send Gift · $${totalUSD.toFixed(2)}`
+                        `Send Gift · ${formatPoints(totalUSD)}`
                       ) : (
                         'Select a Gift'
                       )}
