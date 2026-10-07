@@ -72,7 +72,10 @@ export default function RootLayout({ children }) {
         <NetworkErrorProvider>
           <Header />
           <main className="flex-grow pb-16 lg:pb-0">{children}</main>
-          <Footer />
+          {/* Footer — desktop only, hidden on mobile */}
+          <div className="hidden lg:block">
+            <Footer />
+          </div>
           <MobileBottomTab />
         </NetworkErrorProvider>
       </body>

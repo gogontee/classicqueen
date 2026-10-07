@@ -544,6 +544,7 @@ function GallerySection({ gallery, video, name, view }) {
     : [];
 
   const videoItem = pickVideo(video);
+  const hasVideo = !!videoItem?.url;
 
   if (view === "list") {
     if (images.length === 0) {
@@ -561,6 +562,15 @@ function GallerySection({ gallery, video, name, view }) {
             index={i}
           />
         ))}
+      </div>
+    );
+  }
+
+  // Grid view — if there's no video, let the image scroller take the full width.
+  if (!hasVideo) {
+    return (
+      <div className="w-full">
+        <ImageScroller images={images} name={name} />
       </div>
     );
   }

@@ -16,6 +16,7 @@ import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext"
  *  - No window set → renders nothing (unless `showDebug` is true)
  *
  * @param variant    "inline" (default) | "pill" | "dark"
+ *                   - "pill": gold-gradient text on a soft gold pill background
  *                   - "dark": gold-gradient text, tuned for dark backgrounds
  * @param showDebug  boolean — if true, renders diagnostic states instead of null
  */
@@ -103,19 +104,22 @@ export default function VoteCountdown({
   }, [windowStatus]);
 
   const isDark = variant === "dark";
+  const isPill = variant === "pill";
 
-  const baseClass =
-    variant === "pill"
-      ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#c9a227]/50 bg-[#c9a227]/10"
-      : "inline-flex items-center gap-2";
+  const baseClass = isPill
+    ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#c9a227]/50 bg-[#c9a227]/10"
+    : "inline-flex items-center gap-2";
 
-  // Label text style — gold gradient on dark, dark brown otherwise
-  const labelStyle = isDark
+  // Label text style:
+  //  - pill → gold gradient
+  //  - dark → gold gradient
+  //  - inline → dark brown (unchanged)
+  const labelStyle = isDark || isPill
     ? GOLD_GRADIENT
     : { color: "#6b4423", display: "inline-block" };
 
-  // Digit text style — same idea
-  const digitStyle = isDark
+  // Digit text style — same logic
+  const digitStyle = isDark || isPill
     ? { ...GOLD_GRADIENT, fontWeight: 700 }
     : { color: "#2E1503", fontWeight: 700, display: "inline-block" };
 
@@ -160,7 +164,7 @@ export default function VoteCountdown({
         <div className={baseClass}>
           <Lock
             size={13}
-            className={isDark ? "text-[#c9a227]" : "text-[#6b4423]"}
+            className={isDark || isPill ? "text-[#c9a227]" : "text-[#6b4423]"}
           />
           <span className="text-xs" style={labelStyle}>
             No window set
@@ -177,7 +181,7 @@ export default function VoteCountdown({
       <div className={baseClass}>
         <Lock
           size={13}
-          className={isDark ? "text-[#c9a227]" : "text-[#6b4423]"}
+          className={isDark || isPill ? "text-[#c9a227]" : "text-[#6b4423]"}
         />
         <span className="text-xs font-semibold" style={labelStyle}>
           Voting has closed
