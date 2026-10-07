@@ -426,7 +426,7 @@ export default function FeaturedPost() {
               <p className="text-sm leading-relaxed text-brown-700">
                 Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
                 from around the world. Our platform empowers queens to showcase their unique talents, advocate
-                for meaningful causes, and inspire positive change in their communities.powered by Stargate Studios
+                for meaningful causes, and inspire positive change in their communities.
               </p>
             </DescriptionCard>
 

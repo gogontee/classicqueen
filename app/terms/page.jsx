@@ -91,6 +91,36 @@ const TermsAndConditionsPage = () => {
                   🏆 Prizes & Rewards
                 </button>
                 <button
+                  onClick={() => scrollToSection('dethronement')}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeSection === 'dethronement' 
+                      ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
+                      : 'text-brown-700 hover:bg-brown-50'
+                  }`}
+                >
+                  👑 Dethronement
+                </button>
+                <button
+                  onClick={() => scrollToSection('gifting')}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeSection === 'gifting' 
+                      ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
+                      : 'text-brown-700 hover:bg-brown-50'
+                  }`}
+                >
+                  🎁 Gifting & Conversion
+                </button>
+                <button
+                  onClick={() => scrollToSection('wallet')}
+                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                    activeSection === 'wallet' 
+                      ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
+                      : 'text-brown-700 hover:bg-brown-50'
+                  }`}
+                >
+                  💳 Wallet & Points
+                </button>
+                <button
                   onClick={() => scrollToSection('media')}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
                     activeSection === 'media' 
@@ -166,116 +196,6 @@ const TermsAndConditionsPage = () => {
               </div>
             </div>
           </div>
-
-          {/* Add this new section after the "Prizes & Rewards" section */}
-<section id="dethronement" className="mb-12 scroll-mt-24">
-  <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
-    👑 Dethronement Clause
-  </h2>
-  
-  <div className="space-y-6">
-    <div>
-      <h3 className="text-xl font-bold text-brown-800 mb-3">1. Mandatory Contract Signing</h3>
-      <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
-        <p className="text-brown-700 font-bold mb-2">
-          ⚠️ MANDATORY REQUIREMENT:
-        </p>
-        <p className="text-brown-700">
-          The Winner and Runner-Ups must sign the physical terms and conditions contract document within SEVEN (14) calendar days of being announced as winners at the grand finale. Failure to sign the physical contract will result in automatic disqualification and dethronement.
-        </p>
-      </div>
-    </div>
-    
-    <div>
-      <h3 className="text-xl font-bold text-brown-800 mb-3">2. Dethronement Grounds</h3>
-      <p className="text-brown-700 mb-4">
-        The Winner and Runner-Ups may be dethroned at the sole discretion of Classic Queen International management for any of the following reasons:
-      </p>
-      <ul className="text-brown-700 space-y-2 mb-4">
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span><strong>Failure to sign the Winners contract:</strong> Not signing the official terms and conditions document within the stipulated timeframe</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span><strong>Breach of contract terms:</strong> Violation of any terms outlined in the signed agreement</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span><strong>Misconduct:</strong> Engaging in activities that bring Classic Queen International into disrepute</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span><strong>Criminal activity:</strong> Involvement in any illegal activities during the reign period</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span><strong>Non-performance:</strong> Failure to fulfill official duties and obligations as outlined in the contract</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span><strong>False representation:</strong> Discovery of false information in the original application</span>
-        </li>
-      </ul>
-    </div>
-    
-    <div>
-      <h3 className="text-xl font-bold text-brown-800 mb-3">3. Dethronement Process</h3>
-      <p className="text-brown-700 mb-2">
-        In the event of dethronement:
-      </p>
-      <ul className="text-brown-700 space-y-2">
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>All prizes, titles, and privileges are immediately revoked</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>The dethroned winner must return all physical prizes (crowns, sashes, trophies, etc.) within 14 days</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Any cash prizes already disbursed may be subject to recovery through legal means</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>The title will be transferred to the next runner-up at management's discretion</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>The dethronement decision is final and not subject to appeal</span>
-        </li>
-      </ul>
-    </div>
-    
-    <div>
-      <h3 className="text-xl font-bold text-brown-800 mb-3">4. Contractual Obligations</h3>
-      <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-        <p className="text-brown-700 font-bold mb-2">
-          IMPORTANT NOTES:
-        </p>
-        <ul className="text-brown-700 space-y-2">
-          <li className="flex items-start">
-            <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-            <span>The Winners contract includes detailed obligations, duties, and code of conduct for the reign period</span>
-          </li>
-          <li className="flex items-start">
-            <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-            <span>Winners must make themselves available for contract signing within the specified timeframe</span>
-          </li>
-          <li className="flex items-start">
-            <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-            <span>Failure to sign constitutes automatic forfeiture of all rights to prizes and titles</span>
-          </li>
-          <li className="flex items-start">
-            <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-            <span>The signed contract supersedes all previous agreements and understandings</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
 
           {/* Terms Content */}
           <div className="lg:w-3/4">
@@ -548,6 +468,290 @@ const TermsAndConditionsPage = () => {
                 </div>
               </section>
 
+              {/* Dethronement Clause */}
+              <section id="dethronement" className="mb-12 scroll-mt-24">
+                <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
+                  👑 Dethronement Clause
+                </h2>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">13. Mandatory Contract Signing</h3>
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
+                      <p className="text-brown-700 font-bold mb-2">
+                        ⚠️ MANDATORY REQUIREMENT:
+                      </p>
+                      <p className="text-brown-700">
+                        The Winner and Runner-Ups must sign the physical terms and conditions contract document within SEVEN (14) calendar days of being announced as winners at the grand finale. Failure to sign the physical contract will result in automatic disqualification and dethronement.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">14. Dethronement Grounds</h3>
+                    <p className="text-brown-700 mb-4">
+                      The Winner and Runner-Ups may be dethroned at the sole discretion of Classic Queen International management for any of the following reasons:
+                    </p>
+                    <ul className="text-brown-700 space-y-2 mb-4">
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Failure to sign the Winners contract:</strong> Not signing the official terms and conditions document within the stipulated timeframe</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Breach of contract terms:</strong> Violation of any terms outlined in the signed agreement</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Misconduct:</strong> Engaging in activities that bring Classic Queen International into disrepute</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Criminal activity:</strong> Involvement in any illegal activities during the reign period</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Non-performance:</strong> Failure to fulfill official duties and obligations as outlined in the contract</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>False representation:</strong> Discovery of false information in the original application</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">15. Dethronement Process</h3>
+                    <p className="text-brown-700 mb-2">
+                      In the event of dethronement:
+                    </p>
+                    <ul className="text-brown-700 space-y-2">
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>All prizes, titles, and privileges are immediately revoked</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>The dethroned winner must return all physical prizes (crowns, sashes, trophies, etc.) within 14 days</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Any cash prizes already disbursed may be subject to recovery through legal means</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>The title will be transferred to the next runner-up at management's discretion</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>The dethronement decision is final and not subject to appeal</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">16. Contractual Obligations</h3>
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                      <p className="text-brown-700 font-bold mb-2">
+                        IMPORTANT NOTES:
+                      </p>
+                      <ul className="text-brown-700 space-y-2">
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>The Winners contract includes detailed obligations, duties, and code of conduct for the reign period</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>Winners must make themselves available for contract signing within the specified timeframe</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>Failure to sign constitutes automatic forfeiture of all rights to prizes and titles</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>The signed contract supersedes all previous agreements and understandings</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Gifting & Gift Conversion */}
+              <section id="gifting" className="mb-12 scroll-mt-24">
+                <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
+                  🎁 Gifting & Gift Conversion
+                </h2>
+
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">17. Gifts Do Not Determine Scores</h3>
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
+                      <p className="text-brown-700 font-bold mb-2">
+                        ⚠️ IMPORTANT CLARIFICATION:
+                      </p>
+                      <p className="text-brown-700">
+                        Receiving gifts does <strong>not</strong> directly determine a candidate's score or ranking in the competition. Gifts are a form of appreciation and support from fans. Only the total number of <strong>votes</strong> a candidate accumulates counts toward the final score and determines the outcome of the contest. A candidate with many gifts but few votes will not rank higher than a candidate with fewer gifts but more votes.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">18. Converting Gifts to Votes</h3>
+                    <p className="text-brown-700 mb-4">
+                      Every gift a candidate receives can be converted into votes at any time before the event ends. Once a gift is converted into votes, those votes are immediately locked into the candidate's final score and cannot be reversed.
+                    </p>
+                    <p className="text-brown-700 mb-4">
+                      Conversion is done at a 1:1 ratio — 1 point of gift value = 1 vote. Candidates can convert their full gift balance or any portion of it, at any time, from their dashboard. Candidates may also choose to convert their gift balance into votes for another candidate of their choice.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">19. Unconverted Gifts — 50/50 Settlement</h3>
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
+                      <p className="text-brown-700 font-bold mb-2">
+                        Important — please read carefully:
+                      </p>
+                      <p className="text-brown-700 mb-3">
+                        Any gift that is <strong>not converted to votes</strong> before the end of the show will be settled at <strong>50% of its value</strong> to the candidate.
+                      </p>
+                      <p className="text-brown-700 mb-3">
+                        The remaining 50% is retained by Classic Queen International as an administrative and platform fee. This covers payment processing costs, platform operations, and administrative handling of the settlement.
+                      </p>
+                      <p className="text-brown-700 mb-3">
+                        To receive the full value of any gift, it must be converted into votes before the voting line closes. Once the show ends, unconverted balances are automatically settled at 50%.
+                      </p>
+                      <p className="text-brown-700 font-semibold">
+                        Example: A candidate with 100.00 pts of unconverted gift balance at the end of the show receives 50.00 pts; the remaining 50.00 pts is retained as the platform fee.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">20. When to Convert</h3>
+                    <p className="text-brown-700 mb-2">
+                      Candidates are encouraged to:
+                    </p>
+                    <ul className="text-brown-700 space-y-2">
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Monitor their gift balance regularly from their dashboard</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Convert gifts to votes before the voting window closes to avoid the 50% settlement</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Track conversion history from the dashboard at any time</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              {/* Wallet & Points */}
+              <section id="wallet" className="mb-12 scroll-mt-24">
+                <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
+                  💳 Wallet & Points Policy
+                </h2>
+
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">21. What Your Wallet Is For</h3>
+                    <p className="text-brown-700 mb-4">
+                      Every registered user has a wallet on Classic Queen International. The wallet holds in-app points that are used for two things only:
+                    </p>
+                    <ul className="text-brown-700 space-y-2 mb-4">
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Voting</strong> — cast votes for your favorite candidates</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span><strong>Gifting</strong> — send gifts to support candidates</span>
+                      </li>
+                    </ul>
+                    <p className="text-brown-700">
+                      Points are a form of in-app credit, not a bank account, and are not intended as a store of value.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">22. No Withdrawals</h3>
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
+                      <p className="text-brown-700 font-bold mb-2">
+                        ⚠️ WALLET BALANCE CANNOT BE WITHDRAWN:
+                      </p>
+                      <p className="text-brown-700">
+                        Points purchased or received in your Classic Queen International wallet <strong>cannot be withdrawn</strong> as cash, transferred to another user, or moved to an external account under any circumstances. The wallet is a closed in-app system designed exclusively for voting and gifting within the platform.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">23. No Refunds</h3>
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
+                      <p className="text-brown-700 font-bold mb-2">
+                        ⚠️ WALLET TOP-UPS ARE NON-REFUNDABLE:
+                      </p>
+                      <p className="text-brown-700">
+                        All wallet top-ups are final. Once points are added to your wallet, the transaction is <strong>non-refundable</strong>. This includes:
+                      </p>
+                      <ul className="text-brown-700 space-y-1 mt-2 ml-4">
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>Points purchased but not used</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>Points purchased in error</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>Points left over at the end of a season</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                          <span>Points intended for a specific candidate who later withdraws or is disqualified</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">24. Exhaust Your Balance Before the Season Ends</h3>
+                    <p className="text-brown-700 mb-4">
+                      Users are strongly encouraged to <strong>exhaust their wallet balance</strong> before the current season's voting window closes. Any unused balance simply carries over to the next season of the contest — it does not expire and it does not convert to cash.
+                    </p>
+                    <p className="text-brown-700 mb-4">
+                      On the next season's launch, you can use any carried-over balance for the same purpose: voting for and gifting the new set of candidates. This is the only way to use your remaining points.
+                    </p>
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                      <p className="text-brown-700">
+                        <span className="font-bold">Summary:</span> Unused points are neither refunded nor withdrawn. They remain in your wallet and are available for the next season.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">25. Secure Payments — Powered by Flutterwave</h3>
+                    <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
+                      <p className="text-brown-700 mb-3">
+                        <span className="font-bold">All payments on Classic Queen International are processed through Flutterwave</span>, a leading pan-African payment technology company trusted by thousands of businesses across the continent and worldwide.
+                      </p>
+                      <p className="text-brown-700 mb-3">
+                        Flutterwave handles all card payments, bank transfers, mobile money, and local currency processing securely. Your card details are never stored on our servers — payment information is entered directly into Flutterwave's PCI-DSS compliant checkout and only the confirmation is returned to us.
+                      </p>
+                      <p className="text-brown-700">
+                        Available payment methods include: debit and credit cards, bank transfers, USSD, mobile money (where supported), and more, across multiple countries and currencies.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               {/* Media & Content */}
               <section id="media" className="mb-12 scroll-mt-24">
                 <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
@@ -556,7 +760,7 @@ const TermsAndConditionsPage = () => {
                 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">13. Content Usage Rights</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">26. Content Usage Rights</h3>
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
                       <p className="text-brown-700 font-bold mb-2">
                         ⚠️ IMPORTANT NOTICE:
@@ -590,7 +794,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">14. Permanent Rights</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">27. Permanent Rights</h3>
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                       <p className="text-brown-700 font-bold mb-2">
                         NOTE:
@@ -602,7 +806,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">15. Media Obligations</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">28. Media Obligations</h3>
                     <p className="text-brown-700 mb-2">
                       Contestants agree to:
                     </p>
@@ -636,14 +840,14 @@ const TermsAndConditionsPage = () => {
                 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">16. Camp Attendance</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">29. Camp Attendance</h3>
                     <p className="text-brown-700 mb-4">
                       Pageant camp is MANDATORY for all selected contestants. Failure to attend camp may result in immediate disqualification.
                     </p>
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">17. Camp Coverage</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">30. Camp Coverage</h3>
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
                       <p className="text-brown-700">
                         <span className="font-bold">Note:</span> The registration fee of USD$300 covers all camp-related expenses including:
@@ -666,7 +870,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">18. Camp Rules</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">31. Camp Rules</h3>
                     <ul className="text-brown-700 space-y-2">
                       <li className="flex items-start">
                         <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
@@ -701,7 +905,7 @@ const TermsAndConditionsPage = () => {
                 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">19. Voting Definition</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">32. Voting Definition</h3>
                     <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4">
                       <p className="text-brown-700 font-bold mb-2">
                         Voting Fee Definition:
@@ -713,7 +917,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">20. Voting Rules</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">33. Voting Rules</h3>
                     <p className="text-brown-700 mb-4">
                       Important voting notes:
                     </p>
@@ -750,7 +954,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">21. Vote Counting</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">34. Vote Counting</h3>
                     <p className="text-brown-700 mb-2">
                       Voting results are calculated based on:
                     </p>
@@ -772,7 +976,7 @@ const TermsAndConditionsPage = () => {
                 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">22. Code of Conduct</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">35. Code of Conduct</h3>
                     <p className="text-brown-700 mb-4">
                       All contestants must maintain the highest standards of personal conduct, including:
                     </p>
@@ -801,7 +1005,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">23. Competition Integrity</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">36. Competition Integrity</h3>
                     <p className="text-brown-700 mb-2">
                       To maintain fair competition:
                     </p>
@@ -828,71 +1032,71 @@ const TermsAndConditionsPage = () => {
               </section>
 
               {/* Liability */}
-<section id="liability" className="mb-12 scroll-mt-24">
-  <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
-    ⚠️ Liability & Disclaimers
-  </h2>
-  
-  <div className="space-y-6">
-    <div>
-      <h3 className="text-xl font-bold text-brown-800 mb-3">24. Limitation of Liability</h3>
-      <p className="text-brown-700 mb-4">
-        Classic Queen International, its organizers, sponsors, and affiliates shall not be liable for:
-      </p>
-      <ul className="text-brown-700 space-y-2 mb-4">
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Personal injury, illness, or accidents during events</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Loss or damage to personal property</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Emotional distress or psychological impact</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Financial losses or business opportunities</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Acts of God, force majeure events, or unforeseen circumstances beyond our control</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>Liabilities arising from changes in government policies, regulations, or legal requirements</span>
-        </li>
-      </ul>
-    </div>
-    
-    <div>
-      <h3 className="text-xl font-bold text-brown-800 mb-3">25. Health & Safety</h3>
-      <p className="text-brown-700 mb-2">
-        Contestants acknowledge and agree that:
-      </p>
-      <ul className="text-brown-700 space-y-2">
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>They are physically and mentally fit to participate</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>They have disclosed any medical conditions or limitations</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>They participate at their own risk</span>
-        </li>
-        <li className="flex items-start">
-          <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
-          <span>They will follow all safety instructions and guidelines</span>
-        </li>
-      </ul>
-    </div>
-  </div>
-</section>
+              <section id="liability" className="mb-12 scroll-mt-24">
+                <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-6 pb-4 border-b border-brown-200">
+                  ⚠️ Liability & Disclaimers
+                </h2>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">37. Limitation of Liability</h3>
+                    <p className="text-brown-700 mb-4">
+                      Classic Queen International, its organizers, sponsors, and affiliates shall not be liable for:
+                    </p>
+                    <ul className="text-brown-700 space-y-2 mb-4">
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Personal injury, illness, or accidents during events</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Loss or damage to personal property</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Emotional distress or psychological impact</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Financial losses or business opportunities</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Acts of God, force majeure events, or unforeseen circumstances beyond our control</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>Liabilities arising from changes in government policies, regulations, or legal requirements</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">38. Health & Safety</h3>
+                    <p className="text-brown-700 mb-2">
+                      Contestants acknowledge and agree that:
+                    </p>
+                    <ul className="text-brown-700 space-y-2">
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>They are physically and mentally fit to participate</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>They have disclosed any medical conditions or limitations</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>They participate at their own risk</span>
+                      </li>
+                      <li className="flex items-start">
+                        <div className="w-2 h-2 rounded-full bg-brown-600 mt-2 mr-2 flex-shrink-0"></div>
+                        <span>They will follow all safety instructions and guidelines</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
 
               {/* Changes & Updates */}
               <section id="changes" className="mb-12 scroll-mt-24">
@@ -902,14 +1106,14 @@ const TermsAndConditionsPage = () => {
                 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">26. Amendments to Terms</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">39. Amendments to Terms</h3>
                     <p className="text-brown-700 mb-4">
                       Classic Queen International reserves the right to modify these Terms and Conditions at any time without prior notice. The most current version will always be available on our website. Continued participation constitutes acceptance of updated terms.
                     </p>
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">27. Event Changes</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">40. Event Changes</h3>
                     <p className="text-brown-700 mb-4">
                       Management reserves the right to:
                     </p>
@@ -938,7 +1142,7 @@ const TermsAndConditionsPage = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold text-brown-800 mb-3">28. Contact & Support</h3>
+                    <h3 className="text-xl font-bold text-brown-800 mb-3">41. Contact & Support</h3>
                     <p className="text-brown-700">
                       For questions about these Terms and Conditions, please contact:
                     </p>
