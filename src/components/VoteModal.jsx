@@ -389,7 +389,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[90] flex items-start justify-center p-3 pt-12 pb-16 overflow-y-auto bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 z-[90] flex items-start justify-center p-3 pt-24 sm:pt-28 pb-24 overflow-y-auto bg-black/80 backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div
@@ -463,11 +463,11 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                     <label className="block text-xs font-medium text-white/80 mb-2">
                       Select votes for {candidate?.full_name || `@${candidate?.username}`}
                     </label>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                       {quickVotes.map((votes) => (
                         <button key={votes} onClick={() => handleQuickVoteSelect(votes)}
-                          className={`p-2 rounded-lg border transition-all ${voteCount === votes && !customVotes ? "border-[#c9a227] bg-[#c9a227]/15" : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"}`}>
-                          <span className="block text-sm font-bold text-white">{votes} vote{votes > 1 ? "s" : ""}</span>
+                          className={`py-3 sm:py-2.5 px-2 rounded-lg border transition-all ${voteCount === votes && !customVotes ? "border-[#c9a227] bg-[#c9a227]/15" : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"}`}>
+                          <span className="block text-sm sm:text-sm font-bold text-white">{votes} vote{votes > 1 ? "s" : ""}</span>
                         </button>
                       ))}
                     </div>
@@ -476,7 +476,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                     <label className="block text-xs font-medium text-white/80 mb-1">Or enter a custom amount</label>
                     <input type="text" inputMode="numeric" value={customVotes} onChange={handleCustomVoteChange}
                       placeholder="Enter number of votes"
-                      className="w-full px-3 py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-base text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none text-center" />
+                      className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-base text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none text-center" />
                     <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">1 vote = 1 pt</p>
                   </div>
                   <div className="p-3 border-b border-[#9A7B4F]/20">
@@ -496,10 +496,10 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                       <label className="block text-xs font-medium text-white/80">Your Information</label>
                       <input type="email" placeholder="Email address *" value={guestInfo.email}
                         onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
-                        className="w-full px-3 py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
+                        className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-sm sm:text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
                       <input type="text" placeholder="Your name (optional)" value={guestInfo.name}
                         onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
-                        className="w-full px-3 py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
+                        className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-sm sm:text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
                     </div>
                   )}
                   <div className="p-3 border-b border-[#9A7B4F]/20">
@@ -562,7 +562,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                         (paymentMethod === "wallet" && !walletEnough) ||
                         (paymentMethod === "card" && (fetchingRate || chargeAmount == null))
                       }
-                      className="w-full py-3 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
+                      className="w-full py-4 sm:py-3 text-white rounded-lg text-base sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
                       style={{ background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)", boxShadow: "0 10px 20px rgba(0,0,0,0.3)" }}
                       onMouseEnter={(e) => {
                         if (!processing && paymentMethod && !(paymentMethod === "wallet" && !walletEnough)) {
