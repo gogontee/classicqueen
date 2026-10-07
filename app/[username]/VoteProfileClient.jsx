@@ -17,6 +17,7 @@ import {
   Loader,
   User as UserIcon,
   ChevronLeft,
+  ExternalLink,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import VoteModal from '@/components/VoteModal';
@@ -277,6 +278,41 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
     </div>
   );
 
+  // ---- View My Page card (desktop — below share bar) ----
+  const ViewMyPageDesktop = (
+    <Link
+      href={`/${username}`}
+      className="group block rounded-2xl border border-[#c9a227]/35 bg-gradient-to-r from-[#c9a227]/12 to-[#9A7B4F]/5 p-3 hover:border-[#c9a227]/60 hover:brightness-110 transition-all"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-[#c9a227]/20 border border-[#c9a227]/40 flex items-center justify-center flex-shrink-0">
+          <ExternalLink className="w-4 h-4 text-[#f5d76e]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold text-[#f5d76e] leading-tight">
+            View My Page
+          </p>
+          <p className="text-[10px] text-white/60 truncate mt-0.5">
+            Full profile, gallery & trophy
+          </p>
+        </div>
+        <ArrowRight className="w-3.5 h-3.5 text-[#c9a227]/60 group-hover:text-[#f5d76e] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      </div>
+    </Link>
+  );
+
+  // ---- View My Page card (mobile — full-width) ----
+  const ViewMyPageMobile = (
+    <Link
+      href={`/${username}`}
+      className="group flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-[#c9a227]/40 bg-[#c9a227]/10 hover:bg-[#c9a227]/20 text-[#f5d76e] font-bold text-xs transition-all w-full"
+    >
+      <ExternalLink className="w-3.5 h-3.5" />
+      <span>View My Page</span>
+      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+    </Link>
+  );
+
   // ---- Share bar (mobile — horizontal) ----
   const ShareBarMobile = (
     <div className="w-full border-y border-[#c9a227]/15 bg-black/60 backdrop-blur-sm">
@@ -481,6 +517,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
 
             <div className="space-y-4">
               {ShareBarDesktop}
+              {ViewMyPageDesktop}
               {HowToVoteCard}
             </div>
           </div>
@@ -492,6 +529,10 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
         <div className="container mx-auto px-4 pt-4 pb-2">{ProfileCard}</div>
 
         <div className="mt-3">{ShareBarMobile}</div>
+
+        <div className="container mx-auto px-4 pt-3">
+          {ViewMyPageMobile}
+        </div>
 
         <div className="container mx-auto px-4 py-4">{HowToVoteCard}</div>
       </div>
