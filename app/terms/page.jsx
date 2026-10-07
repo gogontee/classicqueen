@@ -46,13 +46,13 @@ const TermsAndConditionsPage = () => {
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-col lg:flex-row gap-8 max-w-6xl mx-auto">
           {/* Sidebar Navigation */}
-          <div className="lg:w-1/4">
-            <div className="sticky top-24 bg-white rounded-xl shadow-lg p-6 border border-brown-200">
-              <h3 className="text-xl font-bold text-brown-900 mb-4">Quick Navigation</h3>
-              <nav className="space-y-2">
+          <div className="lg:w-1/4 lg:shrink-0 lg:self-start">
+            <div className="sticky top-0 z-20 bg-white rounded-xl shadow-lg p-3 lg:fixed lg:left-[max(1rem,calc((100vw_-_62rem)/2))] lg:top-24 lg:w-60 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:p-6 xl:left-[calc((100vw_-_72rem)/2)] xl:w-[17.5rem] border border-brown-200">
+              <h3 className="text-xl font-bold text-brown-900 mb-3 lg:mb-4">Quick Navigation</h3>
+              <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:gap-2 lg:overflow-x-visible lg:overflow-y-visible lg:pb-0">
                 <button
                   onClick={() => scrollToSection('general')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'general' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -62,7 +62,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('participation')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'participation' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -72,7 +72,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('fees')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'fees' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -82,7 +82,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('prizes')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'prizes' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -92,7 +92,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('dethronement')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'dethronement' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -102,7 +102,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('gifting')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'gifting' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -112,7 +112,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('wallet')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'wallet' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -122,7 +122,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('media')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'media' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -132,7 +132,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('camp')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'camp' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -142,7 +142,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('voting')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'voting' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -152,7 +152,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('conduct')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'conduct' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -162,7 +162,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('liability')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'liability' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -172,7 +172,7 @@ const TermsAndConditionsPage = () => {
                 </button>
                 <button
                   onClick={() => scrollToSection('changes')}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-auto shrink-0 whitespace-nowrap text-left px-4 py-3 rounded-lg transition-all duration-200 lg:w-full lg:shrink-0 ${
                     activeSection === 'changes' 
                       ? 'bg-gradient-to-r from-brown-900 to-brown-800 text-white' 
                       : 'text-brown-700 hover:bg-brown-50'
@@ -182,7 +182,7 @@ const TermsAndConditionsPage = () => {
                 </button>
               </nav>
               
-              <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="mt-8 hidden p-4 bg-amber-50 border border-amber-200 rounded-lg lg:block">
                 <h4 className="font-bold text-brown-900 mb-2">Need Help?</h4>
                 <p className="text-brown-700 text-sm mb-3">
                   Contact our support team for any questions
@@ -592,7 +592,7 @@ const TermsAndConditionsPage = () => {
                         ⚠️ IMPORTANT CLARIFICATION:
                       </p>
                       <p className="text-brown-700">
-                        Receiving gifts does <strong>not</strong> directly determine a candidate's score or ranking in the competition. Gifts are a form of appreciation and support from fans. Only the total number of <strong>votes</strong> a candidate accumulates counts toward the final score and determines the outcome of the contest. A candidate with many gifts but few votes will not rank higher than a candidate with fewer gifts but more votes.
+                        Receiving gifts does <strong>not</strong> directly determine a candidate's score or ranking in the competition. Gifts are a form of appreciation and support from fans. Only the total number of <strong>votes</strong> a candidate accumulates counts toward the final score and contribute determining the outcome of the contest. A candidate with many gifts but few votes will not rank higher than a candidate with fewer gifts but more votes.
                       </p>
                     </div>
                   </div>
@@ -766,7 +766,7 @@ const TermsAndConditionsPage = () => {
                         ⚠️ IMPORTANT NOTICE:
                       </p>
                       <p className="text-brown-700">
-                        By participating in Classic Queen International, you grant the organization exclusive rights to publish, broadcast, distribute, and use your name, likeness, voice, photographs, videos, and any other content from the event for a period of TWO (2) YEARS from the date of the grand finale.
+                        By participating in Classic Queen International, you grant the organization exclusive rights to publish, broadcast, distribute, and use your name, likeness, voice, photographs, videos, and any other content from the event for an indefinite period.
                       </p>
                     </div>
                     
@@ -800,7 +800,7 @@ const TermsAndConditionsPage = () => {
                         NOTE:
                       </p>
                       <p className="text-brown-700">
-                        After the expiration of the 2-year contract period, your content shall remain permanently on all Classic Queen International platforms unless the management determines otherwise. This includes the official website, social media channels, archives, and promotional materials.
+                        After the expiration of any contract period, your content shall remain permanently on all Classic Queen International platforms unless the management determines otherwise. This includes the official website, social media channels, archives, and promotional materials.
                       </p>
                     </div>
                   </div>
@@ -1158,7 +1158,7 @@ const TermsAndConditionsPage = () => {
               {/* Acceptance Section */}
               <div className="mt-12 p-6 bg-gradient-to-r from-brown-900 to-brown-800 rounded-xl text-white">
                 <h3 className="text-2xl font-bold mb-4 text-center text-white">Acceptance of Terms</h3>
-                <p className="text-center mb-6">
+                <p className="text-center mb-6 text-amber-300">
                   By participating in Classic Queen International, you confirm that you have read, understood, and agree to be bound by all the Terms and Conditions outlined above.
                 </p>
                 <div className="text-center">

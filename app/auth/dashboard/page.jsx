@@ -634,6 +634,12 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        <Link
+          href="/terms"
+          className="mt-6 flex w-full items-center justify-center rounded-lg border border-[#c9a227]/50 bg-white px-4 py-3 text-sm font-semibold text-[#6b4423] shadow-sm transition hover:bg-[#faf6ee] md:hidden"
+        >
+          Terms of Use
+        </Link>
       </div>
 
       <EditProfileModal
