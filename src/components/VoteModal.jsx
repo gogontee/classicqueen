@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Loader, Check, ChevronRight, ShieldCheck, Clock, Calendar, Lock, Mail,
+  X, Loader, Check, ChevronRight, ChevronLeft, ShieldCheck, Clock, Calendar, Lock, Mail,
 } from "lucide-react";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
@@ -36,11 +36,32 @@ function formatDate(date) {
   });
 }
 
+// Smooth slide variants — direction-aware
+const slideVariants = {
+  enter: (dir) => ({
+    x: dir > 0 ? 40 : -40,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (dir) => ({
+    x: dir > 0 ? -40 : 40,
+    opacity: 0,
+  }),
+};
+
+const slideTransition = {
+  duration: 0.28,
+  ease: [0.32, 0.72, 0, 1],
+};
+
 export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, onVoteError }) {
   const supabase = createClient();
   const { reportNetworkError } = useNetworkError();
 
-  const [voteCount, setVoteCount] = useState(1);
+  const [voteCount, setVoteCount] = useState(0);
   const [customVotes, setCustomVotes] = useState("");
   const [processing, setProcessing] = useState(false);
   const [guestInfo, setGuestInfo] = useState({ email: "", name: "" });
@@ -49,7 +70,6 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   const [paymentMethod, setPaymentMethod] = useState(null);
   const [error, setError] = useState("");
   const [flutterwaveLoaded, setFlutterwaveLoaded] = useState(false);
-  const [shouldScroll, setShouldScroll] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(true);
   const [paymentError, setPaymentError] = useState({ show: false, message: "", suggestion: "" });
@@ -58,13 +78,25 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   const [windowStatus, setWindowStatus] = useState(null);
   const [windowLoading, setWindowLoading] = useState(true);
 
+  // ---- Wizard stage ----
+  // 1 = vote picker
+  // 2 = guest info (guests only)
+  // 3 = payment method + pay
+  const [stage, setStage] = useState(1);
+  const [direction, setDirection] = useState(1);
+
+  // ---- Auto-scroll triggers ----
+  const [scrollToContinue, setScrollToContinue] = useState(false);
+  const [scrollToPay, setScrollToPay] = useState(false);
+
+  const continueButtonRef = useRef(null);
+  const payButtonRef = useRef(null);
+  const customTimerRef = useRef(null);
+
   // ---- Currency detection state ----
   const [userCurrency, setUserCurrency] = useState("USD");
   const [chargeAmount, setChargeAmount] = useState(null);
   const [fetchingRate, setFetchingRate] = useState(false);
-
-  const payButtonRef = useRef(null);
-  const customTimerRef = useRef(null);
 
   // Fetch voting window
   useEffect(() => {
@@ -119,12 +151,14 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   // Reset on close
   useEffect(() => {
     if (!isOpen) {
-      setVoteCount(1); setCustomVotes(""); setProcessing(false); setGuestInfo({ email: "", name: "" });
-      setPaymentStep("selection"); setPaymentMethod(null); setError(""); setShouldScroll(false);
+      setVoteCount(0); setCustomVotes(""); setProcessing(false); setGuestInfo({ email: "", name: "" });
+      setPaymentStep("selection"); setPaymentMethod(null); setError("");
       setPaymentError({ show: false, message: "", suggestion: "" }); setEmailPrompt(false);
       setGuestWalletPrompt(false); setWindowStatus(null); setWindowLoading(true);
       setWalletBalance(0); setWalletLoading(true);
       setUserCurrency("USD"); setChargeAmount(null); setFetchingRate(false);
+      setStage(1); setDirection(1);
+      setScrollToContinue(false); setScrollToPay(false);
       if (customTimerRef.current) clearTimeout(customTimerRef.current);
     }
   }, [isOpen]);
@@ -140,6 +174,32 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
     script.onload = () => { if (window.FlutterwaveCheckout) setFlutterwaveLoaded(true); };
     document.head.appendChild(script);
   }, [isOpen, flutterwaveLoaded, windowStatus?.state]);
+
+  // ---- Auto-scroll to Continue (Stage 1) when a vote amount is picked ----
+  useEffect(() => {
+    if (!scrollToContinue || !continueButtonRef.current) return;
+    const t = setTimeout(() => {
+      continueButtonRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      setScrollToContinue(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [scrollToContinue]);
+
+  // ---- Auto-scroll to Pay (Stage 3) when a payment method is picked ----
+  useEffect(() => {
+    if (!scrollToPay || !payButtonRef.current) return;
+    const t = setTimeout(() => {
+      payButtonRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      setScrollToPay(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [scrollToPay]);
 
   // ---- Fetch rate whenever voteCount + paymentMethod change (card only) ----
   useEffect(() => {
@@ -186,28 +246,89 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
     return () => { cancelled = true; };
   }, [voteCount, paymentMethod]);
 
-  // Auto-scroll
-  useEffect(() => {
-    if (shouldScroll && payButtonRef.current) {
-      const t = setTimeout(() => {
-        payButtonRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        setShouldScroll(false);
-      }, 250);
-      return () => clearTimeout(t);
-    }
-  }, [shouldScroll]);
-
   const handleQuickVoteSelect = (votes) => {
-    setVoteCount(votes); setCustomVotes(""); setShouldScroll(true);
+    setVoteCount(votes);
+    setCustomVotes("");
+    setScrollToContinue(true);
   };
 
   const handleCustomVoteChange = (e) => {
     const v = e.target.value.replace(/\D/g, "");
     setCustomVotes(v);
     if (v) setVoteCount(parseInt(v, 10));
+    else setVoteCount(0);
     if (customTimerRef.current) clearTimeout(customTimerRef.current);
     if (v) {
-      customTimerRef.current = setTimeout(() => setShouldScroll(true), 2000);
+      customTimerRef.current = setTimeout(() => setScrollToContinue(true), 1500);
+    }
+  };
+
+  const handlePaymentMethodSelect = (m) => {
+    if (m === "wallet" && !currentUser) {
+      setGuestWalletPrompt(true);
+      return;
+    }
+    setPaymentMethod(m);
+    setError("");
+    setScrollToPay(true);
+  };
+
+  // ---- Stage navigation ----
+  const goNext = () => {
+    if (stage === 1) {
+      if (voteCount < 1) {
+        setError("Please select or enter a valid number of votes.");
+        return;
+      }
+      setError("");
+      setScrollToContinue(false);
+      setScrollToPay(false);
+      if (currentUser) {
+        setDirection(1);
+        setStage(3);
+      } else {
+        setDirection(1);
+        setStage(2);
+      }
+      return;
+    }
+
+    if (stage === 2) {
+      const email = guestInfo.email.trim();
+      if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        setError("Please enter a valid email address.");
+        return;
+      }
+      setError("");
+      if (currentUser) {
+        setDirection(1);
+        setStage(3);
+      } else {
+        setDirection(1);
+        setStage(3);
+      }
+      return;
+    }
+  };
+
+  const goBack = () => {
+    setError("");
+    setScrollToContinue(false);
+    setScrollToPay(false);
+    if (stage === 3) {
+      if (currentUser) {
+        setDirection(-1);
+        setStage(1);
+      } else {
+        setDirection(-1);
+        setStage(2);
+      }
+      return;
+    }
+    if (stage === 2) {
+      setDirection(-1);
+      setStage(1);
+      return;
     }
   };
 
@@ -382,7 +503,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   else if (windowStatus?.state !== "open") view = "blocked";
   else if (paymentStep === "success") view = "success";
   else if (paymentStep === "processing") view = "processing";
-  else view = "form";
+  else view = "wizard";
 
   return (
     <AnimatePresence>
@@ -425,7 +546,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 relative">
               {view === "loading" && (
                 <div className="p-10 text-center">
                   <Loader className="w-8 h-8 text-[#c9a227] animate-spin mx-auto mb-3" />
@@ -457,128 +578,253 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                     className="mt-6 text-[11px] text-white/40 hover:text-white/70 underline transition">Cancel</button>
                 </div>
               )}
-              {view === "form" && (
-                <>
-                  <div className="p-3 border-b border-[#9A7B4F]/20">
-                    <label className="block text-xs font-medium text-white/80 mb-2">
-                      Select votes for {candidate?.full_name || `@${candidate?.username}`}
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                      {quickVotes.map((votes) => (
-                        <button key={votes} onClick={() => handleQuickVoteSelect(votes)}
-                          className={`py-3 sm:py-2.5 px-2 rounded-lg border transition-all ${voteCount === votes && !customVotes ? "border-[#c9a227] bg-[#c9a227]/15" : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"}`}>
-                          <span className="block text-sm sm:text-sm font-bold text-white">{votes} vote{votes > 1 ? "s" : ""}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-3 border-b border-[#9A7B4F]/20">
-                    <label className="block text-xs font-medium text-white/80 mb-1">Or enter a custom amount</label>
-                    <input type="text" inputMode="numeric" value={customVotes} onChange={handleCustomVoteChange}
-                      placeholder="Enter number of votes"
-                      className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-base text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none text-center" />
-                    <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">1 vote = 1 pt</p>
-                  </div>
-                  <div className="p-3 border-b border-[#9A7B4F]/20">
-                    <div className="bg-white/5 rounded-lg p-3 border border-[#9A7B4F]/20">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-white/60">Votes:</span>
-                        <span className="text-xl font-bold text-white">{voteCount}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-white/60">Total:</span>
-                        <span className="text-lg font-bold text-[#c9a227]">{formatPoints(totalUSD)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {!currentUser && (
-                    <div className="p-3 border-b border-[#9A7B4F]/20 space-y-2">
-                      <label className="block text-xs font-medium text-white/80">Your Information</label>
-                      <input type="email" placeholder="Email address *" value={guestInfo.email}
-                        onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
-                        className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-sm sm:text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
-                      <input type="text" placeholder="Your name (optional)" value={guestInfo.name}
-                        onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
-                        className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-sm sm:text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
-                    </div>
-                  )}
-                  <div className="p-3 border-b border-[#9A7B4F]/20">
-                    <label className="block text-xs font-medium text-white/80 mb-2">Choose payment method</label>
-                    <PaymentMethodSelector
-                      method={paymentMethod}
-                      onChange={(m) => {
-                        if (m === "wallet" && !currentUser) { setGuestWalletPrompt(true); return; }
-                        setPaymentMethod(m); setError("");
-                      }}
-                      isLoggedIn={!!currentUser}
-                      walletBalance={walletBalance}
-                      walletLoading={walletLoading}
-                      walletEnough={walletEnough}
-                      totalUSD={totalUSD}
-                    />
 
-                    {/* Show local charge preview for card */}
-                    {paymentMethod === "card" && (
-                      <div className="mt-2 rounded-lg border border-[#f97316]/30 bg-[#f97316]/8 px-2.5 py-2">
-                        {fetchingRate ? (
-                          <p className="text-[10px] text-white/75 leading-snug flex items-center gap-1.5">
-                            <Loader size={10} className="animate-spin text-[#fb923c]" />
-                            Fetching exchange rate…
+              {view === "wizard" && (
+                <AnimatePresence mode="wait" custom={direction} initial={false}>
+                  {/* ===== STAGE 1: Vote amount ===== */}
+                  {stage === 1 && (
+                    <motion.div
+                      key="stage-1"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                    >
+                      <div className="p-3 border-b border-[#9A7B4F]/20">
+                        <label className="block text-xs font-medium text-white/80 mb-2">
+                          Select votes for {candidate?.full_name || `@${candidate?.username}`}
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                          {quickVotes.map((votes) => (
+                            <button key={votes} onClick={() => handleQuickVoteSelect(votes)}
+                              className={`py-3 sm:py-2.5 px-2 rounded-lg border transition-all ${voteCount === votes && !customVotes ? "border-[#c9a227] bg-[#c9a227]/15" : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"}`}>
+                              <span className="block text-sm sm:text-sm font-bold text-white">{votes} vote{votes > 1 ? "s" : ""}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="p-3 border-b border-[#9A7B4F]/20">
+                        <label className="block text-xs font-medium text-white/80 mb-1">Or enter a custom amount</label>
+                        <input type="text" inputMode="numeric" value={customVotes} onChange={handleCustomVoteChange}
+                          placeholder="Enter number of votes"
+                          className="w-full px-3 py-3 sm:py-2 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-base text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none text-center" />
+                        <p className="text-[10px] text-[#c9a227]/80 text-center mt-1">1 vote = 1 pt</p>
+                      </div>
+                      {voteCount > 0 && (
+                        <div className="p-3 border-b border-[#9A7B4F]/20">
+                          <div className="bg-white/5 rounded-lg p-3 border border-[#9A7B4F]/20">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-xs text-white/60">Votes:</span>
+                              <span className="text-xl font-bold text-white">{voteCount}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-white/60">Total:</span>
+                              <span className="text-lg font-bold text-[#c9a227]">{formatPoints(totalUSD)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {error && (
+                        <div className="px-3 pt-2">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                            <p className="text-xs text-red-400">{error}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={continueButtonRef} className="p-3">
+                        <button onClick={goNext}
+                          disabled={voteCount < 1}
+                          className="w-full py-4 sm:py-3 text-white rounded-lg text-base sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
+                          style={{ background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)", boxShadow: "0 10px 20px rgba(0,0,0,0.3)" }}
+                          onMouseEnter={(e) => {
+                            if (voteCount > 0) {
+                              e.currentTarget.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+                            }
+                          }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)"; }}
+                        >
+                          Continue
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ===== STAGE 2: Guest info ===== */}
+                  {stage === 2 && (
+                    <motion.div
+                      key="stage-2"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                    >
+                      <div className="p-3 border-b border-[#9A7B4F]/20">
+                        <button
+                          type="button"
+                          onClick={goBack}
+                          className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-white transition-colors"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Back
+                        </button>
+                      </div>
+                      <div className="p-3 space-y-3">
+                        <div>
+                          <label className="block text-sm font-semibold text-white mb-1">
+                            Your Information
+                          </label>
+                          <p className="text-[11px] text-white/50 leading-relaxed">
+                            We need these to send your vote receipt and confirm your payment.
                           </p>
-                        ) : chargeAmount != null && userCurrency !== "USD" ? (
-                          <p className="text-[10px] text-white/75 leading-snug">
-                            You&apos;ll be charged{" "}
-                            <span className="font-semibold text-[#fb923c]">
-                              {chargeAmount.toLocaleString()} {userCurrency}
-                            </span>
-                          </p>
-                        ) : (
-                          <p className="text-[10px] text-white/75 leading-snug">
-                            Secured card payment, powered by{" "}
-                            <span className="font-semibold text-white/90">Flutterwave</span>.
-                          </p>
+                        </div>
+                        <input type="email" placeholder="Email address *" value={guestInfo.email}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
+                          className="w-full px-3 py-3 sm:py-2.5 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-sm text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
+                        <input type="text" placeholder="Your name (optional)" value={guestInfo.name}
+                          onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
+                          className="w-full px-3 py-3 sm:py-2.5 bg-white/5 border border-[#9A7B4F]/30 rounded-lg text-sm text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none" />
+                      </div>
+                      <div className="p-3 border-t border-[#9A7B4F]/20">
+                        <div className="bg-white/5 rounded-lg p-2.5 border border-[#9A7B4F]/20 flex items-center justify-between">
+                          <span className="text-[11px] text-white/60">You&apos;re voting:</span>
+                          <span className="text-[11px] font-bold text-[#c9a227]">
+                            {voteCount} vote{voteCount > 1 ? "s" : ""} · {formatPoints(totalUSD)}
+                          </span>
+                        </div>
+                      </div>
+                      {error && (
+                        <div className="px-3">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                            <p className="text-xs text-red-400">{error}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-3">
+                        <button onClick={goNext}
+                          className="w-full py-4 sm:py-3 text-white rounded-lg text-base sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 hover:brightness-110"
+                          style={{ background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)", boxShadow: "0 10px 20px rgba(0,0,0,0.3)" }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+                          }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)"; }}
+                        >
+                          Continue
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ===== STAGE 3: Payment method + Pay ===== */}
+                  {stage === 3 && (
+                    <motion.div
+                      key="stage-3"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                    >
+                      <div className="p-3 border-b border-[#9A7B4F]/20">
+                        <button
+                          type="button"
+                          onClick={goBack}
+                          className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-white transition-colors"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Back
+                        </button>
+                      </div>
+                      <div className="p-3 border-b border-[#9A7B4F]/20">
+                        <div className="bg-white/5 rounded-lg p-2.5 border border-[#9A7B4F]/20 flex items-center justify-between">
+                          <span className="text-[11px] text-white/60">You&apos;re voting:</span>
+                          <span className="text-[11px] font-bold text-[#c9a227]">
+                            {voteCount} vote{voteCount > 1 ? "s" : ""} · {formatPoints(totalUSD)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="p-3 border-b border-[#9A7B4F]/20">
+                        <label className="block text-xs font-medium text-white/80 mb-2">Choose payment method</label>
+                        <PaymentMethodSelector
+                          method={paymentMethod}
+                          onChange={handlePaymentMethodSelect}
+                          isLoggedIn={!!currentUser}
+                          walletBalance={walletBalance}
+                          walletLoading={walletLoading}
+                          walletEnough={walletEnough}
+                          totalUSD={totalUSD}
+                        />
+
+                        {/* Show local charge preview for card */}
+                        {paymentMethod === "card" && (
+                          <div className="mt-2 rounded-lg border border-[#f97316]/30 bg-[#f97316]/8 px-2.5 py-2">
+                            {fetchingRate ? (
+                              <p className="text-[10px] text-white/75 leading-snug flex items-center gap-1.5">
+                                <Loader size={10} className="animate-spin text-[#fb923c]" />
+                                Fetching exchange rate…
+                              </p>
+                            ) : chargeAmount != null && userCurrency !== "USD" ? (
+                              <p className="text-[10px] text-white/75 leading-snug">
+                                You&apos;ll be charged{" "}
+                                <span className="font-semibold text-[#fb923c]">
+                                  {chargeAmount.toLocaleString()} {userCurrency}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-[10px] text-white/75 leading-snug">
+                                Secured card payment, powered by{" "}
+                                <span className="font-semibold text-white/90">Flutterwave</span>.
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                  <div className="px-3 py-2">
-                    <div className="flex items-center gap-2 bg-[#9A7B4F]/10 border border-[#9A7B4F]/30 rounded-lg p-2">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#c9a227] flex-shrink-0" />
-                      <span className="text-[#c9a227] text-[11px]">Secure payment · Cards accepted worldwide</span>
-                    </div>
-                  </div>
-                  {error && (
-                    <div className="px-3 py-1">
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                        <p className="text-xs text-red-400">{error}</p>
+                      <div className="px-3 py-2">
+                        <div className="flex items-center gap-2 bg-[#9A7B4F]/10 border border-[#9A7B4F]/30 rounded-lg p-2">
+                          <ShieldCheck className="w-3.5 h-3.5 text-[#c9a227] flex-shrink-0" />
+                          <span className="text-[#c9a227] text-[11px]">Secure payment · Cards accepted worldwide</span>
+                        </div>
                       </div>
-                    </div>
+                      {error && (
+                        <div className="px-3 pb-1">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                            <p className="text-xs text-red-400">{error}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={payButtonRef} className="p-3">
+                        <button onClick={handleProceed}
+                          disabled={
+                            processing ||
+                            !paymentMethod ||
+                            (paymentMethod === "wallet" && !walletEnough) ||
+                            (paymentMethod === "card" && (fetchingRate || chargeAmount == null))
+                          }
+                          className="w-full py-4 sm:py-3 text-white rounded-lg text-base sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
+                          style={{ background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)", boxShadow: "0 10px 20px rgba(0,0,0,0.3)" }}
+                          onMouseEnter={(e) => {
+                            if (!processing && paymentMethod && !(paymentMethod === "wallet" && !walletEnough)) {
+                              e.currentTarget.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
+                            }
+                          }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)"; }}
+                        >
+                          {processing ? (<><Loader className="w-4 h-4 animate-spin" />Processing…</>) :
+                            paymentMethod === "card" && fetchingRate ? (<><Loader className="w-4 h-4 animate-spin" />Fetching rate…</>) :
+                            (<>Click to Pay {formatPoints(totalUSD)}<ChevronRight className="w-4 h-4" /></>)
+                          }
+                        </button>
+                        <PoweredByFooter isLoggedIn={!!currentUser} />
+                      </div>
+                    </motion.div>
                   )}
-                  <div ref={payButtonRef} className="p-3">
-                    <button onClick={handleProceed}
-                      disabled={
-                        processing ||
-                        !paymentMethod ||
-                        (paymentMethod === "wallet" && !walletEnough) ||
-                        (paymentMethod === "card" && (fetchingRate || chargeAmount == null))
-                      }
-                      className="w-full py-4 sm:py-3 text-white rounded-lg text-base sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
-                      style={{ background: "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)", boxShadow: "0 10px 20px rgba(0,0,0,0.3)" }}
-                      onMouseEnter={(e) => {
-                        if (!processing && paymentMethod && !(paymentMethod === "wallet" && !walletEnough)) {
-                          e.currentTarget.style.background = "linear-gradient(135deg, #16a34a 0%, #15803d 100%)";
-                        }
-                      }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)"; }}
-                    >
-                      {processing ? (<><Loader className="w-4 h-4 animate-spin" />Processing…</>) :
-                        paymentMethod === "card" && fetchingRate ? (<><Loader className="w-4 h-4 animate-spin" />Fetching rate…</>) :
-                        (<>Click to Pay {formatPoints(totalUSD)}<ChevronRight className="w-4 h-4" /></>)
-                      }
-                    </button>
-                    <PoweredByFooter isLoggedIn={!!currentUser} />
-                  </div>
-                </>
+                </AnimatePresence>
               )}
             </div>
           </motion.div>

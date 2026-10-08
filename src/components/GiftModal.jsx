@@ -16,8 +16,8 @@ import {
   Flower2,
   Star,
   Award,
-  Wallet,
-  CreditCard,
+  ChevronRight,
+  ChevronLeft,
 } from 'lucide-react';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
@@ -25,6 +25,7 @@ import { useNetworkError, isNetworkError } from '@/contexts/NetworkErrorContext'
 import { normalizePaymentMethod } from '@/lib/paymentMethods';
 import { getUserCurrency } from '@/lib/currency';
 import { formatPoints } from '@/lib/points';
+import PaymentMethodSelector from '@/components/vote/PaymentMethodSelector';
 
 const FLW_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
@@ -42,6 +43,27 @@ const GIFTS = [
   { id: 'eternal_crown', name: 'Eternal Crown', emoji: '👸', amount: 700, accent: '#fbbf24', bg: 'rgba(251, 191, 36, 0.10)', border: 'rgba(251, 191, 36, 0.35)', icon: Award },
   { id: 'star_of_court', name: 'Star of the Court', emoji: '⭐', amount: 1000, accent: '#facc15', bg: 'rgba(250, 204, 21, 0.10)', border: 'rgba(250, 204, 21, 0.35)', icon: Star },
 ];
+
+// Smooth slide variants — direction-aware
+const slideVariants = {
+  enter: (dir) => ({
+    x: dir > 0 ? 40 : -40,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (dir) => ({
+    x: dir > 0 ? -40 : 40,
+    opacity: 0,
+  }),
+};
+
+const slideTransition = {
+  duration: 0.28,
+  ease: [0.32, 0.72, 0, 1],
+};
 
 export default function GiftModal({
   isOpen,
@@ -76,9 +98,19 @@ export default function GiftModal({
     suggestion: '',
   });
 
-  // ---- Auto-scroll state ----
-  const [shouldScroll, setShouldScroll] = useState(false);
-  const paymentMethodRef = useRef(null);
+  // ---- Wizard stage ----
+  // 1 = gift picker
+  // 2 = guest info (guests only)
+  // 3 = payment method + send
+  const [stage, setStage] = useState(1);
+  const [direction, setDirection] = useState(1);
+
+  // ---- Auto-scroll triggers ----
+  const [scrollToContinue, setScrollToContinue] = useState(false);
+  const [scrollToPay, setScrollToPay] = useState(false);
+
+  const continueButtonRef = useRef(null);
+  const payButtonRef = useRef(null);
 
   // ----- Auth + wallet balance -----
   useEffect(() => {
@@ -155,23 +187,39 @@ export default function GiftModal({
       setUserCurrency('USD');
       setChargeAmount(null);
       setFetchingRate(false);
-      setShouldScroll(false);
       setPaymentError({ show: false, message: '', suggestion: '' });
+      setStage(1);
+      setDirection(1);
+      setScrollToContinue(false);
+      setScrollToPay(false);
     }
   }, [isOpen]);
 
-  // ----- Auto-scroll to payment method when a gift is selected -----
+  // ----- Auto-scroll to Continue (Stage 1) after a gift is picked -----
   useEffect(() => {
-    if (!shouldScroll || !paymentMethodRef.current) return;
+    if (!scrollToContinue || !continueButtonRef.current) return;
     const t = setTimeout(() => {
-      paymentMethodRef.current.scrollIntoView({
+      continueButtonRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       });
-      setShouldScroll(false);
+      setScrollToContinue(false);
     }, 300);
     return () => clearTimeout(t);
-  }, [shouldScroll]);
+  }, [scrollToContinue]);
+
+  // ----- Auto-scroll to Send (Stage 3) after a payment method is picked -----
+  useEffect(() => {
+    if (!scrollToPay || !payButtonRef.current) return;
+    const t = setTimeout(() => {
+      payButtonRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      setScrollToPay(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [scrollToPay]);
 
   // ----- Fetch rate whenever gift + currency + method changes -----
   useEffect(() => {
@@ -227,51 +275,75 @@ export default function GiftModal({
     };
   }, [selectedGift, paymentMethod]);
 
-  // ----- Payment method hover helpers -----
-  const HOVER_BG =
-    'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #22c55e 100%)';
-  const HOVER_BORDER = 'rgba(34, 197, 94, 0.85)';
-  const SELECTED_BG = 'rgba(201, 162, 39, 0.18)';
-  const SELECTED_BORDER = '#c9a227';
-
-  const walletScheme = {
-    base: 'linear-gradient(135deg, #6b4423 0%, #9A7B4F 50%, #c9a227 100%)',
-    border: 'rgba(154, 123, 79, 0.7)',
-  };
-  const cardScheme = {
-    base: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)',
-    border: 'rgba(249, 115, 22, 0.7)',
+  // ----- Gift pick handler (Stage 1) -----
+  const handleGiftSelect = (gift) => {
+    setSelectedGift(gift);
+    setError('');
+    setScrollToContinue(true);
   };
 
-  const getMethodStyle = (key, isSelected) => {
-    const scheme = key === 'wallet' ? walletScheme : cardScheme;
-    return {
-      background: isSelected ? SELECTED_BG : scheme.base,
-      borderColor: isSelected ? SELECTED_BORDER : scheme.border,
-      boxShadow: isSelected
-        ? '0 0 0 1px rgba(201, 162, 39, 0.5), 0 4px 12px rgba(0,0,0,0.3)'
-        : '0 2px 6px rgba(0,0,0,0.25)',
-    };
+  // ----- Payment method pick handler (Stage 3) -----
+  const handlePaymentMethodSelect = (m) => {
+    if (m === 'wallet' && !currentUser) {
+      setError('Please sign in to use your wallet.');
+      return;
+    }
+    setPaymentMethod(m);
+    setError('');
+    setScrollToPay(true);
   };
 
-  const handleMethodHoverEnter = (e, isSelected) => {
-    if (isSelected) return;
-    e.currentTarget.style.background = HOVER_BG;
-    e.currentTarget.style.borderColor = HOVER_BORDER;
-    e.currentTarget.style.boxShadow = '0 4px 14px rgba(22, 163, 74, 0.35)';
+  // ----- Stage navigation -----
+  const goNext = () => {
+    if (stage === 1) {
+      if (!selectedGift) {
+        setError('Please select a gift.');
+        return;
+      }
+      setError('');
+      setScrollToContinue(false);
+      setScrollToPay(false);
+      if (currentUser) {
+        setDirection(1);
+        setStage(3);
+      } else {
+        setDirection(1);
+        setStage(2);
+      }
+      return;
+    }
+
+    if (stage === 2) {
+      const email = guestInfo.email.trim();
+      if (!email || !/\S+@\S+\.\S+/.test(email)) {
+        setError('Please enter a valid email address.');
+        return;
+      }
+      setError('');
+      setDirection(1);
+      setStage(3);
+      return;
+    }
   };
 
-  const handleMethodHoverLeave = (e, key, isSelected) => {
-    const scheme = key === 'wallet' ? walletScheme : cardScheme;
-    if (isSelected) {
-      e.currentTarget.style.background = SELECTED_BG;
-      e.currentTarget.style.borderColor = SELECTED_BORDER;
-      e.currentTarget.style.boxShadow =
-        '0 0 0 1px rgba(201, 162, 39, 0.5), 0 4px 12px rgba(0,0,0,0.3)';
-    } else {
-      e.currentTarget.style.background = scheme.base;
-      e.currentTarget.style.borderColor = scheme.border;
-      e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+  const goBack = () => {
+    setError('');
+    setScrollToContinue(false);
+    setScrollToPay(false);
+    if (stage === 3) {
+      if (currentUser) {
+        setDirection(-1);
+        setStage(1);
+      } else {
+        setDirection(-1);
+        setStage(2);
+      }
+      return;
+    }
+    if (stage === 2) {
+      setDirection(-1);
+      setStage(1);
+      return;
     }
   };
 
@@ -548,8 +620,11 @@ export default function GiftModal({
     setUserCurrency('USD');
     setChargeAmount(null);
     setFetchingRate(false);
-    setShouldScroll(false);
     setPaymentError({ show: false, message: '', suggestion: '' });
+    setStage(1);
+    setDirection(1);
+    setScrollToContinue(false);
+    setScrollToPay(false);
   };
 
   const totalUSD = selectedGift?.amount ?? 0;
@@ -558,7 +633,7 @@ export default function GiftModal({
   let view;
   if (paymentStep === 'success') view = 'success';
   else if (paymentStep === 'processing') view = 'processing';
-  else view = 'form';
+  else view = 'wizard';
 
   return (
     <AnimatePresence>
@@ -583,6 +658,7 @@ export default function GiftModal({
               flexDirection: 'column',
             }}
           >
+            {/* Header */}
             <div
               className="p-3 border-b border-[#c9a227]/30 flex items-center justify-between sticky top-0 z-10 flex-shrink-0"
               style={{ background: 'linear-gradient(90deg, #6b4423, #9A7B4F)' }}
@@ -637,7 +713,8 @@ export default function GiftModal({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-0">
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto min-h-0 relative">
               {view === 'success' && (
                 <div className="p-6 text-center">
                   <motion.div
@@ -671,324 +748,397 @@ export default function GiftModal({
                   <p className="text-white/40 text-xs mt-1">
                     Please do not close this window.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProcessing(false);
+                      setPaymentStep('selection');
+                      setError('');
+                    }}
+                    className="mt-6 text-[11px] text-white/40 hover:text-white/70 underline transition"
+                  >
+                    Cancel
+                  </button>
                 </div>
               )}
 
-              {view === 'form' && (
-                <>
-                  <div className="p-3 border-b border-[#c9a227]/20">
-                    <label className="block text-xs font-medium text-white/80 mb-2">
-                      Choose a gift for{' '}
-                      {candidate?.full_name || `@${candidate?.username}`}
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {GIFTS.map((gift) => {
-                        const isSelected = selectedGift?.id === gift.id;
-                        return (
-                          <button
-                            key={gift.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedGift(gift);
-                              setError('');
-                              setShouldScroll(true);
-                            }}
-                            className="p-2 rounded-lg border text-center transition-all relative"
+              {view === 'wizard' && (
+                <AnimatePresence mode="wait" custom={direction} initial={false}>
+                  {/* ===== STAGE 1: Gift picker ===== */}
+                  {stage === 1 && (
+                    <motion.div
+                      key="stage-1"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                    >
+                      <div className="p-3 border-b border-[#c9a227]/20">
+                        <label className="block text-xs font-medium text-white/80 mb-2">
+                          Choose a gift for{' '}
+                          {candidate?.full_name || `@${candidate?.username}`}
+                        </label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {GIFTS.map((gift) => {
+                            const isSelected = selectedGift?.id === gift.id;
+                            return (
+                              <button
+                                key={gift.id}
+                                type="button"
+                                onClick={() => handleGiftSelect(gift)}
+                                className="p-2 rounded-lg border text-center transition-all relative"
+                                style={{
+                                  background: isSelected
+                                    ? 'rgba(245, 215, 110, 0.15)'
+                                    : gift.bg,
+                                  borderColor: isSelected ? '#c9a227' : gift.border,
+                                  boxShadow: isSelected
+                                    ? '0 0 0 1px rgba(201, 162, 39, 0.5), 0 4px 12px rgba(0,0,0,0.3)'
+                                    : '0 2px 6px rgba(0,0,0,0.2)',
+                                }}
+                              >
+                                <div className="text-xl mb-0.5 leading-none">
+                                  {gift.emoji}
+                                </div>
+                                <div className="text-[10px] font-semibold text-white leading-tight">
+                                  {gift.name}
+                                </div>
+                                <div
+                                  className="text-[9px] font-bold mt-0.5"
+                                  style={{ color: gift.accent }}
+                                >
+                                  {gift.amount} pts
+                                </div>
+                                {isSelected && (
+                                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#c9a227] flex items-center justify-center">
+                                    <Check size={9} className="text-black" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {selectedGift && (
+                        <div className="p-3 border-b border-[#c9a227]/20">
+                          <div
+                            className="rounded-lg p-3 border"
                             style={{
-                              background: isSelected
-                                ? 'rgba(245, 215, 110, 0.15)'
-                                : gift.bg,
-                              borderColor: isSelected ? '#c9a227' : gift.border,
-                              boxShadow: isSelected
-                                ? '0 0 0 1px rgba(201, 162, 39, 0.5), 0 4px 12px rgba(0,0,0,0.3)'
-                                : '0 2px 6px rgba(0,0,0,0.2)',
+                              background: selectedGift.bg,
+                              borderColor: selectedGift.border,
                             }}
                           >
-                            <div className="text-xl mb-0.5 leading-none">
-                              {gift.emoji}
-                            </div>
-                            <div className="text-[10px] font-semibold text-white leading-tight">
-                              {gift.name}
-                            </div>
-                            <div
-                              className="text-[9px] font-bold mt-0.5"
-                              style={{ color: gift.accent }}
-                            >
-                              {gift.amount} pts
-                            </div>
-                            {isSelected && (
-                              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#c9a227] flex items-center justify-center">
-                                <Check size={9} className="text-black" />
+                            <div className="flex items-center gap-3">
+                              <span className="text-3xl">
+                                {selectedGift.emoji}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-white truncate">
+                                  {selectedGift.name}
+                                </p>
+                                <p className="text-xs text-white/60">
+                                  Amount: {selectedGift.amount} pts
+                                </p>
                               </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {selectedGift && (
-                    <div className="p-3 border-b border-[#c9a227]/20">
-                      <div
-                        className="rounded-lg p-3 border"
-                        style={{
-                          background: selectedGift.bg,
-                          borderColor: selectedGift.border,
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-3xl">{selectedGift.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-white truncate">
-                              {selectedGift.name}
-                            </p>
-                            <p className="text-xs text-white/60">
-                              Amount: {selectedGift.amount} pts
-                            </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
+                      )}
 
-                  {selectedGift && !currentUser && (
-                    <div className="p-3 border-b border-[#c9a227]/20 space-y-2">
-                      <label className="block text-xs font-medium text-white/80">
-                        Your Information
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="Email address *"
-                        value={guestInfo.email}
-                        onChange={(e) =>
-                          setGuestInfo({ ...guestInfo, email: e.target.value })
-                        }
-                        className="w-full px-3 py-2 bg-white/5 border border-[#c9a227]/30 rounded-lg text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Your name (optional)"
-                        value={guestInfo.name}
-                        onChange={(e) =>
-                          setGuestInfo({ ...guestInfo, name: e.target.value })
-                        }
-                        className="w-full px-3 py-2 bg-white/5 border border-[#c9a227]/30 rounded-lg text-xs text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none"
-                      />
-                    </div>
-                  )}
+                      {error && (
+                        <div className="px-3 pt-2">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                            <p className="text-xs text-red-400">{error}</p>
+                          </div>
+                        </div>
+                      )}
 
-                  {selectedGift && (
-                    <div
-                      ref={paymentMethodRef}
-                      className="p-3 border-b border-[#c9a227]/20"
-                    >
-                      <label className="block text-xs font-medium text-white/80 mb-2">
-                        Choose payment method
-                      </label>
-
-                      <div className="grid grid-cols-2 gap-1.5">
+                      <div ref={continueButtonRef} className="p-3">
                         <button
-                          type="button"
-                          onClick={() => {
-                            if (!currentUser) {
-                              setError('Please sign in to use your wallet.');
-                              return;
+                          onClick={goNext}
+                          disabled={!selectedGift}
+                          className="w-full py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 flex items-center justify-center gap-2 text-white"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)',
+                            boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (selectedGift) {
+                              e.currentTarget.style.background =
+                                'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
                             }
-                            setPaymentMethod('wallet');
-                            setError('');
                           }}
-                          onMouseEnter={(e) =>
-                            handleMethodHoverEnter(e, paymentMethod === 'wallet')
-                          }
-                          onMouseLeave={(e) =>
-                            handleMethodHoverLeave(
-                              e,
-                              'wallet',
-                              paymentMethod === 'wallet'
-                            )
-                          }
-                          className="p-2 rounded-lg border text-left transition-all duration-200 cursor-pointer"
-                          style={getMethodStyle(
-                            'wallet',
-                            paymentMethod === 'wallet'
-                          )}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background =
+                              'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)';
+                          }}
                         >
-                          <Wallet
-                            size={14}
-                            className={`mb-1 ${
-                              paymentMethod === 'wallet'
-                                ? 'text-[#c9a227]'
-                                : 'text-white'
-                            }`}
-                          />
-                          <span className="block text-[11px] font-bold text-white leading-tight">
-                            Wallet
-                          </span>
-                          <span className="block text-[9px] text-white/75 mt-0.5 leading-tight">
-                            {!currentUser
-                              ? 'Sign in required'
-                              : walletLoading
-                              ? '…'
-                              : formatPoints(walletBalance)}
-                          </span>
+                          Continue
+                          <ChevronRight className="w-4 h-4" />
                         </button>
+                      </div>
+                    </motion.div>
+                  )}
 
+                  {/* ===== STAGE 2: Guest info ===== */}
+                  {stage === 2 && (
+                    <motion.div
+                      key="stage-2"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                    >
+                      <div className="p-3 border-b border-[#c9a227]/20">
                         <button
                           type="button"
-                          onClick={() => {
-                            setPaymentMethod('card');
-                            setError('');
-                          }}
-                          onMouseEnter={(e) =>
-                            handleMethodHoverEnter(e, paymentMethod === 'card')
-                          }
-                          onMouseLeave={(e) =>
-                            handleMethodHoverLeave(
-                              e,
-                              'card',
-                              paymentMethod === 'card'
-                            )
-                          }
-                          className="p-2 rounded-lg border text-left transition-all duration-200 cursor-pointer"
-                          style={getMethodStyle(
-                            'card',
-                            paymentMethod === 'card'
-                          )}
+                          onClick={goBack}
+                          className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-white transition-colors"
                         >
-                          <CreditCard
-                            size={14}
-                            className={`mb-1 ${
-                              paymentMethod === 'card'
-                                ? 'text-[#c9a227]'
-                                : 'text-white'
-                            }`}
-                          />
-                          <span className="block text-[11px] font-bold text-white leading-tight">
-                            Card
-                          </span>
-                          <span className="block text-[9px] text-white/75 mt-0.5 leading-tight">
-                            Any currency
-                          </span>
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Back
                         </button>
                       </div>
 
-                      {paymentMethod === 'wallet' && currentUser && (
-                        <div className="mt-2 rounded-lg border border-[#c9a227]/30 bg-[#c9a227]/8 px-2.5 py-2">
-                          <p className="text-[10px] text-white/75 leading-snug">
-                            <span className="font-semibold text-[#c9a227]">
-                              {formatPoints(totalUSD)}
-                            </span>{' '}
-                            will be deducted from your points balance.
+                      <div className="p-3 space-y-3">
+                        <div>
+                          <label className="block text-sm font-semibold text-white mb-1">
+                            Your Information
+                          </label>
+                          <p className="text-[11px] text-white/50 leading-relaxed">
+                            We need these to send your gift receipt and confirm
+                            your payment.
                           </p>
                         </div>
-                      )}
-
-                      {paymentMethod === 'wallet' &&
-                        !walletEnough &&
-                        currentUser && (
-                          <p className="text-[10px] text-red-400 mt-2 text-center">
-                            Insufficient balance — buy points from the
-                            dashboard.
-                          </p>
-                        )}
-
-                      {paymentMethod === 'card' && (
-                        <div className="mt-2 rounded-lg border border-[#f97316]/30 bg-[#f97316]/8 px-2.5 py-2">
-                          {fetchingRate ? (
-                            <p className="text-[10px] text-white/75 leading-snug flex items-center gap-1.5">
-                              <Loader
-                                size={10}
-                                className="animate-spin text-[#fb923c]"
-                              />
-                              Fetching exchange rate…
-                            </p>
-                          ) : chargeAmount != null &&
-                            userCurrency !== 'USD' ? (
-                            <p className="text-[10px] text-white/75 leading-snug">
-                              You&apos;ll be charged{' '}
-                              <span className="font-semibold text-[#fb923c]">
-                                {chargeAmount.toLocaleString()} {userCurrency}
-                              </span>
-                            </p>
-                          ) : (
-                            <p className="text-[10px] text-white/75 leading-snug">
-                              Secured card payment, powered by{' '}
-                              <span className="font-semibold text-white/90">
-                                Flutterwave
-                              </span>
-                              .
-                            </p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="px-3 py-2">
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                        <p className="text-xs text-red-400">{error}</p>
+                        <input
+                          type="email"
+                          placeholder="Email address *"
+                          value={guestInfo.email}
+                          onChange={(e) =>
+                            setGuestInfo({
+                              ...guestInfo,
+                              email: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-3 sm:py-2.5 bg-white/5 border border-[#c9a227]/30 rounded-lg text-sm text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Your name (optional)"
+                          value={guestInfo.name}
+                          onChange={(e) =>
+                            setGuestInfo({
+                              ...guestInfo,
+                              name: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-3 sm:py-2.5 bg-white/5 border border-[#c9a227]/30 rounded-lg text-sm text-white placeholder-white/40 focus:border-[#c9a227] focus:outline-none"
+                        />
                       </div>
-                    </div>
+
+                      {selectedGift && (
+                        <div className="p-3 border-t border-[#c9a227]/20">
+                          <div className="bg-white/5 rounded-lg p-2.5 border border-[#c9a227]/20 flex items-center justify-between">
+                            <span className="text-[11px] text-white/60">
+                              You&apos;re sending:
+                            </span>
+                            <span className="text-[11px] font-bold text-[#f5d76e]">
+                              {selectedGift.emoji} {selectedGift.name} ·{' '}
+                              {formatPoints(totalUSD)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {error && (
+                        <div className="px-3">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                            <p className="text-xs text-red-400">{error}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-3">
+                        <button
+                          onClick={goNext}
+                          className="w-full py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-300 hover:brightness-110 flex items-center justify-center gap-2 text-white"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)',
+                            boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background =
+                              'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background =
+                              'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)';
+                          }}
+                        >
+                          Continue
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </motion.div>
                   )}
 
-                  <div className="p-3">
-                    <button
-                      onClick={handleProceed}
-                      disabled={
-                        processing ||
-                        !selectedGift ||
-                        !paymentMethod ||
-                        (paymentMethod === 'wallet' && !walletEnough) ||
-                        (paymentMethod === 'card' &&
-                          !currentUser &&
-                          !guestInfo.email) ||
-                        (paymentMethod === 'card' &&
-                          (fetchingRate || chargeAmount == null))
-                      }
-                      className="w-full py-3 rounded-lg text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 flex items-center justify-center gap-2 text-white"
-                      style={{
-                        background:
-                          'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)',
-                        boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!processing && selectedGift && paymentMethod) {
-                          e.currentTarget.style.background =
-                            'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background =
-                          'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)';
-                      }}
+                  {/* ===== STAGE 3: Payment method + Send ===== */}
+                  {stage === 3 && (
+                    <motion.div
+                      key="stage-3"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
                     >
-                      {processing ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          Processing…
-                        </>
-                      ) : paymentMethod === 'card' && fetchingRate ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          Fetching rate…
-                        </>
-                      ) : selectedGift ? (
-                        `Send Gift · ${formatPoints(totalUSD)}`
-                      ) : (
-                        'Select a Gift'
-                      )}
-                    </button>
+                      <div className="p-3 border-b border-[#c9a227]/20">
+                        <button
+                          type="button"
+                          onClick={goBack}
+                          className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-white transition-colors"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Back
+                        </button>
+                      </div>
 
-                    <p className="text-[10px] text-white/40 text-center mt-2">
-                      By proceeding, you agree to our Terms of Service
-                    </p>
-                  </div>
-                </>
+                      {selectedGift && (
+                        <div className="p-3 border-b border-[#c9a227]/20">
+                          <div className="bg-white/5 rounded-lg p-2.5 border border-[#c9a227]/20 flex items-center justify-between">
+                            <span className="text-[11px] text-white/60">
+                              You&apos;re sending:
+                            </span>
+                            <span className="text-[11px] font-bold text-[#f5d76e]">
+                              {selectedGift.emoji} {selectedGift.name} ·{' '}
+                              {formatPoints(totalUSD)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-3 border-b border-[#c9a227]/20">
+                        <label className="block text-xs font-medium text-white/80 mb-2">
+                          Choose payment method
+                        </label>
+
+                        <PaymentMethodSelector
+                          method={paymentMethod}
+                          onChange={handlePaymentMethodSelect}
+                          isLoggedIn={!!currentUser}
+                          walletBalance={walletBalance}
+                          walletLoading={walletLoading}
+                          walletEnough={walletEnough}
+                          totalUSD={totalUSD}
+                        />
+
+                        {paymentMethod === 'card' && (
+                          <div className="mt-2 rounded-lg border border-[#f97316]/30 bg-[#f97316]/8 px-2.5 py-2">
+                            {fetchingRate ? (
+                              <p className="text-[10px] text-white/75 leading-snug flex items-center gap-1.5">
+                                <Loader
+                                  size={10}
+                                  className="animate-spin text-[#fb923c]"
+                                />
+                                Fetching exchange rate…
+                              </p>
+                            ) : chargeAmount != null &&
+                              userCurrency !== 'USD' ? (
+                              <p className="text-[10px] text-white/75 leading-snug">
+                                You&apos;ll be charged{' '}
+                                <span className="font-semibold text-[#fb923c]">
+                                  {chargeAmount.toLocaleString()} {userCurrency}
+                                </span>
+                              </p>
+                            ) : (
+                              <p className="text-[10px] text-white/75 leading-snug">
+                                Secured card payment, powered by{' '}
+                                <span className="font-semibold text-white/90">
+                                  Flutterwave
+                                </span>
+                                .
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {error && (
+                        <div className="px-3 pt-2">
+                          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                            <p className="text-xs text-red-400">{error}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div ref={payButtonRef} className="p-3">
+                        <button
+                          onClick={handleProceed}
+                          disabled={
+                            processing ||
+                            !selectedGift ||
+                            !paymentMethod ||
+                            (paymentMethod === 'wallet' && !walletEnough) ||
+                            (paymentMethod === 'card' &&
+                              !currentUser &&
+                              !guestInfo.email) ||
+                            (paymentMethod === 'card' &&
+                              (fetchingRate || chargeAmount == null))
+                          }
+                          className="w-full py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 flex items-center justify-center gap-2 text-white"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)',
+                            boxShadow: '0 10px 20px rgba(0,0,0,0.3)',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!processing && selectedGift && paymentMethod) {
+                              e.currentTarget.style.background =
+                                'linear-gradient(135deg, #16a34a 0%, #15803d 100%)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background =
+                              'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)';
+                          }}
+                        >
+                          {processing ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Processing…
+                            </>
+                          ) : paymentMethod === 'card' && fetchingRate ? (
+                            <>
+                              <Loader className="w-4 h-4 animate-spin" />
+                              Fetching rate…
+                            </>
+                          ) : selectedGift ? (
+                            `Send Gift · ${formatPoints(totalUSD)}`
+                          ) : (
+                            'Select a Gift'
+                          )}
+                        </button>
+
+                        <p className="text-[10px] text-white/40 text-center mt-2">
+                          By proceeding, you agree to our Terms of Service
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               )}
             </div>
           </motion.div>
 
+          {/* Payment error popup */}
           <AnimatePresence>
             {paymentError.show && (
               <motion.div
