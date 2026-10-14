@@ -19,6 +19,7 @@ export default function FundWalletModal({
   const [errorMsg, setErrorMsg] = useState("");
   const [chargeAmount, setChargeAmount] = useState(null);
   const [userCurrency, setUserCurrency] = useState("USD");
+  const [rateFallback, setRateFallback] = useState(false);
 
   // Reset when closed
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function FundWalletModal({
       setErrorMsg("");
       setChargeAmount(null);
       setUserCurrency("USD");
+      setRateFallback(false);
     }
   }, [isOpen]);
 
@@ -46,6 +48,7 @@ export default function FundWalletModal({
 
     setStatus("fetching-rate");
     setErrorMsg("");
+    setRateFallback(false);
 
     const currency = getUserCurrency();
     setUserCurrency(currency);
@@ -62,18 +65,27 @@ export default function FundWalletModal({
       const res = await fetch(
         `/api/get-rate?amount=${amountUSD}&from=${currency}`
       );
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok || !data.amount) {
-        throw new Error(data.error || "Could not fetch exchange rate.");
+      if (!res.ok || !data?.amount) {
+        throw new Error(data?.error || "Could not fetch exchange rate.");
       }
 
       setChargeAmount(data.amount);
+      setRateFallback(false);
       setStatus("");
     } catch (err) {
-      console.error("[fund-wallet] rate error:", err);
-      setStatus("error");
-      setErrorMsg(err?.message || "Failed to fetch rate. Please try again.");
+      console.warn(
+        "[fund-wallet] rate fetch failed, falling back to USD:",
+        err?.message
+      );
+      // Fallback: charge in USD. Flutterwave supports USD globally,
+      // so the user is never blocked by a rate lookup failure.
+      setUserCurrency("USD");
+      setChargeAmount(amountUSD);
+      setRateFallback(true);
+      setStatus("");
+      // No error — user can still complete the payment.
     }
   };
 
@@ -159,6 +171,7 @@ export default function FundWalletModal({
             setChargeAmount(null);
             setErrorMsg("");
             setStatus("");
+            setRateFallback(false);
           }}
           disabled={status === "processing" || status === "fetching-rate"}
           className="w-full px-4 py-3 border rounded-xl mb-3 text-center text-lg disabled:opacity-50"
@@ -169,6 +182,15 @@ export default function FundWalletModal({
             You&apos;ll be charged{" "}
             <span className="font-semibold">
               {chargeAmount} {userCurrency}
+            </span>
+          </p>
+        )}
+
+        {rateFallback && readyToPay && (
+          <p className="text-xs text-center text-[#6b4423] mb-3">
+            Local pricing unavailable — you&apos;ll be charged{" "}
+            <span className="font-semibold">
+              ${Number(chargeAmount).toFixed(2)} USD
             </span>
           </p>
         )}

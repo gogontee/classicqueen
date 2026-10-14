@@ -36,7 +36,6 @@ function formatDate(date) {
   });
 }
 
-// Smooth slide variants — direction-aware
 const slideVariants = {
   enter: (dir) => ({
     x: dir > 0 ? 40 : -40,
@@ -79,9 +78,6 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   const [windowLoading, setWindowLoading] = useState(true);
 
   // ---- Wizard stage ----
-  // 1 = vote picker
-  // 2 = guest info (guests only)
-  // 3 = payment method + pay
   const [stage, setStage] = useState(1);
   const [direction, setDirection] = useState(1);
 
@@ -97,6 +93,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   const [userCurrency, setUserCurrency] = useState("USD");
   const [chargeAmount, setChargeAmount] = useState(null);
   const [fetchingRate, setFetchingRate] = useState(false);
+  const [rateFallback, setRateFallback] = useState(false);
 
   // Fetch voting window
   useEffect(() => {
@@ -156,7 +153,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
       setPaymentError({ show: false, message: "", suggestion: "" }); setEmailPrompt(false);
       setGuestWalletPrompt(false); setWindowStatus(null); setWindowLoading(true);
       setWalletBalance(0); setWalletLoading(true);
-      setUserCurrency("USD"); setChargeAmount(null); setFetchingRate(false);
+      setUserCurrency("USD"); setChargeAmount(null); setFetchingRate(false); setRateFallback(false);
       setStage(1); setDirection(1);
       setScrollToContinue(false); setScrollToPay(false);
       if (customTimerRef.current) clearTimeout(customTimerRef.current);
@@ -175,27 +172,21 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
     document.head.appendChild(script);
   }, [isOpen, flutterwaveLoaded, windowStatus?.state]);
 
-  // ---- Auto-scroll to Continue (Stage 1) when a vote amount is picked ----
+  // ---- Auto-scroll to Continue (Stage 1) ----
   useEffect(() => {
     if (!scrollToContinue || !continueButtonRef.current) return;
     const t = setTimeout(() => {
-      continueButtonRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      continueButtonRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
       setScrollToContinue(false);
     }, 300);
     return () => clearTimeout(t);
   }, [scrollToContinue]);
 
-  // ---- Auto-scroll to Pay (Stage 3) when a payment method is picked ----
+  // ---- Auto-scroll to Pay (Stage 3) ----
   useEffect(() => {
     if (!scrollToPay || !payButtonRef.current) return;
     const t = setTimeout(() => {
-      payButtonRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      payButtonRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
       setScrollToPay(false);
     }, 300);
     return () => clearTimeout(t);
@@ -205,10 +196,12 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
   useEffect(() => {
     if (paymentMethod !== "card") {
       setChargeAmount(null);
+      setRateFallback(false);
       return;
     }
     if (voteCount < 1) {
       setChargeAmount(null);
+      setRateFallback(false);
       return;
     }
 
@@ -221,23 +214,34 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
 
       if (currency === "USD") {
         setChargeAmount(totalUSD);
+        setRateFallback(false);
         return;
       }
 
       setFetchingRate(true);
       try {
         const res = await fetch(`/api/get-rate?amount=${totalUSD}&from=${currency}`);
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
         if (cancelled) return;
-        if (!res.ok || !data.amount) {
-          throw new Error(data.error || "Could not fetch exchange rate.");
+
+        if (!res.ok || !data?.amount) {
+          throw new Error(data?.error || "Could not fetch exchange rate.");
         }
+
         setChargeAmount(data.amount);
+        setRateFallback(false);
       } catch (err) {
         if (cancelled) return;
-        console.error("[vote-modal] rate fetch failed:", err);
-        setChargeAmount(null);
-        setError(err?.message || "Could not fetch exchange rate.");
+        console.warn(
+          "[vote-modal] rate fetch failed, falling back to USD:",
+          err?.message
+        );
+        // Fallback: charge in USD. Flutterwave supports USD globally,
+        // so the user is never blocked by a rate lookup failure.
+        setUserCurrency("USD");
+        setChargeAmount(totalUSD);
+        setRateFallback(true);
+        // Don't set error — the user can still complete the payment.
       } finally {
         if (!cancelled) setFetchingRate(false);
       }
@@ -300,13 +304,8 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
         return;
       }
       setError("");
-      if (currentUser) {
-        setDirection(1);
-        setStage(3);
-      } else {
-        setDirection(1);
-        setStage(3);
-      }
+      setDirection(1);
+      setStage(3);
       return;
     }
   };
@@ -332,7 +331,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
     }
   };
 
-  // Wallet flow (via vote-verify with skip flag so it goes through one code path)
+  // Wallet flow
   const processWalletPayment = async () => {
     const totalUSD = voteCount * PRICE_PER_VOTE_USD;
     if (walletBalance < totalUSD) {
@@ -377,7 +376,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
     }
   };
 
-  // Card flow — opens Flutterwave with local currency
+  // Card flow — opens Flutterwave with local currency (or USD fallback)
   const processCardPayment = () => {
     if (!window.FlutterwaveCheckout) {
       setError("Payment system not loaded."); setProcessing(false); setPaymentStep("selection"); return;
@@ -598,9 +597,21 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                         </label>
                         <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                           {quickVotes.map((votes) => (
-                            <button key={votes} onClick={() => handleQuickVoteSelect(votes)}
-                              className={`py-3 sm:py-2.5 px-2 rounded-lg border transition-all ${voteCount === votes && !customVotes ? "border-[#c9a227] bg-[#c9a227]/15" : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"}`}>
-                              <span className="block text-sm sm:text-sm font-bold text-white">{votes} vote{votes > 1 ? "s" : ""}</span>
+                            <button
+                              key={votes}
+                              onClick={() => handleQuickVoteSelect(votes)}
+                              className={`py-3 sm:py-2.5 px-2 rounded-lg border transition-all ${
+                                voteCount === votes && !customVotes
+                                  ? "border-[#c9a227] bg-[#c9a227]/15"
+                                  : "border-[#9A7B4F]/25 hover:border-[#9A7B4F]/60 bg-white/5"
+                              }`}
+                            >
+                              <span className="block text-sm sm:text-sm font-bold text-white">
+                                {votes} vote{votes > 1 ? "s" : ""}
+                              </span>
+                              <span className="block text-[10px] text-[#c9a227]/90 font-semibold mt-0.5">
+                                {votes} pt{votes > 1 ? "s" : ""}
+                              </span>
                             </button>
                           ))}
                         </div>
@@ -761,7 +772,7 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                           totalUSD={totalUSD}
                         />
 
-                        {/* Show local charge preview for card */}
+                        {/* Show charge preview for card */}
                         {paymentMethod === "card" && (
                           <div className="mt-2 rounded-lg border border-[#f97316]/30 bg-[#f97316]/8 px-2.5 py-2">
                             {fetchingRate ? (
@@ -775,6 +786,14 @@ export default function VoteModal({ isOpen, onClose, candidate, onVoteSuccess, o
                                 <span className="font-semibold text-[#fb923c]">
                                   {chargeAmount.toLocaleString()} {userCurrency}
                                 </span>
+                              </p>
+                            ) : rateFallback ? (
+                              <p className="text-[10px] text-white/75 leading-snug">
+                                Local pricing unavailable — you&apos;ll be charged{" "}
+                                <span className="font-semibold text-[#fb923c]">
+                                  ${Number(chargeAmount ?? 0).toFixed(2)} USD
+                                </span>{" "}
+                                on your card.
                               </p>
                             ) : (
                               <p className="text-[10px] text-white/75 leading-snug">

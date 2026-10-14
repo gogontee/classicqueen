@@ -44,7 +44,6 @@ const GIFTS = [
   { id: 'star_of_court', name: 'Star of the Court', emoji: '⭐', amount: 1000, accent: '#facc15', bg: 'rgba(250, 204, 21, 0.10)', border: 'rgba(250, 204, 21, 0.35)', icon: Star },
 ];
 
-// Smooth slide variants — direction-aware
 const slideVariants = {
   enter: (dir) => ({
     x: dir > 0 ? 40 : -40,
@@ -91,6 +90,7 @@ export default function GiftModal({
   const [userCurrency, setUserCurrency] = useState('USD');
   const [chargeAmount, setChargeAmount] = useState(null);
   const [fetchingRate, setFetchingRate] = useState(false);
+  const [rateFallback, setRateFallback] = useState(false);
 
   const [paymentError, setPaymentError] = useState({
     show: false,
@@ -99,9 +99,6 @@ export default function GiftModal({
   });
 
   // ---- Wizard stage ----
-  // 1 = gift picker
-  // 2 = guest info (guests only)
-  // 3 = payment method + send
   const [stage, setStage] = useState(1);
   const [direction, setDirection] = useState(1);
 
@@ -187,6 +184,7 @@ export default function GiftModal({
       setUserCurrency('USD');
       setChargeAmount(null);
       setFetchingRate(false);
+      setRateFallback(false);
       setPaymentError({ show: false, message: '', suggestion: '' });
       setStage(1);
       setDirection(1);
@@ -225,10 +223,12 @@ export default function GiftModal({
   useEffect(() => {
     if (!selectedGift) {
       setChargeAmount(null);
+      setRateFallback(false);
       return;
     }
     if (paymentMethod !== 'card') {
       setChargeAmount(null);
+      setRateFallback(false);
       return;
     }
 
@@ -240,6 +240,7 @@ export default function GiftModal({
 
       if (currency === 'USD') {
         setChargeAmount(selectedGift.amount);
+        setRateFallback(false);
         return;
       }
 
@@ -248,23 +249,28 @@ export default function GiftModal({
         const res = await fetch(
           `/api/get-rate?amount=${selectedGift.amount}&from=${currency}`
         );
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
 
         if (cancelled) return;
 
-        if (!res.ok || !data.amount) {
-          throw new Error(data.error || 'Could not fetch exchange rate.');
+        if (!res.ok || !data?.amount) {
+          throw new Error(data?.error || 'Could not fetch exchange rate.');
         }
 
         setChargeAmount(data.amount);
+        setRateFallback(false);
       } catch (err) {
         if (cancelled) return;
-        console.error('[gift-modal] rate fetch failed:', err);
-        setChargeAmount(null);
-        setError(
-          err?.message ||
-            'Could not fetch exchange rate. Please try another method.'
+        console.warn(
+          '[gift-modal] rate fetch failed, falling back to USD:',
+          err?.message
         );
+        // Fallback: charge in USD. Flutterwave supports USD globally,
+        // so the user is never blocked by a rate lookup failure.
+        setUserCurrency('USD');
+        setChargeAmount(selectedGift.amount);
+        setRateFallback(true);
+        // Don't set error — the user can still complete the payment.
       } finally {
         if (!cancelled) setFetchingRate(false);
       }
@@ -620,6 +626,7 @@ export default function GiftModal({
     setUserCurrency('USD');
     setChargeAmount(null);
     setFetchingRate(false);
+    setRateFallback(false);
     setPaymentError({ show: false, message: '', suggestion: '' });
     setStage(1);
     setDirection(1);
@@ -1057,6 +1064,14 @@ export default function GiftModal({
                                 <span className="font-semibold text-[#fb923c]">
                                   {chargeAmount.toLocaleString()} {userCurrency}
                                 </span>
+                              </p>
+                            ) : rateFallback ? (
+                              <p className="text-[10px] text-white/75 leading-snug">
+                                Local pricing unavailable — you&apos;ll be charged{' '}
+                                <span className="font-semibold text-[#fb923c]">
+                                  ${Number(chargeAmount ?? 0).toFixed(2)} USD
+                                </span>{' '}
+                                on your card.
                               </p>
                             ) : (
                               <p className="text-[10px] text-white/75 leading-snug">

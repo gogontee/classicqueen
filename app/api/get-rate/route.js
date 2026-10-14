@@ -1,7 +1,9 @@
 // app/api/get-rate/route.js
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic"; // ensures env vars are read at runtime, not build time
+export const dynamic = "force-dynamic";
+
+const RATE_TIMEOUT_MS = 5000; // hard cap on Flutterwave call
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -15,9 +17,17 @@ export async function GET(request) {
     );
   }
 
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return NextResponse.json(
+      { error: "Invalid amount" },
+      { status: 400 }
+    );
+  }
+
   // If the user is already in USD, no conversion is needed
   if (from === "USD") {
-    return NextResponse.json({ amount: Number(amount), rate: 1 });
+    return NextResponse.json({ amount: numericAmount, rate: 1 });
   }
 
   const secretKey = process.env.FLUTTERWAVE_SECRET_KEY;
@@ -29,46 +39,62 @@ export async function GET(request) {
     );
   }
 
+  // Timeout via AbortController so a slow Flutterwave call fails fast
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), RATE_TIMEOUT_MS);
+
   try {
-    // Query Flutterwave: "how much of `from` do I need to reach `amount` USD?"
-    const url = `https://api.flutterwave.com/v3/transfers/rates?amount=${amount}&destination_currency=USD&source_currency=${from}`;
+    const url = `https://api.flutterwave.com/v3/transfers/rates?amount=${numericAmount}&destination_currency=USD&source_currency=${from}`;
 
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${secretKey}` },
+      signal: controller.signal,
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
 
-    if (data.status !== "success") {
+    if (!res.ok || !data || data.status !== "success") {
+      console.error("[get-rate] Flutterwave rejected:", {
+        status: res.status,
+        message: data?.message,
+        from,
+        amount: numericAmount,
+      });
       return NextResponse.json(
-        { error: data.message || "Failed to fetch rate" },
-        { status: 400 }
+        { error: data?.message || "Rate unavailable" },
+        { status: 502 }
       );
     }
 
-    // Flutterwave returns: data.source.amount (the local amount needed)
-    // and data.rate (the conversion rate)
     const sourceAmount = data.data?.source?.amount;
     const rate = data.data?.rate;
 
-    if (!sourceAmount) {
+    if (!sourceAmount || !Number.isFinite(Number(sourceAmount))) {
+      console.error("[get-rate] missing source amount:", data);
       return NextResponse.json(
-        { error: "Flutterwave returned no amount" },
-        { status: 400 }
+        { error: "Rate response malformed" },
+        { status: 502 }
       );
     }
 
     return NextResponse.json({
-      amount: Math.ceil(sourceAmount), // round up to nearest whole unit
+      amount: Math.ceil(Number(sourceAmount)),
       rate,
       from,
       to: "USD",
     });
   } catch (err) {
-    console.error("[get-rate] error:", err);
-    return NextResponse.json(
-      { error: err?.message || "Rate lookup failed" },
-      { status: 500 }
+    const aborted = err?.name === "AbortError";
+    console.error(
+      "[get-rate]",
+      aborted ? "timed out" : "exception",
+      { from, amount: numericAmount, message: err?.message }
     );
+    return NextResponse.json(
+      { error: aborted ? "Rate lookup timed out" : "Rate lookup failed" },
+      { status: aborted ? 504 : 500 }
+    );
+  } finally {
+    clearTimeout(timeout);
   }
 }
