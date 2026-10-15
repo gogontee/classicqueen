@@ -21,6 +21,13 @@ export default function FundWalletModal({
   const [userCurrency, setUserCurrency] = useState("USD");
   const [rateFallback, setRateFallback] = useState(false);
 
+  // ---- New: the tx_ref and the amount we'll credit ----
+  // These are fixed at the moment the user clicks "Continue" so that
+  // the pending record, the Flutterwave charge, the callback, and the
+  // webhook all reference the exact same transaction.
+  const [pendingTxRef, setPendingTxRef] = useState(null);
+  const [lockedAmountUSD, setLockedAmountUSD] = useState(null);
+
   // Reset when closed
   useEffect(() => {
     if (!isOpen) {
@@ -30,6 +37,8 @@ export default function FundWalletModal({
       setChargeAmount(null);
       setUserCurrency("USD");
       setRateFallback(false);
+      setPendingTxRef(null);
+      setLockedAmountUSD(null);
     }
   }, [isOpen]);
 
@@ -51,47 +60,67 @@ export default function FundWalletModal({
     setRateFallback(false);
 
     const currency = getUserCurrency();
-    setUserCurrency(currency);
 
-    // If already USD, use the amount directly
-    if (currency === "USD") {
-      setChargeAmount(amountUSD);
-      setStatus("");
+    // ---- 1. Determine how much to charge in local currency ----
+    let localCharge = amountUSD;
+    let chargeCurrency = currency;
+    let fallback = false;
+
+    if (currency !== "USD") {
+      try {
+        const res = await fetch(
+          `/api/get-rate?amount=${amountUSD}&from=${currency}`
+        );
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.amount) {
+          throw new Error(data?.error || "Could not fetch exchange rate.");
+        }
+        localCharge = Number(data.amount);
+      } catch (err) {
+        console.warn(
+          "[fund-wallet] rate fetch failed, falling back to USD:",
+          err?.message
+        );
+        localCharge = amountUSD;
+        chargeCurrency = "USD";
+        fallback = true;
+      }
+    }
+
+    // ---- 2. Generate a single tx_ref for this payment ----
+    const txRef = `WALLET_${userId}_${Date.now()}`;
+
+    // ---- 3. Write the pending record BEFORE opening Flutterwave ----
+    // The webhook reads this to know how many points to credit.
+    const { error: pendingErr } = await supabase
+      .from("pending_wallet_funds")
+      .insert({
+        tx_ref: txRef,
+        user_id: userId,
+        usd_amount: amountUSD,
+        currency: chargeCurrency,
+        local_amount: localCharge,
+      });
+
+    if (pendingErr) {
+      console.error("[fund-wallet] pending insert failed:", pendingErr);
+      setStatus("error");
+      setErrorMsg("Could not start payment. Please try again.");
       return;
     }
 
-    // Otherwise, fetch the local equivalent from Flutterwave
-    try {
-      const res = await fetch(
-        `/api/get-rate?amount=${amountUSD}&from=${currency}`
-      );
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok || !data?.amount) {
-        throw new Error(data?.error || "Could not fetch exchange rate.");
-      }
-
-      setChargeAmount(data.amount);
-      setRateFallback(false);
-      setStatus("");
-    } catch (err) {
-      console.warn(
-        "[fund-wallet] rate fetch failed, falling back to USD:",
-        err?.message
-      );
-      // Fallback: charge in USD. Flutterwave supports USD globally,
-      // so the user is never blocked by a rate lookup failure.
-      setUserCurrency("USD");
-      setChargeAmount(amountUSD);
-      setRateFallback(true);
-      setStatus("");
-      // No error — user can still complete the payment.
-    }
+    // ---- 4. Commit state so the Flutterwave config uses these values ----
+    setPendingTxRef(txRef);
+    setLockedAmountUSD(amountUSD);
+    setUserCurrency(chargeCurrency);
+    setChargeAmount(localCharge);
+    setRateFallback(fallback);
+    setStatus("");
   };
 
   const config = {
     public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY,
-    tx_ref: `WALLET_${userId}_${Date.now()}`,
+    tx_ref: pendingTxRef, // same ref as the pending record
     amount: chargeAmount,
     currency: userCurrency,
     payment_options:
@@ -115,14 +144,18 @@ export default function FundWalletModal({
       setErrorMsg("");
 
       try {
+        // Use the locked USD amount, not a re-derived one, so the credit
+        // matches exactly what the pending record says.
+        const creditUSD = lockedAmountUSD ?? amountUSD;
+
         const { data, error } = await supabase.functions.invoke(
           "wallet-fund",
           {
             body: {
               user_id: userId,
-              amount: amountUSD, // still in USD — this is what the wallet gets
-              currency: userCurrency, // what Flutterwave actually charged in
-              tx_ref: response.tx_ref,
+              amount: creditUSD, // the USD amount to credit
+              currency: userCurrency, // what Flutterwave charged in
+              tx_ref: response.tx_ref || pendingTxRef,
               transaction_id: response.transaction_id,
             },
           }
@@ -151,7 +184,7 @@ export default function FundWalletModal({
   };
 
   // Show the Flutterwave button only after the rate has been fetched
-  const readyToPay = chargeAmount !== null && chargeAmount > 0;
+  const readyToPay = chargeAmount !== null && chargeAmount > 0 && !!pendingTxRef;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
@@ -168,7 +201,12 @@ export default function FundWalletModal({
           value={amount}
           onChange={(e) => {
             setAmount(e.target.value);
+            // Any change to the amount invalidates the pending record
+            // and forces the user to click Continue again, so the new
+            // pending row can be written for the new amount.
             setChargeAmount(null);
+            setPendingTxRef(null);
+            setLockedAmountUSD(null);
             setErrorMsg("");
             setStatus("");
             setRateFallback(false);

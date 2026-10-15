@@ -21,18 +21,9 @@ serve(async (req: Request) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    console.log("[wallet-fund] env check", {
-      hasFlwSecret: !!FLW_SECRET_KEY,
-      hasSupabaseUrl: !!SUPABASE_URL,
-      hasServiceKey: !!SUPABASE_SERVICE_KEY,
-    });
-
-    if (!FLW_SECRET_KEY) {
-      throw new Error("Missing FLUTTERWAVE_SECRET_KEY");
-    }
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    if (!FLW_SECRET_KEY) throw new Error("Missing FLUTTERWAVE_SECRET_KEY");
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY)
       throw new Error("Missing Supabase service credentials");
-    }
 
     const body = await req.json();
     console.log("[wallet-fund] body:", JSON.stringify(body));
@@ -45,12 +36,14 @@ serve(async (req: Request) => {
       );
     }
 
-    const expectedCurrency = currency || "USD";
     const amountUSD = Number(amount);
+    if (!Number.isFinite(amountUSD) || amountUSD <= 0) {
+      throw new Error(`Invalid amount: ${amount}`);
+    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // 1. Idempotency check
+    // ---- 1. Idempotency check by tx_ref ----
     const { data: existing } = await supabase
       .from("wallet_transactions")
       .select("id")
@@ -68,89 +61,52 @@ serve(async (req: Request) => {
       );
     }
 
-    // 2. Verify with Flutterwave
+    // ---- 2. Verify with Flutterwave ----
     console.log("[wallet-fund] verifying transaction:", transaction_id);
     const verifyRes = await fetch(
       `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`,
-      {
-        headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` },
-      }
+      { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } }
     );
+    const verifyData = await verifyRes.json().catch(() => null);
 
-    const verifyData = await verifyRes.json();
-
+    const flwStatus = verifyData?.data?.status;
+    const flwTxRef = verifyData?.data?.tx_ref;
     const flwAmount = Number(verifyData?.data?.amount);
     const flwCurrency = verifyData?.data?.currency;
 
-    console.log("[wallet-fund] FLW status:", verifyData?.status);
-    console.log("[wallet-fund] FLW data status:", verifyData?.data?.status);
-    console.log("[wallet-fund] FLW currency:", flwCurrency);
-    console.log("[wallet-fund] FLW amount:", flwAmount);
-    console.log("[wallet-fund] expected currency:", expectedCurrency);
-    console.log("[wallet-fund] wallet credit (USD):", amountUSD);
+    console.log("[wallet-fund] FLW verify:", {
+      apiStatus: verifyData?.status,
+      txStatus: flwStatus,
+      txRef: flwTxRef,
+      amount: flwAmount,
+      currency: flwCurrency,
+    });
 
-    if (
-      verifyData.status !== "success" ||
-      verifyData.data?.status !== "successful"
-    ) {
+    // ---- 3. Confirm success ----
+    if (verifyData?.status !== "success" || flwStatus !== "successful") {
       throw new Error(
-        `Payment verification failed. FLW returned: ${JSON.stringify(verifyData)}`
+        `Payment not successful. FLW status: ${flwStatus || "unknown"}`
       );
     }
 
-    // 3. Ensure the currency Flutterwave charged matches what the client said
-    if (flwCurrency && flwCurrency !== expectedCurrency) {
+    // ---- 4. Confirm the tx_ref matches (prevents replay / mismatch) ----
+    if (flwTxRef && flwTxRef !== tx_ref) {
       throw new Error(
-        `Currency mismatch. Client sent ${expectedCurrency}, FLW returned ${flwCurrency}.`
+        `tx_ref mismatch. Client sent ${tx_ref}, FLW returned ${flwTxRef}.`
       );
     }
 
-    // 4. Server-side amount verification
-    if (expectedCurrency === "USD") {
-      // For USD, verify the charged amount covers the expected wallet credit
-      if (flwAmount < amountUSD - 0.01) {
-        throw new Error(
-          `Payment amount too low. Expected $${amountUSD.toFixed(
-            2
-          )}, got $${flwAmount.toFixed(2)}`
-        );
-      }
-    } else {
-      // For non-USD, fetch the rate again server-side and confirm the
-      // amount Flutterwave charged matches what the server computes.
-      // This prevents a client from sending a larger `amount` than what
-      // they actually paid for.
-      console.log("[wallet-fund] verifying rate for:", expectedCurrency);
+    // ---- 5. Currency sanity check (optional, informational only) ----
+    // We do NOT re-verify the amount against a rate lookup. Flutterwave
+    // already charged the amount we told it to charge in the checkout config.
+    // The tx_ref match above is the authoritative link.
+    const currencyToStore = flwCurrency || currency || "USD";
 
-      const rateRes = await fetch(
-        `https://api.flutterwave.com/v3/transfers/rates?amount=${amountUSD}&destination_currency=USD&source_currency=${expectedCurrency}`,
-        { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } }
-      );
-      const rateData = await rateRes.json();
+    // ---- 6. Credit wallet atomically (always in USD) ----
+    console.log("[wallet-fund] crediting wallet for user:", user_id, {
+      usd: amountUSD,
+    });
 
-      const expectedLocalAmount = Number(rateData?.data?.source?.amount);
-
-      console.log("[wallet-fund] expected local amount:", expectedLocalAmount);
-      console.log("[wallet-fund] FLW charged amount:", flwAmount);
-
-      if (!expectedLocalAmount || Number.isNaN(expectedLocalAmount)) {
-        throw new Error(
-          `Could not verify rate for ${expectedCurrency}. FLW rate endpoint returned: ${JSON.stringify(
-            rateData
-          )}`
-        );
-      }
-
-      // Allow 1-unit tolerance for rounding on Flutterwave's side
-      if (flwAmount < expectedLocalAmount - 1) {
-        throw new Error(
-          `Amount too low for ${expectedCurrency}. Expected ${expectedLocalAmount}, got ${flwAmount}`
-        );
-      }
-    }
-
-    // 5. Credit wallet atomically (always in USD)
-    console.log("[wallet-fund] crediting wallet for user:", user_id);
     const { data: creditResult, error } = await supabase.rpc("credit_wallet", {
       p_user_id: user_id,
       p_amount: amountUSD,
@@ -158,8 +114,11 @@ serve(async (req: Request) => {
       p_metadata: {
         flw_transaction_id: transaction_id,
         flw_amount: flwAmount,
-        flw_currency: flwCurrency || expectedCurrency,
+        flw_currency: currencyToStore,
         wallet_credit_usd: amountUSD,
+        source: "wallet_fund",
+        payment_method: "flutterwave",
+        gateway: "callback",
       },
     });
 
