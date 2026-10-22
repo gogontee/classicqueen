@@ -8,8 +8,10 @@ import {
   ChevronRight, Sparkles
 } from 'lucide-react'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 
 export default function AboutPage() {
+  const t = useTranslations('AboutPage')
   const router = useRouter()
   const [activeAccordion, setActiveAccordion] = useState(null)
 
@@ -20,59 +22,59 @@ export default function AboutPage() {
   const values = [
     {
       icon: Crown,
-      title: 'Elegance & Class',
-      description: 'Celebrating timeless beauty, grace, and sophistication in every aspect of our pageant.'
+      title: t('values.v1Title'),
+      description: t('values.v1Desc')
     },
     {
       icon: Target,
-      title: 'Purpose & Impact',
-      description: 'Empowering women to achieve their dreams and make a positive impact in their communities.'
+      title: t('values.v2Title'),
+      description: t('values.v2Desc')
     },
     {
       icon: Globe,
-      title: 'Global Excellence',
-      description: 'Embracing diversity and creating opportunities for women from all backgrounds worldwide.'
+      title: t('values.v3Title'),
+      description: t('values.v3Desc')
     },
     {
       icon: Heart,
-      title: 'Social Responsibility',
-      description: 'Fostering compassion, leadership, and community service as core values.'
+      title: t('values.v4Title'),
+      description: t('values.v4Desc')
     },
     {
       icon: Users,
-      title: 'Sisterhood',
-      description: 'Building lifelong connections and supportive networks among our queens.'
+      title: t('values.v5Title'),
+      description: t('values.v5Desc')
     },
     {
       icon: Trophy,
-      title: 'Legacy Building',
-      description: 'Creating enduring impact and inspiring future generations of women leaders.'
+      title: t('values.v6Title'),
+      description: t('values.v6Desc')
     }
   ]
 
   const pillars = [
     {
       icon: Sparkles,
-      title: 'Beauty with Purpose',
-      description: 'Beyond physical appearance, we celebrate intelligence, character, and meaningful contributions to society.',
+      title: t('pillars.p1Title'),
+      description: t('pillars.p1Desc'),
       color: 'from-brown-600 to-cyan-500'
     },
     {
       icon: Award,
-      title: 'Leadership Development',
-      description: 'Providing training, mentorship, and platforms for our queens to become confident leaders and influencers.',
+      title: t('pillars.p2Title'),
+      description: t('pillars.p2Desc'),
       color: 'from-brown-500 to-cyan-500'
     },
     {
       icon: Globe,
-      title: 'Cultural Excellence',
-      description: 'Promoting cultural understanding, international diplomacy, and global sisterhood.',
+      title: t('pillars.p3Title'),
+      description: t('pillars.p3Desc'),
       color: 'from-brown-500 to-teal-500'
     },
     {
       icon: Heart,
-      title: 'Humanitarian Advocacy',
-      description: 'Supporting charitable causes and empowering queens to become agents of positive change.',
+      title: t('pillars.p4Title'),
+      description: t('pillars.p4Desc'),
       color: 'from-brown-500 to-red-500'
     }
   ]
@@ -110,55 +112,45 @@ export default function AboutPage() {
                 </div>
               </div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gold-400 leading-tight">
-                Classic Queen International
+                {t('heroTitle')}
               </h1>
               <p className="text-xl md:text-2xl text-gold-400 mb-8 max-w-4xl mx-auto font-light">
-                Celebrating beauty with purpose, intelligence, and cultural excellence
+                {t('heroSubtitle')}
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
               <div className="space-y-6">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <h2 className="text-2xl font-bold text-amber-300 mb-4">Our Essence</h2>
+                  <h2 className="text-2xl font-bold text-amber-300 mb-4">{t('essenceTitle')}</h2>
                   <p className="text-amber-100 text-lg">
-                    Classic Queen International is a prestigious global platform created to celebrate 
-                    beauty with purpose, intelligence, and cultural excellence. Beyond glamour and the crown, 
-                    we are dedicated to empowering young women to become confident leaders, influential voices, 
-                    and agents of positive change in their communities and across the world. 
-                    This Project is powered by stargate studios Africa.
+                    {t('essenceText')}
                   </p>
                 </div>
 
                 <div className="bg-gradient-to-r from-amber-900/30 to-brown-900/30 backdrop-blur-sm rounded-2xl p-6 border border-amber-500/20">
                   <Quote className="h-8 w-8 text-amber-300 mb-4" />
                   <p className="text-xl italic text-amber-100 mb-4">
-                    "We do not just crown winners — we build icons, leaders, and timeless queens."
+                    {t('quote')}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <h2 className="text-2xl font-bold text-amber-300 mb-4">Our Platform</h2>
+                  <h2 className="text-2xl font-bold text-amber-300 mb-4">{t('platformTitle')}</h2>
                   <p className="text-amber-100 text-lg">
-                    We promote grace, confidence, discipline, social responsibility, and international sisterhood. 
-                    Our platform provides contestants with opportunities for personal development, leadership training, 
-                    media exposure, and humanitarian advocacy, ensuring that every queen represents not just beauty, 
-                    but substance and impact.
+                    {t('platformText')}
                   </p>
                 </div>
 
                 <div className="bg-gradient-to-r from-brown-900/40 to-amber-900/40 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                   <div className="flex items-center space-x-3 mb-3">
                     <Star className="h-5 w-5 text-amber-300" />
-                    <h3 className="text-lg font-bold text-white">What We Stand For</h3>
+                    <h3 className="text-lg font-bold text-white">{t('standForTitle')}</h3>
                   </div>
                   <p className="text-amber-100">
-                    Classic Queen International stands for elegance, class, and integrity, 
-                    nurturing queens who are poised, articulate, and socially conscious. 
-                    Through meaningful projects, partnerships, and global representation, 
-                    our queens use their influence to inspire hope, promote unity, and create lasting change.
+                    {t('standForText')}
                   </p>
                 </div>
               </div>
@@ -176,10 +168,10 @@ export default function AboutPage() {
                 <Target className="h-8 w-8 text-amber-600" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-brown-900 mb-4">
-                Our Guiding Principles
+                {t('guidingPrinciplesTitle')}
               </h2>
               <p className="text-brown-600 max-w-3xl mx-auto text-lg">
-                The foundation upon which we build our legacy
+                {t('guidingPrinciplesSubtitle')}
               </p>
             </div>
 
@@ -191,12 +183,10 @@ export default function AboutPage() {
                     <div className="w-14 h-14 bg-gradient-to-br from-amber-600 to-amber-700 rounded-xl flex items-center justify-center shadow-lg">
                       <Target className="h-7 w-7 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-brown-900">Mission Statement</h3>
+                    <h3 className="text-2xl font-bold text-brown-900">{t('missionTitle')}</h3>
                   </div>
                   <p className="text-brown-700 text-lg leading-relaxed">
-                    To empower women through a prestigious global beauty platform that nurtures confidence, 
-                    intelligence, leadership, and social responsibility, transforming queens into influential 
-                    ambassadors of positive change.
+                    {t('missionText')}
                   </p>
                 </div>
               </div>
@@ -208,12 +198,10 @@ export default function AboutPage() {
                     <div className="w-14 h-14 bg-gradient-to-br from-brown-600 to-brown-700 rounded-xl flex items-center justify-center shadow-lg">
                       <Star className="h-7 w-7 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-brown-900">Vision Statement</h3>
+                    <h3 className="text-2xl font-bold text-brown-900">{t('visionTitle')}</h3>
                   </div>
                   <p className="text-brown-700 text-lg leading-relaxed">
-                    To be a world-class international beauty pageant recognized for excellence, 
-                    integrity, and impact — producing timeless queens who inspire, lead, and 
-                    uplift communities globally.
+                    {t('visionText')}
                   </p>
                 </div>
               </div>
@@ -223,10 +211,10 @@ export default function AboutPage() {
             <div className="mb-16">
               <div className="text-center mb-12">
                 <h3 className="text-2xl md:text-3xl font-bold text-brown-900 mb-4">
-                  Our Four Pillars of Excellence
+                  {t('pillarsTitle')}
                 </h3>
                 <p className="text-brown-600 max-w-3xl mx-auto">
-                  The cornerstones that define the Classic Queen International experience
+                  {t('pillarsSubtitle')}
                 </p>
               </div>
 
@@ -255,10 +243,10 @@ export default function AboutPage() {
             <div>
               <div className="text-center mb-12">
                 <h3 className="text-2xl md:text-3xl font-bold text-brown-900 mb-4">
-                  Our Core Values
+                  {t('valuesTitle')}
                 </h3>
                 <p className="text-brown-600 max-w-3xl mx-auto">
-                  The principles that guide every decision and interaction at Classic Queen International
+                  {t('valuesSubtitle')}
                 </p>
               </div>
 
@@ -296,10 +284,10 @@ export default function AboutPage() {
                 <Trophy className="h-8 w-8 text-brown-600" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-brown-900 mb-4">
-                Creating Lasting Impact
+                {t('impactTitle')}
               </h2>
               <p className="text-brown-600 max-w-3xl mx-auto text-lg">
-                How Classic Queen International transforms lives and communities
+                {t('impactSubtitle')}
               </p>
             </div>
 
@@ -310,11 +298,10 @@ export default function AboutPage() {
                     <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
                       <CheckCircle className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold text-brown-900">Personal Transformation</h3>
+                    <h3 className="text-xl font-bold text-brown-900">{t('impact.i1Title')}</h3>
                   </div>
                   <p className="text-brown-700">
-                    Through our comprehensive training programs, contestants develop confidence, 
-                    communication skills, and leadership abilities that serve them long after the competition ends.
+                    {t('impact.i1Desc')}
                   </p>
                 </div>
 
@@ -323,11 +310,10 @@ export default function AboutPage() {
                     <div className="w-10 h-10 bg-gradient-to-br from-brown-500 to-brown-600 rounded-lg flex items-center justify-center">
                       <Globe className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold text-brown-900">Global Influence</h3>
+                    <h3 className="text-xl font-bold text-brown-900">{t('impact.i2Title')}</h3>
                   </div>
                   <p className="text-brown-700">
-                    Our queens become ambassadors for positive change, representing their countries 
-                    with pride and working on international initiatives that address pressing global challenges.
+                    {t('impact.i2Desc')}
                   </p>
                 </div>
 
@@ -336,11 +322,10 @@ export default function AboutPage() {
                     <div className="w-10 h-10 bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg flex items-center justify-center">
                       <Heart className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="text-xl font-bold text-brown-900">Community Engagement</h3>
+                    <h3 className="text-xl font-bold text-brown-900">{t('impact.i3Title')}</h3>
                   </div>
                   <p className="text-brown-700">
-                    Each contestant develops and implements a social impact project, creating 
-                    tangible benefits for their communities and inspiring others to make a difference.
+                    {t('impact.i3Desc')}
                   </p>
                 </div>
               </div>
@@ -357,7 +342,7 @@ export default function AboutPage() {
                         unoptimized
                       />
                     </div>
-                    <h3 className="text-2xl font-bold mb-4">The Classic Queen Difference</h3>
+                    <h3 className="text-2xl font-bold mb-4">{t('differenceTitle')}</h3>
                   </div>
                   
                   <div className="space-y-4">
@@ -366,9 +351,9 @@ export default function AboutPage() {
                         <Sparkles className="h-4 w-4 text-amber-300" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-amber-200 mb-1">Holistic Development</h4>
+                        <h4 className="font-bold text-amber-200 mb-1">{t('diff.d1Title')}</h4>
                         <p className="text-amber-100 text-sm">
-                          We focus on mind, body, and spirit — developing complete women ready to lead.
+                          {t('diff.d1Desc')}
                         </p>
                       </div>
                     </div>
@@ -378,9 +363,9 @@ export default function AboutPage() {
                         <Users className="h-4 w-4 text-amber-300" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-amber-200 mb-1">Lifelong Network</h4>
+                        <h4 className="font-bold text-amber-200 mb-1">{t('diff.d2Title')}</h4>
                         <p className="text-amber-100 text-sm">
-                          Join a global sisterhood of empowered women supporting each other's growth.
+                          {t('diff.d2Desc')}
                         </p>
                       </div>
                     </div>
@@ -390,9 +375,9 @@ export default function AboutPage() {
                         <Award className="h-4 w-4 text-amber-300" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-amber-200 mb-1">Career Advancement</h4>
+                        <h4 className="font-bold text-amber-200 mb-1">{t('diff.d3Title')}</h4>
                         <p className="text-amber-100 text-sm">
-                          Media exposure, networking opportunities, and brand partnerships for career growth.
+                          {t('diff.d3Desc')}
                         </p>
                       </div>
                     </div>
@@ -402,9 +387,9 @@ export default function AboutPage() {
                         <Globe className="h-4 w-4 text-amber-300" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-amber-200 mb-1">International Platform</h4>
+                        <h4 className="font-bold text-amber-200 mb-1">{t('diff.d4Title')}</h4>
                         <p className="text-amber-100 text-sm">
-                          Represent your country on a world stage and make your voice heard globally.
+                          {t('diff.d4Desc')}
                         </p>
                       </div>
                     </div>
@@ -416,7 +401,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Final CTA - Reduced gap */}
+      {/* Final CTA */}
       <div className="container mx-auto px-4 pt-8 pb-16">
         <div className="max-w-4xl mx-auto text-center">
           <div className="relative">
@@ -432,18 +417,17 @@ export default function AboutPage() {
                 />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Become a Classic Queen
+                {t('ctaTitle')}
               </h2>
               <p className="text-xl text-amber-200 mb-8 max-w-2xl mx-auto">
-                Join our prestigious platform and begin your journey to becoming a timeless queen 
-                who leads with grace, intelligence, and purpose.
+                {t('ctaSubtitle')}
               </p>
               <div className="flex justify-center">
                 <button 
                   onClick={handleStartJourney}
                   className="px-10 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-brown-900 font-bold rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center group"
                 >
-                  Start Your Journey
+                  {t('ctaButton')}
                   <ChevronRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </button>
               </div>

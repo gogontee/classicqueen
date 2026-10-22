@@ -6,8 +6,12 @@ import Image from 'next/image'
 import { Calendar, ArrowRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { motion } from 'motion/react'
+import { useTranslations, useLocale } from 'next-intl'
 
 export default function TopNews() {
+  const t = useTranslations('TopNews')
+  const locale = useLocale() // Get current language (en or fr)
+  
   const [news, setNews] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -46,10 +50,10 @@ export default function TopNews() {
         <div className="text-center mb-8 md:mb-10">
           
           <h2 className="mt-3 text-3xl sm:text-4xl font-bold bg-[linear-gradient(135deg,#f5d76e,#c9a227,#9A7B4F,#c9a227,#f5d76e)] bg-clip-text text-transparent">
-            Top News
+            {t('title')}
           </h2>
           <p className="mt-2 text-sm text-white/60 max-w-md mx-auto">
-            Latest updates, exclusives, and behind-the-scenes stories.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -146,7 +150,8 @@ export default function TopNews() {
                         <div className="flex items-center gap-1.5 text-[10px] text-[#c9a227] mb-1.5">
                           <Calendar size={10} />
                           <span>
-                            {new Date(item.created_at).toLocaleDateString('en-US', {
+                            {/* Format date based on selected locale */}
+                            {new Date(item.created_at).toLocaleDateString(locale, {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
@@ -163,7 +168,7 @@ export default function TopNews() {
                         </p>
 
                         <div className="flex items-center justify-end text-[#c9a227] text-[10px] md:text-xs font-semibold group-hover:text-[#f5d76e] transition-colors mt-auto">
-                          Read More
+                          {t('readMore')}
                           <ArrowRight
                             size={11}
                             className="ml-1 group-hover:translate-x-1 transition-transform"
@@ -195,7 +200,7 @@ export default function TopNews() {
               boxShadow: '0 6px 18px rgba(201,162,39,0.4)',
             }}
           >
-            More Updates
+            {t('moreUpdates')}
             <ArrowRight size={16} />
           </Link>
         </div>

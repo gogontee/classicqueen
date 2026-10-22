@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTranslations } from 'next-intl'
 
 const FADE_MS = 1200 // crossfade duration
 
 const NextQueenSection = () => {
+  const t = useTranslations('NextQueenSection')
   const supabase = createClient()
   const [candidates, setCandidates] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,7 +43,7 @@ const NextQueenSection = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-4 md:mb-6">
             <h2 className="text-xl md:text-2xl font-bold text-brown-900 tracking-tight">
-              WHO BECOMES THE NEXT QUEEN?
+              {t('title')}
             </h2>
             <div className="w-16 h-0.5 bg-gradient-to-r from-gold-500 to-gold-600 mx-auto mt-1 rounded-full"></div>
           </div>
@@ -68,7 +70,7 @@ const NextQueenSection = () => {
         {/* Section Title */}
         <div className="text-center mb-4 md:mb-6">
           <h2 className="text-xl md:text-2xl font-bold text-brown-900 tracking-tight">
-            WHO BECOMES THE NEXT QUEEN?
+            {t('title')}
           </h2>
           <div className="w-16 h-0.5 bg-gradient-to-r from-gold-500 to-gold-600 mx-auto mt-1 rounded-full"></div>
         </div>
@@ -99,11 +101,11 @@ const NextQueenSection = () => {
             href="/candidates"
             className="inline-block px-5 md:px-6 py-2.5 bg-gradient-to-r from-brown-900 to-brown-800 hover:from-gold-600 hover:to-gold-500 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5"
           >
-            Click Here to Vote
+            {t('ctaButton')}
           </Link>
 
           <p className="mt-2 text-brown-600 text-xs max-w-md mx-auto">
-            Your vote decides who wears the crown. Support your Queen today.
+            {t('ctaSubtitle')}
           </p>
         </div>
       </div>

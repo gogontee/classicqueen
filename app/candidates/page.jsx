@@ -1,4 +1,5 @@
 // src/app/candidates/page.jsx
+import { getTranslations } from "next-intl/server";
 import CandidatesView from "@/components/CandidatesView";
 import SponsorsSection from "@/components/Home/SponsorsSection";
 import { supabase } from "@/lib/supabase";
@@ -7,6 +8,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function CandidatesPage() {
+  // 1. Initialize the translation hook for this specific page
+  const t = await getTranslations("CandidatesPage");
+
   const { data: candidates, error } = await supabase
     .from("candidates")
     .select("*")
@@ -17,7 +21,8 @@ export default async function CandidatesPage() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-neutral-50 px-6">
         <p className="text-red-600 font-medium">
-          Failed to load candidates: {error.message}
+          {/* Translate the error message and pass the dynamic error text into it */}
+          {t("error", { message: error.message })}
         </p>
       </main>
     );
@@ -45,15 +50,15 @@ export default async function CandidatesPage() {
         {/* Header */}
         <header className="relative py-7 px-6 text-center">
           <p className="text-xs uppercase tracking-[0.35em] text-yellow-400/90 sm:text-yellow-700/80 font-semibold">
-            Vote your Queen
+            {t("voteQueen")}
           </p>
 
           <h1 className="mt-2 text-4xl sm:text-5xl font-bold bg-[linear-gradient(135deg,#f5d76e,#c9a227,#9A7B4F,#c9a227,#f5d76e)] sm:bg-[linear-gradient(135deg,#2E1503,#6b4423,#9A7B4F,#c9a227,#f5d76e,#9A7B4F)] bg-clip-text text-transparent">
-            Classic Queen International
+            {t("title")}
           </h1>
 
           <p className="mt-1 text-lg font-medium text-white/85 sm:text-neutral-600">
-            Candidates 2026
+            {t("subtitle")}
           </p>
         </header>
 
@@ -61,7 +66,7 @@ export default async function CandidatesPage() {
         <section className="mx-auto max-w-7xl px-6 pb-20">
           {candidates?.length === 0 ? (
             <p className="text-center text-white/70 sm:text-neutral-500">
-              No approved candidates yet. Check back soon.
+              {t("noCandidates")}
             </p>
           ) : (
             <CandidatesView candidates={candidates} />

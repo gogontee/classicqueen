@@ -4,13 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Download, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-
-const DEFAULT_FALLBACK_ITEMS = [
-  { type: 'image', src: '/featured1.jpeg', caption: 'Elegance personified 👑', href: '/gallery' },
-  { type: 'image', src: '/featured2.jpeg', caption: 'Grace and beauty ✨', href: '/gallery' },
-  { type: 'image', src: '/featured3.jpeg', caption: 'Confidence in every step 💫', href: '/gallery' },
-  { type: 'image', src: '/featured4.jpeg', caption: 'Queen with purpose 👑', href: '/gallery' }
-]
+import { useTranslations } from 'next-intl'
 
 const GOLD_GRADIENT =
   'linear-gradient(90deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #BF953F 100%)'
@@ -21,6 +15,16 @@ const DESKTOP_AUTOSCROLL_MIN = 7
 const MAX_DT                 = 0.05 // cap frame delta at 50ms to prevent post-stall jumps
 
 export default function FeaturedPost() {
+  const t = useTranslations('FeaturedPost')
+  
+  // Moved inside component so it uses translated text
+  const getDefaultFallbackItems = () => [
+    { type: 'image', src: '/featured1.jpeg', caption: 'Elegance personified 👑', href: '/gallery' },
+    { type: 'image', src: '/featured2.jpeg', caption: 'Grace and beauty ✨', href: '/gallery' },
+    { type: 'image', src: '/featured3.jpeg', caption: 'Confidence in every step 💫', href: '/gallery' },
+    { type: 'image', src: '/featured4.jpeg', caption: 'Queen with purpose 👑', href: '/gallery' }
+  ]
+
   const [featuredItems, setFeaturedItems] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedItem, setSelectedItem] = useState(null)
@@ -70,17 +74,17 @@ export default function FeaturedPost() {
         if (data?.feature_post && data.feature_post.length > 0) {
           setFeaturedItems(data.feature_post)
         } else {
-          setFeaturedItems(DEFAULT_FALLBACK_ITEMS)
+          setFeaturedItems(getDefaultFallbackItems())
         }
       } catch (err) {
         console.error('Error fetching posts:', err)
-        setFeaturedItems(DEFAULT_FALLBACK_ITEMS)
+        setFeaturedItems(getDefaultFallbackItems())
       } finally {
         setIsLoading(false)
       }
     }
     fetchFeaturedPosts()
-  }, [])
+  }, [t])
 
   // ------------------- modal keyboard nav -------------------
   useEffect(() => {
@@ -257,16 +261,16 @@ export default function FeaturedPost() {
       try {
         await navigator.share({
           title: selectedItem.caption,
-          text: `Check out this ${selectedItem.type} from Classic Queen`,
+          text: t('shareText', { type: selectedItem.type }),
           url: shareUrl,
         })
       } catch {
         await navigator.clipboard.writeText(shareUrl)
-        alert('Link copied to clipboard!')
+        alert(t('copied'))
       }
     } else {
       await navigator.clipboard.writeText(shareUrl)
-      alert('Link copied to clipboard!')
+      alert(t('copied'))
     }
   }
   const handleDownload = () => {
@@ -282,7 +286,7 @@ export default function FeaturedPost() {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Past Queens</h2>
+          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">{t('title')}</h2>
           <div className="flex gap-4 overflow-hidden">
             {[...Array(5)].map((_, i) => (
               <div
@@ -301,9 +305,9 @@ export default function FeaturedPost() {
     return (
       <div className="py-8">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">Past Queens</h2>
+          <h2 className="text-3xl font-bold text-center mb-6 text-brown-900">{t('title')}</h2>
           <div className="text-center p-8 bg-brown-50 rounded-lg">
-            <p className="text-brown-600">No featured posts available.</p>
+            <p className="text-brown-600">{t('noPosts')}</p>
           </div>
         </div>
       </div>
@@ -316,7 +320,7 @@ export default function FeaturedPost() {
     <section className="w-full py-8 bg-gradient-to-b from-white to-brown-50">
       <div className="container mx-auto px-4">
         <h2 className="text-center text-3xl md:text-4xl font-bold mb-6 text-brown-900">
-          Past Queens
+          {t('title')}
         </h2>
       </div>
 
@@ -392,7 +396,7 @@ export default function FeaturedPost() {
               className="flex justify-center"
             >
               <span className="text-[10px] text-brown-400">
-                Auto-scroll resumes in a few seconds…
+                {t('resumeScroll')}
               </span>
             </motion.div>
           )}
@@ -406,14 +410,10 @@ export default function FeaturedPost() {
           <div className="md:hidden">
             <DescriptionCard>
               <p className="text-sm leading-relaxed text-brown-700">
-                Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
-                from around the world. Our platform empowers queens to showcase their unique talents, advocate
-                for meaningful causes, and inspire positive change in their communities. Through this prestigious
-                competition, we honor women who embody grace, confidence, and the transformative power of leadership.
+                {t('aboutText')}
               </p>
-
               <div className="mt-5">
-                <LearnMoreButton />
+                <LearnMoreButton>{t('learnMore')}</LearnMoreButton>
               </div>
             </DescriptionCard>
           </div>
@@ -422,37 +422,32 @@ export default function FeaturedPost() {
           <div className="hidden md:grid grid-cols-3 gap-5 mt-6 text-left">
             {/* Column 1 — Short description */}
             <DescriptionCard>
-              <SectionLabel>About the Pageant</SectionLabel>
+              <SectionLabel>{t('aboutTitle')}</SectionLabel>
               <p className="text-sm leading-relaxed text-brown-700">
-                Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women
-                from around the world. Our platform empowers queens to showcase their unique talents, advocate
-                for meaningful causes, and inspire positive change in their communities.
+                {t('aboutText')}
               </p>
             </DescriptionCard>
 
             {/* Column 2 — Mission */}
             <DescriptionCard>
-              <SectionLabel>Our Mission</SectionLabel>
+              <SectionLabel>{t('missionTitle')}</SectionLabel>
               <p className="text-sm leading-relaxed text-brown-700">
-                To empower women through a prestigious global beauty platform that nurtures confidence,
-                intelligence, leadership, and social responsibility, transforming queens into influential
-                ambassadors of positive change.
+                {t('missionText')}
               </p>
             </DescriptionCard>
 
             {/* Column 3 — Values */}
             <DescriptionCard>
-              <SectionLabel>Our Values</SectionLabel>
+              <SectionLabel>{t('valuesTitle')}</SectionLabel>
               <p className="text-sm leading-relaxed text-brown-700">
-                Classic Queen International stands for elegance, class, and integrity, nurturing queens who
-                are poised, articulate, and socially conscious. 
+                {t('valuesText')}
               </p>
             </DescriptionCard>
           </div>
 
           {/* Desktop-only centered Learn More button, below the grid */}
           <div className="hidden md:flex justify-center mt-6">
-            <LearnMoreButton />
+            <LearnMoreButton>{t('learnMore')}</LearnMoreButton>
           </div>
         </div>
       </div>
@@ -599,7 +594,7 @@ function SectionLabel({ children }) {
 }
 
 /* ---------------- Learn More button ---------------- */
-function LearnMoreButton() {
+function LearnMoreButton({ children }) {
   return (
     <a
       href="/about"
@@ -616,7 +611,7 @@ function LearnMoreButton() {
         boxShadow: "0 4px 12px rgba(201,162,39,0.35)",
       }}
     >
-      Learn More
+      {children}
       <svg
         width="14"
         height="14"

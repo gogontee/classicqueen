@@ -9,8 +9,11 @@ import {
 } from 'lucide-react'
 import { motion } from "motion/react"
 import { supabase } from '../../lib/supabase'
+import { useTranslations } from 'next-intl'
 
 export default function ContactPage() {
+  const t = useTranslations('ContactPage')
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,28 +31,29 @@ export default function ContactPage() {
   const [activeTab, setActiveTab] = useState('form')
   const [uploadProgress, setUploadProgress] = useState(0)
 
+  // The types array now pulls labels from translations
   const inquiryTypes = [
-    { value: 'general', label: 'General Inquiry', icon: MessageCircle },
-    { value: 'participation', label: 'Contestant Application', icon: Users },
-    { value: 'sponsorship', label: 'Sponsorship', icon: Award },
-    { value: 'media', label: 'Media & Press', icon: FileText },
-    { value: 'volunteer', label: 'Volunteer', icon: Heart },
-    { value: 'partnership', label: 'Partnership', icon: Globe },
+    { value: 'general', label: t('types.general'), icon: MessageCircle },
+    { value: 'participation', label: t('types.participation'), icon: Users },
+    { value: 'sponsorship', label: t('types.sponsorship'), icon: Award },
+    { value: 'media', label: t('types.media'), icon: FileText },
+    { value: 'volunteer', label: t('types.volunteer'), icon: Heart },
+    { value: 'partnership', label: t('types.partnership'), icon: Globe },
   ]
 
   const contactInfo = [
     {
       icon: Mail,
-      title: 'Email Address',
+      title: t('emailTitle'),
       details: ['classicqueeninternational1@gmail.com'],
-      description: 'For all inquiries and information',
+      description: t('emailDesc'),
       color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Phone,
-      title: 'Phone Number',
+      title: t('phoneTitle'),
       details: ['+234 815 666 0109'],
-      description: 'Call or WhatsApp available',
+      description: t('phoneDesc'),
       color: 'from-emerald-500 to-teal-500'
     }
   ]
@@ -72,19 +76,19 @@ export default function ContactPage() {
     const newErrors = {}
     
     if (!formData.name.trim()) {
-      newErrors.name = 'Name is required'
+      newErrors.name = t('errors.nameRequired')
     }
     
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required'
+      newErrors.email = t('errors.emailRequired')
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address'
+      newErrors.email = t('errors.emailInvalid')
     }
     
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required'
+      newErrors.message = t('errors.messageRequired')
     } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters'
+      newErrors.message = t('errors.messageMin')
     }
     
     setErrors(newErrors)
@@ -95,7 +99,6 @@ export default function ContactPage() {
     try {
       setUploadProgress(0)
       
-      // Validate file type
       const allowedTypes = [
         'application/pdf',
         'application/msword',
@@ -111,27 +114,17 @@ export default function ContactPage() {
         throw new Error('File type not allowed. Please upload PDF, DOC, DOCX, JPG, PNG, WebP, or TXT files.')
       }
       
-      // Validate file size (10MB max)
       const maxSize = 10 * 1024 * 1024 // 10MB
       if (file.size > maxSize) {
         throw new Error('File size must be less than 10MB')
       }
       
-      // Create unique filename with timestamp
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 15)
       const fileExtension = file.name.split('.').pop()
       const fileName = `${timestamp}_${randomString}.${fileExtension}`
       const filePath = `${fileName}`
       
-      console.log('Uploading file to enquiries bucket:', {
-        bucket: 'enquiries',
-        path: filePath,
-        size: file.size,
-        type: file.type
-      })
-      
-      // Upload to Supabase Storage - enquiries bucket
       const { data, error: uploadError } = await supabase.storage
         .from('enquiries')
         .upload(filePath, file, {
@@ -144,14 +137,9 @@ export default function ContactPage() {
         throw new Error(`Upload failed: ${uploadError.message}`)
       }
       
-      console.log('File uploaded successfully:', data)
-      
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('enquiries')
         .getPublicUrl(filePath)
-      
-      console.log('Public URL generated:', publicUrl)
       
       setUploadProgress(100)
       return publicUrl
@@ -174,13 +162,10 @@ export default function ContactPage() {
     try {
       let attachmentUrl = null
       
-      // Upload file if selected
       if (selectedFile) {
         setFileUploading(true)
         try {
-          console.log('Starting file upload:', selectedFile.name)
           attachmentUrl = await uploadFile(selectedFile)
-          console.log('File uploaded successfully, URL:', attachmentUrl)
         } catch (error) {
           console.error('File upload failed:', error)
           alert(`File upload failed: ${error.message}. Please try again or submit without attachment.`)
@@ -191,7 +176,6 @@ export default function ContactPage() {
         setFileUploading(false)
       }
       
-      // Prepare enquiry data
       const enquiryData = {
         name: formData.name.trim(),
         email: formData.email.trim(),
@@ -208,9 +192,6 @@ export default function ContactPage() {
         created_at: new Date().toISOString()
       }
       
-      console.log('Submitting enquiry data:', enquiryData)
-      
-      // Insert into Supabase enquiries table
       const { data: insertData, error } = await supabase
         .from('enquiries')
         .insert([enquiryData])
@@ -221,9 +202,6 @@ export default function ContactPage() {
         throw new Error(`Database error: ${error.message}`)
       }
       
-      console.log('Enquiry submitted successfully:', insertData)
-      
-      // Reset form
       setFormData({
         name: '',
         email: '',
@@ -236,11 +214,9 @@ export default function ContactPage() {
       setUploadProgress(0)
       setErrors({})
       
-      // Show success message
       setIsSubmitted(true)
       setIsSubmitting(false)
       
-      // Reset success message after 5 seconds
       setTimeout(() => {
         setIsSubmitted(false)
       }, 5000)
@@ -255,10 +231,8 @@ export default function ContactPage() {
   const handleFileChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      // Reset upload progress
       setUploadProgress(0)
       
-      // Check file type
       const allowedTypes = [
         'application/pdf',
         'application/msword',
@@ -275,7 +249,6 @@ export default function ContactPage() {
         return
       }
       
-      // Check file size (10MB max)
       if (file.size > 10 * 1024 * 1024) {
         alert('File size must be less than 10MB')
         return
@@ -296,7 +269,6 @@ export default function ContactPage() {
     transition: { duration: 0.5 }
   }
 
-  // Format file size
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -319,11 +291,10 @@ export default function ContactPage() {
             className="max-w-3xl mx-auto text-center"
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight text-white">
-              Connect With <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-gold-300">Us</span>
+              {t('heroTitle1')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-gold-300">{t('heroTitle2')}</span>
             </h1>
             <p className="text-lg md:text-xl text-white mb-10 max-w-2xl mx-auto leading-relaxed">
-              Reach out to us for inquiries about participation, partnerships, 
-              or any questions. We're here to support your journey.
+              {t('heroSubtitle')}
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 text-white">
@@ -352,7 +323,7 @@ export default function ContactPage() {
               className="bg-white rounded-2xl shadow-lg p-6 border border-brown-100"
             >
               <h2 className="text-2xl font-bold text-brown-900 mb-6 pb-3 border-b border-brown-100">
-                Quick <span className="text-gold-600">Contact</span>
+                {t('quickContact')} <span className="text-gold-600">{t('quickContactAccent')}</span>
               </h2>
               
               <div className="space-y-6">
@@ -382,15 +353,14 @@ export default function ContactPage() {
               </div>
             </motion.div>
 
-            {/* Social Media - Fixed Colors */}
+            {/* Social Media */}
             <motion.div 
               {...fadeInUp}
               transition={{ delay: 0.1 }}
               className="bg-white rounded-2xl shadow-lg p-6 border border-brown-100"
             >
-              <h3 className="text-xl font-bold text-brown-900 mb-6">Connect With Us</h3>
+              <h3 className="text-xl font-bold text-brown-900 mb-6">{t('socialTitle')}</h3>
               <div className="space-y-4">
-                {/* Instagram - Pink */}
                 <motion.a
                   href="https://instagram.com/classicqueeninternational"
                   target="_blank"
@@ -405,7 +375,6 @@ export default function ContactPage() {
                   <Send size={16} className="ml-auto rotate-45 opacity-80 flex-shrink-0" />
                 </motion.a>
 
-                {/* Facebook - Blue */}
                 <motion.a
                   href="https://facebook.com/profile.php?id=100063561464595"
                   target="_blank"
@@ -420,7 +389,6 @@ export default function ContactPage() {
                   <Send size={16} className="ml-auto rotate-45 opacity-80 flex-shrink-0" />
                 </motion.a>
 
-                {/* TikTok - Black */}
                 <motion.a
                   href="https://tiktok.com/@classicqueenintl"
                   target="_blank"
@@ -443,7 +411,7 @@ export default function ContactPage() {
               transition={{ delay: 0.2 }}
               className="bg-gradient-to-br from-brown-50 to-gold-50 rounded-2xl shadow-lg p-6 border border-gold-100 overflow-hidden"
             >
-              <h3 className="text-xl font-bold text-brown-900 mb-4">Inquiry Types</h3>
+              <h3 className="text-xl font-bold text-brown-900 mb-4">{t('inquiryTypesTitle')}</h3>
               <div className="grid grid-cols-2 gap-3">
                 {inquiryTypes.map((type) => {
                   const Icon = type.icon
@@ -485,7 +453,7 @@ export default function ContactPage() {
                   }`}
                 >
                   <Send size={18} className="inline mr-2 align-middle" />
-                  Send Message
+                  {t('sendMessageTab')}
                 </button>
               </div>
 
@@ -500,10 +468,9 @@ export default function ContactPage() {
                     <div className="inline-flex items-center justify-center w-24 h-24 bg-emerald-50 text-emerald-600 rounded-full mb-8 shadow-lg">
                       <CheckCircle size={48} />
                     </div>
-                    <h3 className="text-2xl font-bold text-brown-900 mb-4">Message Sent Successfully!</h3>
+                    <h3 className="text-2xl font-bold text-brown-900 mb-4">{t('successTitle')}</h3>
                     <p className="text-brown-600 mb-8 max-w-md mx-auto">
-                      Thank you for reaching out to Classic Queen International. 
-                      Our team will get back to you within 24-48 hours.
+                      {t('successText')}
                     </p>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
@@ -511,7 +478,7 @@ export default function ContactPage() {
                       onClick={() => setIsSubmitted(false)}
                       className="px-8 py-3 bg-gradient-to-r from-gold-500 to-gold-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
                     >
-                      Send Another Message
+                      {t('sendAnother')}
                     </motion.button>
                   </motion.div>
                 ) : (
@@ -522,10 +489,10 @@ export default function ContactPage() {
                   >
                     <div className="mb-8">
                       <h2 className="text-2xl md:text-3xl font-bold text-brown-900 mb-2">
-                        Send Your <span className="text-gold-600">Inquiry</span>
+                        {t('formTitle1')} <span className="text-gold-600">{t('formTitle2')}</span>
                       </h2>
                       <p className="text-brown-600">
-                        Fill out the form below and we'll respond promptly.
+                        {t('formSubtitle')}
                       </p>
                     </div>
 
@@ -537,7 +504,7 @@ export default function ContactPage() {
                         >
                           <label className="block text-brown-700 font-medium text-sm">
                             <User size={16} className="inline mr-2" />
-                            Full Name *
+                            {t('formLabels.fullName')}
                           </label>
                           <input
                             type="text"
@@ -547,7 +514,7 @@ export default function ContactPage() {
                             className={`w-full px-4 py-3 rounded-xl border ${
                               errors.name ? 'border-red-400' : 'border-brown-200'
                             } focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent bg-brown-50/50 transition-all`}
-                            placeholder="Enter your full name"
+                            placeholder={t('placeholders.name')}
                           />
                           {errors.name && (
                             <p className="text-sm text-red-500 mt-1">{errors.name}</p>
@@ -560,7 +527,7 @@ export default function ContactPage() {
                         >
                           <label className="block text-brown-700 font-medium text-sm">
                             <Mail size={16} className="inline mr-2" />
-                            Email Address *
+                            {t('formLabels.email')}
                           </label>
                           <input
                             type="email"
@@ -570,7 +537,7 @@ export default function ContactPage() {
                             className={`w-full px-4 py-3 rounded-xl border ${
                               errors.email ? 'border-red-400' : 'border-brown-200'
                             } focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent bg-brown-50/50 transition-all`}
-                            placeholder="Enter your email address"
+                            placeholder={t('placeholders.email')}
                           />
                           {errors.email && (
                             <p className="text-sm text-red-500 mt-1">{errors.email}</p>
@@ -585,7 +552,7 @@ export default function ContactPage() {
                         >
                           <label className="block text-brown-700 font-medium text-sm">
                             <Phone size={16} className="inline mr-2" />
-                            Phone Number
+                            {t('formLabels.phone')}
                           </label>
                           <input
                             type="tel"
@@ -593,7 +560,7 @@ export default function ContactPage() {
                             value={formData.phone}
                             onChange={handleChange}
                             className="w-full px-4 py-3 rounded-xl border border-brown-200 focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent bg-brown-50/50 transition-all"
-                            placeholder="Enter your phone number"
+                            placeholder={t('placeholders.phone')}
                           />
                         </motion.div>
 
@@ -603,7 +570,7 @@ export default function ContactPage() {
                         >
                           <label className="block text-brown-700 font-medium text-sm">
                             <Award size={16} className="inline mr-2" />
-                            Subject
+                            {t('formLabels.subject')}
                           </label>
                           <input
                             type="text"
@@ -611,14 +578,14 @@ export default function ContactPage() {
                             value={formData.subject}
                             onChange={handleChange}
                             className="w-full px-4 py-3 rounded-xl border border-brown-200 focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent bg-brown-50/50 transition-all"
-                            placeholder="Subject of your inquiry"
+                            placeholder={t('placeholders.subject')}
                           />
                         </motion.div>
                       </div>
 
                       <div className="space-y-2">
                         <label className="block text-brown-700 font-medium text-sm">
-                          Inquiry Type
+                          {t('formLabels.inquiryType')}
                         </label>
                         <select
                           name="inquiryType"
@@ -636,7 +603,7 @@ export default function ContactPage() {
 
                       <div className="space-y-2">
                         <label className="block text-brown-700 font-medium text-sm">
-                          Message *
+                          {t('formLabels.message')}
                         </label>
                         <textarea
                           name="message"
@@ -646,7 +613,7 @@ export default function ContactPage() {
                           className={`w-full px-4 py-3 rounded-xl border ${
                             errors.message ? 'border-red-400' : 'border-brown-200'
                           } focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent bg-brown-50/50 transition-all resize-none`}
-                          placeholder="Please provide details about your inquiry..."
+                          placeholder={t('placeholders.message')}
                         />
                         {errors.message && (
                           <p className="text-sm text-red-500 mt-1">{errors.message}</p>
@@ -656,7 +623,7 @@ export default function ContactPage() {
                       {/* File Upload */}
                       <div className="space-y-2">
                         <label className="block text-brown-700 font-medium text-sm">
-                          Attachment (Optional)
+                          {t('formLabels.attachment')}
                         </label>
                         <div className="border-2 border-dashed border-brown-300 rounded-xl p-6 text-center hover:border-gold-400 transition-all bg-gradient-to-b from-brown-50/50 to-transparent">
                           {selectedFile ? (
@@ -723,10 +690,10 @@ export default function ContactPage() {
                                   <Award size={28} />
                                 </div>
                                 <p className="text-brown-700 font-medium mb-1">
-                                  Click to upload a file
+                                  {t('formLabels.clickUpload')}
                                 </p>
                                 <p className="text-brown-500 text-sm">
-                                  PDF, DOC, JPG, PNG, WebP, TXT up to 10MB
+                                  {t('formLabels.uploadHint')}
                                 </p>
                               </motion.label>
                             </>
@@ -745,20 +712,19 @@ export default function ContactPage() {
                           <div className="flex items-center justify-center">
                             <Loader2 size={20} className="animate-spin mr-3" />
                             <span>
-                              {fileUploading ? 'Uploading File...' : 'Sending Message...'}
+                              {fileUploading ? t('formLabels.uploading') : t('formLabels.sending')}
                             </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
                             <Send size={20} className="mr-3" />
-                            <span>Send Message</span>
+                            <span>{t('formLabels.sendBtn')}</span>
                           </div>
                         )}
                       </motion.button>
 
                       <p className="text-center text-brown-500 text-xs md:text-sm mt-6">
-                        By submitting this form, you agree to our Privacy Policy and 
-                        consent to being contacted by Classic Queen International.
+                        {t('formLabels.privacy')}
                       </p>
                     </form>
                   </motion.div>

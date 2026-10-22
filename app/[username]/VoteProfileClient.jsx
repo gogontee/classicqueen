@@ -22,8 +22,10 @@ import {
 import { createClient } from '@/utils/supabase/client';
 import VoteModal from '@/components/VoteModal';
 import GiftModal from '@/components/GiftModal';
+import { useTranslations } from 'next-intl';
 
 export default function VoteProfileClient() {
+  const t = useTranslations('VoteProfile');
   const params = useParams();
   const username = params.username;
   const supabase = createClient();
@@ -79,20 +81,8 @@ export default function VoteProfileClient() {
   };
 
   const getShareMessage = () => {
-    const name =
-      candidate?.full_name?.toUpperCase() ||
-      (candidate?.username || '').toUpperCase() ||
-      'ME';
-    const country = candidate?.country ? `, representing ${candidate.country}` : '';
-    return `Hello, I am participating in the Classic Queen International 2026 pageant${country}.
-Please help vote for me — I need your votes to qualify.
-
-HOW TO VOTE:
-1. Click this link to vote: ${getShareUrl()}
-2. Click on the VOTE button
-3. Each vote is 1 pt — cast as many as you can to support me
-
-I deeply appreciate your support and hope it helps me emerge as Classic Queen International 2026.`;
+    const country = candidate?.country ? t('representing', { country: candidate.country }) : '';
+    return t('shareMessage', { country, url: getShareUrl() });
   };
 
   const handleCopyLink = async () => {
@@ -136,7 +126,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
       <div className="min-h-screen bg-gradient-to-b from-[#2E1503] via-[#1a0d02] to-black flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-10 h-10 text-[#c9a227] animate-spin mx-auto mb-3" />
-          <p className="text-white/60 text-sm">Loading candidate…</p>
+          <p className="text-white/60 text-sm">{t('loading')}</p>
         </div>
       </div>
     );
@@ -150,17 +140,17 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
             <UserIcon className="w-10 h-10 text-[#c9a227]" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">
-            Candidate Not Found
+            {t('notFoundTitle')}
           </h1>
           <p className="text-white/60 text-sm mb-6">
-            We couldn&apos;t find the candidate you&apos;re trying to vote for.
+            {t('notFoundText')}
           </p>
           <Link
             href="/candidates"
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#9A7B4F] to-[#6b4423] text-white rounded-xl font-semibold text-sm hover:brightness-110 transition"
           >
             <ChevronLeft className="w-4 h-4" />
-            Browse Candidates
+            {t('browseCandidates')}
           </Link>
         </div>
       </div>
@@ -213,7 +203,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
           className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gradient-to-r from-[#9A7B4F] to-[#6b4423] text-white font-bold text-[13px] shadow-lg hover:brightness-110 transition-all duration-300 hover:-translate-y-0.5"
         >
           <Heart className="w-3.5 h-3.5 fill-current" />
-          Click to Vote
+          {t('voteButton')}
         </button>
 
         <button
@@ -221,7 +211,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
           className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-[#c9a227]/50 bg-[#c9a227]/10 text-[#f5d76e] font-bold text-[13px] hover:bg-[#c9a227]/20 transition-all duration-300 hover:-translate-y-0.5"
         >
           <Gift className="w-3.5 h-3.5" />
-          Gift Me
+          {t('giftButton')}
         </button>
       </div>
     </motion.div>
@@ -231,7 +221,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
   const ShareBarDesktop = (
     <div className="bg-white/5 rounded-2xl border border-[#c9a227]/20 p-3">
       <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 px-1">
-        Share
+        {t('shareTitle')}
       </p>
       <div className="space-y-2">
         <button
@@ -241,12 +231,12 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
           {copied ? (
             <>
               <Check className="w-4 h-4 text-green-400" />
-              <span className="text-green-400">Copied!</span>
+              <span className="text-green-400">{t('copied')}</span>
             </>
           ) : (
             <>
               <Copy className="w-4 h-4" />
-              <span>Copy Link</span>
+              <span>{t('copyLink')}</span>
             </>
           )}
         </button>
@@ -290,10 +280,10 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[11px] font-bold text-[#f5d76e] leading-tight">
-            View My Page
+            {t('viewMyPage')}
           </p>
           <p className="text-[10px] text-white/60 truncate mt-0.5">
-            Full profile, gallery & trophy
+            {t('viewMyPageSubtitle')}
           </p>
         </div>
         <ArrowRight className="w-3.5 h-3.5 text-[#c9a227]/60 group-hover:text-[#f5d76e] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
@@ -308,7 +298,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
       className="group flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-[#c9a227]/40 bg-[#c9a227]/10 hover:bg-[#c9a227]/20 text-[#f5d76e] font-bold text-xs transition-all w-full"
     >
       <ExternalLink className="w-3.5 h-3.5" />
-      <span>View My Page</span>
+      <span>{t('viewMyPage')}</span>
       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
     </Link>
   );
@@ -325,12 +315,12 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
             {copied ? (
               <>
                 <Check className="w-3 h-3 text-green-400 flex-shrink-0" />
-                <span className="truncate text-green-400">Copied!</span>
+                <span className="truncate text-green-400">{t('copied')}</span>
               </>
             ) : (
               <>
                 <Copy className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">Copy</span>
+                <span className="truncate">{t('copyLink')}</span>
               </>
             )}
           </button>
@@ -372,16 +362,16 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-sm md:text-base font-bold text-white mb-1 leading-snug">
-            Want to see how to vote for your favorite?
+            {t('howToVoteCardTitle')}
           </h3>
           <p className="text-xs text-white/60 mb-3 leading-relaxed">
-            A quick guide on how to cast your vote for {displayName}.
+            {t('howToVoteCardText', { name: displayName })}
           </p>
           <button
             onClick={() => setShowHowToVote(true)}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-[#9A7B4F] to-[#6b4423] text-white text-xs font-bold hover:brightness-110 transition"
           >
-            Click Here
+            {t('clickHere')}
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -443,10 +433,10 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
 
               <div className="min-w-0 flex-1">
                 <h2 className="text-base font-bold text-white truncate">
-                  How to Vote
+                  {t('howToVoteModalTitle')}
                 </h2>
                 <p className="text-[11px] text-white/70 truncate">
-                  for {displayName}
+                  {t('howToVoteModalSubtitle', { name: displayName })}
                 </p>
               </div>
             </div>
@@ -457,27 +447,26 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
                 <div className="w-7 h-7 rounded-full bg-[#c9a227] text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
                   1
                 </div>
-                <p className="text-sm text-white/80 leading-relaxed pt-0.5">
-                  Click the <strong className="text-white">Click to Vote</strong>{' '}
-                  button on {displayName}&apos;s profile.
-                </p>
+                <p 
+                  className="text-sm text-white/80 leading-relaxed pt-0.5"
+                  dangerouslySetInnerHTML={{ __html: t.raw('step1', { name: displayName }) }} 
+                />
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-[#c9a227] text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
                   2
                 </div>
-                <p className="text-sm text-white/80 leading-relaxed pt-0.5">
-                  Choose how many votes you want to cast. Each vote is{' '}
-                  <strong className="text-white">1 pt</strong>.
-                </p>
+                <p 
+                  className="text-sm text-white/80 leading-relaxed pt-0.5"
+                  dangerouslySetInnerHTML={{ __html: t.raw('step2') }} 
+                />
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-7 h-7 rounded-full bg-[#c9a227] text-black text-xs font-bold flex items-center justify-center flex-shrink-0">
                   3
                 </div>
                 <p className="text-sm text-white/80 leading-relaxed pt-0.5">
-                  Enter your email, complete the payment, and your votes count
-                  immediately.
+                  {t('step3')}
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -485,8 +474,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
                   4
                 </div>
                 <p className="text-sm text-white/80 leading-relaxed pt-0.5">
-                  Share {displayName}&apos;s profile with friends and family to
-                  multiply support.
+                  {t('step4', { name: displayName })}
                 </p>
               </div>
 
@@ -498,7 +486,7 @@ I deeply appreciate your support and hope it helps me emerge as Classic Queen In
                 className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-[#9A7B4F] to-[#6b4423] text-white text-sm font-bold hover:brightness-110 transition flex items-center justify-center gap-2"
               >
                 <Heart className="w-4 h-4 fill-current" />
-                Click to Vote
+                {t('voteButton')}
               </button>
             </div>
           </motion.div>

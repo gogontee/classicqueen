@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Crown, Trophy, Star, Heart, Eye } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const FeaturedCandidates = () => {
+  const t = useTranslations('FeaturedCandidates')
   const [featuredCandidates, setFeaturedCandidates] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -49,7 +51,7 @@ const FeaturedCandidates = () => {
       <section className="py-12 md:py-16 bg-gradient-to-b from-brown-50 to-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-brown-900 mb-12">
-            Featured Contestants
+            {t('title')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
@@ -72,11 +74,10 @@ const FeaturedCandidates = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-brown-900 mb-4">
-            Featured Contestants
+            {t('title')}
           </h2>
           <p className="text-brown-600 max-w-2xl mx-auto">
-            Meet our top contestants who are leading the competition with their grace, 
-            talent, and commitment to making a difference.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -117,7 +118,7 @@ const FeaturedCandidates = () => {
                       </div>
                     </div>
                     <button className="bg-gold-500 hover:bg-gold-600 text-white px-4 py-1 rounded-lg text-sm font-medium transition-colors">
-                      Vote Now
+                      {t('voteNow')}
                     </button>
                   </div>
                 </div>
@@ -155,7 +156,7 @@ const FeaturedCandidates = () => {
                     href={`/candidates/${candidate.id}`}
                     className="text-brown-700 hover:text-gold-600 font-medium flex items-center space-x-2 transition-colors"
                   >
-                    <span>View Profile</span>
+                    <span>{t('viewProfile')}</span>
                     <span>→</span>
                   </Link>
                   <div className="flex space-x-2">
@@ -178,7 +179,7 @@ const FeaturedCandidates = () => {
             href="/candidates"
             className="inline-flex items-center space-x-2 bg-brown-600 hover:bg-brown-700 text-white font-medium py-3 px-8 rounded-lg transition-all duration-300 hover:scale-105"
           >
-            <span>View All Contestants</span>
+            <span>{t('viewAll')}</span>
             <Crown size={18} />
           </Link>
         </div>

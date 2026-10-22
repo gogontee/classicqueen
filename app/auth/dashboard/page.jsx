@@ -33,8 +33,10 @@ import HowModal from "@/components/how/HowModal";
 import { useWallet } from "@/hooks/useWallet";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 import { formatPoints } from "@/lib/points";
+import { useTranslations } from "next-intl";
 
 export default function Dashboard() {
+  const t = useTranslations("Dashboard");
   const router = useRouter();
   const supabase = createClient();
   const { reportNetworkError } = useNetworkError();
@@ -58,7 +60,7 @@ export default function Dashboard() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
 
   // How-to guide modal
-  const [howGuide, setHowGuide] = useState(null); // 'vote' | 'gift' | 'fund' | 'favorite' | null
+  const [howGuide, setHowGuide] = useState(null); 
 
   // Wallet
   const { balance, fetchBalance, ensureWallet } = useWallet(profile?.id);
@@ -81,7 +83,6 @@ export default function Dashboard() {
 
       setProfile(profileData);
 
-      // If this user has a candidate_code, look up their candidate record
       if (profileData?.candidate_code) {
         const { data: candidateData } = await supabase
           .from("candidates")
@@ -107,7 +108,6 @@ export default function Dashboard() {
     }
   }, [router, supabase, reportNetworkError]);
 
-  // Reload only the candidate stats — used after conversions
   const reloadCandidateSelf = useCallback(async () => {
     if (!profile?.candidate_code) return;
     try {
@@ -129,8 +129,7 @@ export default function Dashboard() {
       try {
         const { data, error } = await supabase
           .from("favorites")
-          .select(
-            `
+          .select(`
             id,
             created_at,
             candidate:candidates (
@@ -142,8 +141,7 @@ export default function Dashboard() {
               status,
               vote_count
             )
-          `
-          )
+          `)
           .eq("user_id", userId)
           .order("created_at", { ascending: false });
 
@@ -175,7 +173,6 @@ export default function Dashboard() {
     };
   }, [loadProfile, loadFavorites]);
 
-  // Ensure wallet row exists once profile is loaded
   useEffect(() => {
     if (profile?.id) ensureWallet();
   }, [profile?.id, ensureWallet]);
@@ -251,7 +248,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <section className="min-h-screen bg-[#faf6ee] flex items-center justify-center px-4">
-        <p className="text-[#6b4423] text-sm">Loading dashboard…</p>
+        <p className="text-[#6b4423] text-sm">{t("loading")}</p>
       </section>
     );
   }
@@ -260,18 +257,19 @@ export default function Dashboard() {
     return (
       <section className="min-h-screen bg-[#faf6ee] flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl p-6 max-w-sm text-center text-red-600 text-sm shadow">
-          {error || "Profile not found."}
+          {error || t("notFound")}
         </div>
       </section>
     );
   }
 
   const roleColors = {
-    admin: { bg: "#6b4423", text: "white", label: "Admin" },
-    candidate: { bg: "#9A7B4F", text: "white", label: "Candidate" },
-    user: { bg: "#faf6ee", text: "#6b4423", label: "User" },
+    admin: { bg: "#6b4423", text: "white" },
+    candidate: { bg: "#9A7B4F", text: "white" },
+    user: { bg: "#faf6ee", text: "#6b4423" },
   };
   const badge = roleColors[profile.role] || roleColors.user;
+  const roleLabel = t(`roles.${profile.role}`);
 
   const initials =
     profile.first_name && profile.last_name
@@ -281,12 +279,11 @@ export default function Dashboard() {
   const giftBalance = Number(candidateSelf?.gift_balance_usd ?? 0);
   const canConvert = giftBalance >= 1;
 
-  // How-to guide definitions
   const howGuides = [
-    { key: "vote", label: "How to Vote", icon: Heart },
-    { key: "gift", label: "How to Gift", icon: Gift },
-    { key: "fund", label: "How to Buy Points", icon: Wallet },
-    { key: "favorite", label: "Add Favorite", icon: Star },
+    { key: "vote", label: t("guides.vote"), icon: Heart },
+    { key: "gift", label: t("guides.gift"), icon: Gift },
+    { key: "fund", label: t("guides.fund"), icon: Wallet },
+    { key: "favorite", label: t("guides.favorite"), icon: Star },
   ];
 
   return (
@@ -312,7 +309,7 @@ export default function Dashboard() {
               margin: 0,
             }}
           >
-            My Dashboard
+            {t("title")}
           </h1>
           <button
             onClick={handleLogout}
@@ -329,7 +326,7 @@ export default function Dashboard() {
             }}
           >
             <LogOut size={14} />
-            Sign Out
+            {t("signOut")}
           </button>
         </div>
       </div>
@@ -412,7 +409,7 @@ export default function Dashboard() {
                 ) : (
                   <Shield size={11} />
                 )}
-                {badge.label}
+                {roleLabel}
               </div>
 
               <div className="flex items-center justify-center md:justify-start gap-2 mt-3 text-[#6b4423] text-sm">
@@ -427,7 +424,7 @@ export default function Dashboard() {
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[#9A7B4F] text-[#6b4423] hover:bg-[#faf6ee] transition text-sm font-semibold"
               >
                 <Settings size={14} />
-                Edit Profile
+                {t("editProfile")}
               </button>
 
               {profile.role === "admin" && (
@@ -440,7 +437,7 @@ export default function Dashboard() {
                   }}
                 >
                   <ShieldCheck size={14} />
-                  Admin Panel
+                  {t("adminPanel")}
                 </Link>
               )}
             </div>
@@ -458,7 +455,7 @@ export default function Dashboard() {
               >
                 <p className="text-[10px] uppercase tracking-wider font-bold text-[#6b4423] mb-3 flex items-center gap-1.5">
                   <Sparkles size={11} className="text-[#c9a227]" />
-                  Your Candidate Stats
+                  {t("stats.title")}
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
@@ -467,7 +464,7 @@ export default function Dashboard() {
                       {candidateSelf.vote_count ?? 0}
                     </p>
                     <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
-                      Votes
+                      {t("stats.votes")}
                     </p>
                   </div>
                   <div>
@@ -475,7 +472,7 @@ export default function Dashboard() {
                       {candidateSelf.gift_count ?? 0}
                     </p>
                     <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
-                      Gifts
+                      {t("stats.gifts")}
                     </p>
                   </div>
                   <div>
@@ -483,7 +480,7 @@ export default function Dashboard() {
                       {formatPoints(candidateSelf.gift_total_usd ?? 0)}
                     </p>
                     <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
-                      Total Value
+                      {t("stats.totalValue")}
                     </p>
                   </div>
                   <div>
@@ -491,7 +488,7 @@ export default function Dashboard() {
                       {formatPoints(candidateSelf.gift_balance_usd ?? 0)}
                     </p>
                     <p className="text-[10px] text-[#6b4423]/70 font-medium mt-0.5">
-                      Convertible
+                      {t("stats.convertible")}
                     </p>
                   </div>
                 </div>
@@ -506,7 +503,7 @@ export default function Dashboard() {
                     }}
                   >
                     <Gift size={14} />
-                    See Who Sent You Gifts
+                    {t("stats.seeGifts")}
                   </button>
 
                   <button
@@ -519,20 +516,17 @@ export default function Dashboard() {
                     }}
                   >
                     <Sparkles size={14} />
-                    {canConvert
-                      ? "Convert Gift Balance to Votes"
-                      : "No Gift Balance Yet"}
+                    {canConvert ? t("stats.convertVotes") : t("stats.noGiftBalance")}
                   </button>
                 </div>
 
-                {/* Conversion history button */}
                 <div className="mt-2">
                   <button
                     onClick={() => setHistoryModalOpen(true)}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm font-semibold border border-[#c9a227]/40 bg-[#c9a227]/10 hover:bg-[#c9a227]/20 transition"
                   >
                     <History size={14} />
-                    View Conversion History
+                    {t("stats.viewHistory")}
                   </button>
                 </div>
               </div>
@@ -559,7 +553,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mb-3">
             <HelpCircle size={14} className="text-[#9A7B4F]" />
             <h3 className="text-sm font-bold text-[#2E1503]">
-              Need help? Quick guides
+              {t("guides.title")}
             </h3>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -584,9 +578,9 @@ export default function Dashboard() {
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-lg font-bold text-[#2E1503]">My Favorites</h3>
+              <h3 className="text-lg font-bold text-[#2E1503]">{t("favorites.title")}</h3>
               <p className="text-xs text-[#6b4423]/70 mt-0.5">
-                {favorites.length} candidate{favorites.length === 1 ? "" : "s"} saved
+                {t("favorites.saved", { count: favorites.length })}
               </p>
             </div>
             <button
@@ -597,7 +591,7 @@ export default function Dashboard() {
               }}
             >
               <Plus size={14} />
-              Add Favorite
+              {t("favorites.addBtn")}
             </button>
           </div>
 
@@ -615,10 +609,10 @@ export default function Dashboard() {
                 </div>
               </div>
               <p className="text-sm text-[#6b4423] font-medium">
-                No favorites yet
+                {t("favorites.emptyTitle")}
               </p>
               <p className="text-xs text-[#6b4423]/60 mt-1">
-                Search for a candidate and add her to your favorites.
+                {t("favorites.emptyText")}
               </p>
             </div>
           ) : (
@@ -638,7 +632,7 @@ export default function Dashboard() {
           href="/terms"
           className="mt-6 flex w-full items-center justify-center rounded-lg border border-[#c9a227]/50 bg-white px-4 py-3 text-sm font-semibold text-[#6b4423] shadow-sm transition hover:bg-[#faf6ee] md:hidden"
         >
-          Terms of Use
+          {t("termsOfUse")}
         </Link>
       </div>
 
@@ -659,7 +653,6 @@ export default function Dashboard() {
         onAdded={handleFavoriteAdded}
       />
 
-      {/* Vote modal */}
       <VoteModal
         isOpen={voteOpen}
         onClose={() => setVoteOpen(false)}
@@ -667,7 +660,6 @@ export default function Dashboard() {
         onVoteSuccess={handleVoteSuccess}
       />
 
-      {/* Gift transactions modal */}
       <GiftTransactionsModal
         isOpen={giftModalOpen}
         onClose={() => setGiftModalOpen(false)}
@@ -675,7 +667,6 @@ export default function Dashboard() {
         onConverted={() => setConvertModalOpen(true)}
       />
 
-      {/* Convert gift modal */}
       <ConvertGiftModal
         isOpen={convertModalOpen}
         onClose={() => setConvertModalOpen(false)}
@@ -685,14 +676,12 @@ export default function Dashboard() {
         }}
       />
 
-      {/* Conversion history modal */}
       <ConversionHistoryModal
         isOpen={historyModalOpen}
         onClose={() => setHistoryModalOpen(false)}
         candidate={candidateSelf}
       />
 
-      {/* How-to guide modal */}
       <HowModal
         isOpen={!!howGuide}
         onClose={() => setHowGuide(null)}
@@ -703,6 +692,7 @@ export default function Dashboard() {
 }
 
 function FavoriteCard({ favorite, onRemove, onVote }) {
+  const t = useTranslations("Dashboard");
   const c = favorite.candidate;
   if (!c) return null;
 
@@ -767,7 +757,7 @@ function FavoriteCard({ favorite, onRemove, onVote }) {
           }}
         >
           <Heart size={12} fill="currentColor" />
-          Vote
+          {t("favorites.voteBtn")}
         </button>
 
         <button
@@ -776,7 +766,7 @@ function FavoriteCard({ favorite, onRemove, onVote }) {
             e.stopPropagation();
             onRemove();
           }}
-          aria-label="Remove from favorites"
+          aria-label={t("favorites.removeBtn")}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 hover:bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-10"
         >
           <Trash2 size={14} />

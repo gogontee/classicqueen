@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 const SponsorsSection = () => {
+  const t = useTranslations('SponsorsSection')
   const [isPaused, setIsPaused] = useState(false)
   const [imageErrors, setImageErrors] = useState({})
   const scrollContainerRef = useRef(null)
@@ -12,62 +14,21 @@ const SponsorsSection = () => {
   const router = useRouter()
 
   const sponsors = [
-    {
-      id: 1,
-      name: 'Platinum Sponsors',
-      logo: '/sponsor1.jpeg',
-      fallbackLogo: '/sponsor1.jpeg',
-      type: 'Highest Level',
-    },
-    {
-      id: 2,
-      name: 'Gold Sponsors',
-      logo: '/sponsor2.jpeg',
-      fallbackLogo: '/sponsor2.jpeg',
-      type: 'Premium Level',
-    },
-    {
-      id: 3,
-      name: 'Media Partners',
-      logo: '/sponsor3.jpeg',
-      fallbackLogo: '/sponsor3.jpeg',
-      type: 'Broadcast & Media',
-    },
-    {
-      id: 4,
-      name: 'Silver Sponsors',
-      logo: '/sponsor4.jpeg',
-      fallbackLogo: '/sponsor4.jpeg',
-      type: 'Supporting Level',
-    },
-    {
-      id: 5,
-      name: 'Platinum Sponsors',
-      logo: '/sponsor5.jpeg',
-      fallbackLogo: '/sponsor5.jpeg',
-      type: 'Highest Level',
-    },
-    {
-      id: 6,
-      name: 'Gold Sponsors',
-      logo: '/sponsor6.jpeg',
-      fallbackLogo: '/sponsor6.jpeg',
-      type: 'Premium Level',
-    },
+    { id: 1, name: 'Platinum Sponsors', logo: '/sponsor1.jpeg', fallbackLogo: '/sponsor1.jpeg', type: 'Highest Level' },
+    { id: 2, name: 'Gold Sponsors', logo: '/sponsor2.jpeg', fallbackLogo: '/sponsor2.jpeg', type: 'Premium Level' },
+    { id: 3, name: 'Media Partners', logo: '/sponsor3.jpeg', fallbackLogo: '/sponsor3.jpeg', type: 'Broadcast & Media' },
+    { id: 4, name: 'Silver Sponsors', logo: '/sponsor4.jpeg', fallbackLogo: '/sponsor4.jpeg', type: 'Supporting Level' },
+    { id: 5, name: 'Platinum Sponsors', logo: '/sponsor5.jpeg', fallbackLogo: '/sponsor5.jpeg', type: 'Highest Level' },
+    { id: 6, name: 'Gold Sponsors', logo: '/sponsor6.jpeg', fallbackLogo: '/sponsor6.jpeg', type: 'Premium Level' },
   ]
 
   const handleImageError = (sponsorId, sponsorName) => {
-    setImageErrors((prev) => ({
-      ...prev,
-      [sponsorId]: true,
-    }))
+    setImageErrors((prev) => ({ ...prev, [sponsorId]: true }))
     console.log(`Failed to load image for ${sponsorName}, using fallback`)
   }
 
   const getImageSrc = (sponsor) => {
-    if (imageErrors[sponsor.id]) {
-      return sponsor.fallbackLogo
-    }
+    if (imageErrors[sponsor.id]) return sponsor.fallbackLogo
     return sponsor.logo
   }
 
@@ -86,23 +47,17 @@ const SponsorsSection = () => {
         requestId = requestAnimationFrame(autoScroll)
         return
       }
-
       scrollPosition += scrollSpeed
-
       if (scrollPosition >= scrollContainer.scrollWidth / 2) {
         scrollPosition = 0
         scrollContainer.scrollLeft = 0
       }
-
       scrollContainer.scrollLeft = scrollPosition
       requestId = requestAnimationFrame(autoScroll)
     }
 
     requestId = requestAnimationFrame(autoScroll)
-
-    return () => {
-      if (requestId) cancelAnimationFrame(requestId)
-    }
+    return () => { if (requestId) cancelAnimationFrame(requestId) }
   }, [isPaused])
 
   const handleSponsorContact = () => {
@@ -115,11 +70,11 @@ const SponsorsSection = () => {
         {/* Section Title */}
         <div className="text-center mb-6 md:mb-8">
           <h2 className="text-2xl md:text-3xl font-bold text-brown-900">
-            OUR VALUED SPONSORS & PARTNERS
+            {t('title')}
           </h2>
           <div className="w-20 h-1 bg-gradient-to-r from-gold-500 to-gold-600 mx-auto mt-2 rounded-full"></div>
           <p className="text-brown-600 text-sm md:text-base mt-3 max-w-2xl mx-auto">
-            This is a space for visionary brands ready to stand at the forefront of Africa&apos;s most refined pageant experience.
+            {t('subtitle')}
           </p>
         </div>
 
@@ -135,12 +90,8 @@ const SponsorsSection = () => {
           >
             <div ref={contentRef} className="inline-flex gap-4 md:gap-6 py-2">
               {duplicatedSponsors.map((sponsor, index) => (
-                <div
-                  key={`${sponsor.id}-${index}`}
-                  className="inline-flex flex-shrink-0 sponsor-card"
-                >
+                <div key={`${sponsor.id}-${index}`} className="inline-flex flex-shrink-0 sponsor-card">
                   <div className="w-full group relative bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-brown-100 hover:border-gold-200">
-                    {/* Sponsor Image — natural ratio, full width */}
                     <div className="relative w-full">
                       <Image
                         src={getImageSrc(sponsor)}
@@ -157,32 +108,17 @@ const SponsorsSection = () => {
             </div>
           </div>
 
-          {/* Edge fades */}
           <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-brown-50 to-transparent pointer-events-none"></div>
           <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-brown-50 to-transparent pointer-events-none"></div>
         </div>
 
-        {/* Responsive widths + hide scrollbar */}
         <style jsx>{`
-          /* Mobile default: 3 per row */
-          .sponsor-card {
-            width: calc(33.333% - 0.75rem);
-          }
-
-          /* Desktop: 5 per row */
+          .sponsor-card { width: calc(33.333% - 0.75rem); }
           @media (min-width: 768px) {
-            .sponsor-card {
-              width: calc(20% - 1rem);
-            }
+            .sponsor-card { width: calc(20% - 1rem); }
           }
-
-          .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
+          .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+          .scrollbar-hide::-webkit-scrollbar { display: none; }
         `}</style>
 
         {/* CTA */}
@@ -190,17 +126,17 @@ const SponsorsSection = () => {
           <div className="inline-flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-4 bg-gradient-to-r from-brown-50 to-gold-50 rounded-xl p-6 shadow-lg w-full max-w-2xl">
             <div className="text-center sm:text-left w-full sm:w-auto">
               <h3 className="text-lg md:text-xl font-bold text-brown-900">
-                Become a Sponsor
+                {t('becomeSponsor')}
               </h3>
               <p className="text-brown-600 text-sm mt-1">
-                Partner with us and reach a premium audience
+                {t('becomeSponsorSubtitle')}
               </p>
             </div>
             <button
               onClick={handleSponsorContact}
               className="px-6 py-2.5 bg-gradient-to-r from-brown-900 to-brown-800 hover:from-gold-600 hover:to-gold-500 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-300 whitespace-nowrap w-full sm:w-auto"
             >
-              Contact for Sponsorship
+              {t('contactButton')}
             </button>
           </div>
         </div>

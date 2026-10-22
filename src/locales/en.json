@@ -1,0 +1,318 @@
+{
+  "Navigation": {
+    "home": "Home",
+    "register": "Register",
+    "candidates": "Candidates",
+    "gallery": "Gallery",
+    "news": "News",
+    "about": "About",
+    "contact": "Contact",
+    "info": "Info",
+    "login": "Login",
+    "logout": "Logout",
+    "dashboard": "My Dashboard"
+  },
+  "VoteModal": {
+    "title": "Vote for {name}",
+    "selectVotes": "Select votes for {name}",
+    "customAmount": "Or enter a custom amount",
+    "votesLabel": "Votes:",
+    "totalLabel": "Total:",
+    "paymentMethod": "Choose payment method",
+    "securePayment": "Secure payment · Cards accepted worldwide",
+    "pay": "Click to Pay {amount}",
+    "voteCount": "{count, plural, =1 {1 vote} other {# votes}}",
+    "insufficient": "Insufficient balance — buy points from the dashboard.",
+    "continue": "Continue",
+    "back": "Back",
+    "wallet": "Wallet",
+    "card": "Card"
+  },
+    "CandidatesPage": {
+    "voteQueen": "Vote your Queen",
+    "title": "Classic Queen International",
+    "subtitle": "Candidates 2026",
+    "noCandidates": "No approved candidates yet. Check back soon.",
+    "error": "Failed to load candidates: {message}"
+  },
+    "HeroSection": {
+    "voteNow": "VOTE NOW",
+    "loading": "Loading hero content...",
+    "errorTitle": "Hero Content Unavailable",
+    "errorDescription": "Check your database connection or add content via Hero Manager",
+    "noContentTitle": "No Hero Content",
+    "noContentDescription": "Add hero images or videos via the Hero Manager",
+    "goToManager": "Go to Hero Manager",
+    "unmute": "Unmute video",
+    "mute": "Mute video",
+    "pause": "Pause",
+    "play": "Play",
+    "previous": "Previous",
+    "next": "Next"
+  },
+    "FeaturedCandidates": {
+    "title": "Featured Contestants",
+    "subtitle": "Meet our top contestants who are leading the competition with their grace, talent, and commitment to making a difference.",
+    "voteNow": "Vote Now",
+    "viewProfile": "View Profile",
+    "viewAll": "View All Contestants"
+  },
+    "Footer": {
+    "about": "About",
+    "contact": "Contact",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "followUs": "Follow Us"
+  },
+    "FeaturedPost": {
+    "title": "Past Queens",
+    "noPosts": "No featured posts available.",
+    "resumeScroll": "Auto-scroll resumes in a few seconds…",
+    "aboutTitle": "About the Pageant",
+    "aboutText": "Classic Queen International Pageant celebrates elegance, intelligence, and purpose-driven women from around the world. Our platform empowers queens to showcase their unique talents, advocate for meaningful causes, and inspire positive change in their communities.",
+    "missionTitle": "Our Mission",
+    "missionText": "To empower women through a prestigious global beauty platform that nurtures confidence, intelligence, leadership, and social responsibility, transforming queens into influential ambassadors of positive change.",
+    "valuesTitle": "Our Values",
+    "valuesText": "Classic Queen International stands for elegance, class, and integrity, nurturing queens who are poised, articulate, and socially conscious.",
+    "learnMore": "Learn More",
+    "shareText": "Check out this {type} from Classic Queen",
+    "copied": "Link copied to clipboard!"
+  },
+    "GalleryPage": {
+    "title": "Gallery",
+    "subtitle": "Explore our captivating gallery of past queens, showcasing their elegance, talent, and memorable moments from the Classic Queen International Pageant.",
+    "noImages": "No images available in the gallery.",
+    "error": "Failed to load gallery images: {message}"
+  },
+    "NextQueenSection": {
+    "title": "WHO BECOMES THE NEXT QUEEN?",
+    "ctaButton": "Click Here to Vote",
+    "ctaSubtitle": "Your vote decides who wears the crown. Support your Queen today."
+  },
+    "NewsPage": {
+    "title": "News",
+    "subtitle": "Stay updated with the latest news, announcements, and highlights from the Classic Queen International Pageant.",
+    "noArticles": "No news articles available at the moment.",
+    "error": "Failed to load news articles: {message}"
+  },
+    "SponsorsSection": {
+    "title": "OUR VALUED SPONSORS & PARTNERS",
+    "subtitle": "This is a space for visionary brands ready to stand at the forefront of Africa's most refined pageant experience.",
+    "becomeSponsor": "Become a Sponsor",
+    "becomeSponsorSubtitle": "Partner with us and reach a premium audience",
+    "contactButton": "Contact for Sponsorship"
+  },
+    
+    "Stats": {
+    "titles": {
+      "candidates": "Candidates",
+      "hostCountry": "Host Country",
+      "starPrize": "Star Prize",
+      "crown": "Crown"
+    },
+    "values": {
+      "global": "Global",
+      "ghana": "Ghana",
+      "5000": "$5,000",
+      "top3": "Top 3"
+    }
+  },
+    "TopNews": {
+    "title": "Top News",
+    "subtitle": "Latest updates, exclusives, and behind-the-scenes stories.",
+    "readMore": "Read More",
+    "moreUpdates": "More Updates"
+  },
+    "AboutPage": {
+    "heroTitle": "Classic Queen International",
+    "heroSubtitle": "Celebrating beauty with purpose, intelligence, and cultural excellence",
+    "essenceTitle": "Our Essence",
+    "essenceText": "Classic Queen International is a prestigious global platform created to celebrate beauty with purpose, intelligence, and cultural excellence. Beyond glamour and the crown, we are dedicated to empowering young women to become confident leaders, influential voices, and agents of positive change in their communities and across the world. This Project is powered by stargate studios Africa.",
+    "quote": "\"We do not just crown winners — we build icons, leaders, and timeless queens.\"",
+    "platformTitle": "Our Platform",
+    "platformText": "We promote grace, confidence, discipline, social responsibility, and international sisterhood. Our platform provides contestants with opportunities for personal development, leadership training, media exposure, and humanitarian advocacy, ensuring that every queen represents not just beauty, but substance and impact.",
+    "standForTitle": "What We Stand For",
+    "standForText": "Classic Queen International stands for elegance, class, and integrity, nurturing queens who are poised, articulate, and socially conscious. Through meaningful projects, partnerships, and global representation, our queens use their influence to inspire hope, promote unity, and create lasting change.",
+    "guidingPrinciplesTitle": "Our Guiding Principles",
+    "guidingPrinciplesSubtitle": "The foundation upon which we build our legacy",
+    "missionTitle": "Mission Statement",
+    "missionText": "To empower women through a prestigious global beauty platform that nurtures confidence, intelligence, leadership, and social responsibility, transforming queens into influential ambassadors of positive change.",
+    "visionTitle": "Vision Statement",
+    "visionText": "To be a world-class international beauty pageant recognized for excellence, integrity, and impact — producing timeless queens who inspire, lead, and uplift communities globally.",
+    "pillarsTitle": "Our Four Pillars of Excellence",
+    "pillarsSubtitle": "The cornerstones that define the Classic Queen International experience",
+    "valuesTitle": "Our Core Values",
+    "valuesSubtitle": "The principles that guide every decision and interaction at Classic Queen International",
+    "impactTitle": "Creating Lasting Impact",
+    "impactSubtitle": "How Classic Queen International transforms lives and communities",
+    "differenceTitle": "The Classic Queen Difference",
+    "ctaTitle": "Become a Classic Queen",
+    "ctaSubtitle": "Join our prestigious platform and begin your journey to becoming a timeless queen who leads with grace, intelligence, and purpose.",
+    "ctaButton": "Start Your Journey",
+    "values": {
+      "v1Title": "Elegance & Class",
+      "v1Desc": "Celebrating timeless beauty, grace, and sophistication in every aspect of our pageant.",
+      "v2Title": "Purpose & Impact",
+      "v2Desc": "Empowering women to achieve their dreams and make a positive impact in their communities.",
+      "v3Title": "Global Excellence",
+      "v3Desc": "Embracing diversity and creating opportunities for women from all backgrounds worldwide.",
+      "v4Title": "Social Responsibility",
+      "v4Desc": "Fostering compassion, leadership, and community service as core values.",
+      "v5Title": "Sisterhood",
+      "v5Desc": "Building lifelong connections and supportive networks among our queens.",
+      "v6Title": "Legacy Building",
+      "v6Desc": "Creating enduring impact and inspiring future generations of women leaders."
+    },
+    "pillars": {
+      "p1Title": "Beauty with Purpose",
+      "p1Desc": "Beyond physical appearance, we celebrate intelligence, character, and meaningful contributions to society.",
+      "p2Title": "Leadership Development",
+      "p2Desc": "Providing training, mentorship, and platforms for our queens to become confident leaders and influencers.",
+      "p3Title": "Cultural Excellence",
+      "p3Desc": "Promoting cultural understanding, international diplomacy, and global sisterhood.",
+      "p4Title": "Humanitarian Advocacy",
+      "p4Desc": "Supporting charitable causes and empowering queens to become agents of positive change."
+    },
+    "impact": {
+      "i1Title": "Personal Transformation",
+      "i1Desc": "Through our comprehensive training programs, contestants develop confidence, communication skills, and leadership abilities that serve them long after the competition ends.",
+      "i2Title": "Global Influence",
+      "i2Desc": "Our queens become ambassadors for positive change, representing their countries with pride and working on international initiatives that address pressing global challenges.",
+      "i3Title": "Community Engagement",
+      "i3Desc": "Each contestant develops and implements a social impact project, creating tangible benefits for their communities and inspiring others to make a difference."
+    },
+    "diff": {
+      "d1Title": "Holistic Development",
+      "d1Desc": "We focus on mind, body, and spirit — developing complete women ready to lead.",
+      "d2Title": "Lifelong Network",
+      "d2Desc": "Join a global sisterhood of empowered women supporting each other's growth.",
+      "d3Title": "Career Advancement",
+      "d3Desc": "Media exposure, networking opportunities, and brand partnerships for career growth.",
+      "d4Title": "International Platform",
+      "d4Desc": "Represent your country on a world stage and make your voice heard globally."
+    }
+  },
+    "ContactPage": {
+    "heroTitle1": "Connect With",
+    "heroTitle2": "Us",
+    "heroSubtitle": "Reach out to us for inquiries about participation, partnerships, or any questions. We're here to support your journey.",
+    "quickContact": "Quick",
+    "quickContactAccent": "Contact",
+    "emailTitle": "Email Address",
+    "emailDesc": "For all inquiries and information",
+    "phoneTitle": "Phone Number",
+    "phoneDesc": "Call or WhatsApp available",
+    "socialTitle": "Connect With Us",
+    "inquiryTypesTitle": "Inquiry Types",
+    "sendMessageTab": "Send Message",
+    "formTitle1": "Send Your",
+    "formTitle2": "Inquiry",
+    "formSubtitle": "Fill out the form below and we'll respond promptly.",
+    "successTitle": "Message Sent Successfully!",
+    "successText": "Thank you for reaching out to Classic Queen International. Our team will get back to you within 24-48 hours.",
+    "sendAnother": "Send Another Message",
+    "formLabels": {
+      "fullName": "Full Name *",
+      "email": "Email Address *",
+      "phone": "Phone Number",
+      "subject": "Subject",
+      "inquiryType": "Inquiry Type",
+      "message": "Message *",
+      "attachment": "Attachment (Optional)",
+      "clickUpload": "Click to upload a file",
+      "uploadHint": "PDF, DOC, JPG, PNG, WebP, TXT up to 10MB",
+      "uploading": "Uploading File...",
+      "sending": "Sending Message...",
+      "sendBtn": "Send Message",
+      "privacy": "By submitting this form, you agree to our Privacy Policy and consent to being contacted by Classic Queen International."
+    },
+    "placeholders": {
+      "name": "Enter your full name",
+      "email": "Enter your email address",
+      "phone": "Enter your phone number",
+      "subject": "Subject of your inquiry",
+      "message": "Please provide details about your inquiry..."
+    },
+    "errors": {
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "messageRequired": "Message is required",
+      "messageMin": "Message must be at least 10 characters"
+    },
+    "types": {
+      "general": "General Inquiry",
+      "participation": "Contestant Application",
+      "sponsorship": "Sponsorship",
+      "media": "Media & Press",
+      "volunteer": "Volunteer",
+      "partnership": "Partnership"
+    }
+  },
+    "VoteProfile": {
+    "loading": "Loading candidate…",
+    "notFoundTitle": "Candidate Not Found",
+    "notFoundText": "We couldn't find the candidate you're trying to vote for.",
+    "browseCandidates": "Browse Candidates",
+    "voteButton": "Click to Vote",
+    "giftButton": "Gift Me",
+    "shareTitle": "Share",
+    "copied": "Copied!",
+    "copyLink": "Copy Link",
+    "viewMyPage": "View My Page",
+    "viewMyPageSubtitle": "Full profile, gallery & trophy",
+    "howToVoteCardTitle": "Want to see how to vote for your favorite?",
+    "howToVoteCardText": "A quick guide on how to cast your vote for {name}.",
+    "clickHere": "Click Here",
+    "howToVoteModalTitle": "How to Vote",
+    "howToVoteModalSubtitle": "for {name}",
+    "step1": "Click the <strong>Click to Vote</strong> button on {name}'s profile.",
+    "step2": "Choose how many votes you want to cast. Each vote is <strong>1 pt</strong>.",
+    "step3": "Enter your email, complete the payment, and your votes count immediately.",
+    "step4": "Share {name}'s profile with friends and family to multiply support.",
+    "shareMessage": "Hello, I am participating in the Classic Queen International 2026 pageant{country}.\nPlease help vote for me — I need your votes to qualify.\n\nHOW TO VOTE:\n1. Click this link to vote: {url}\n2. Click on the VOTE button\n3. Each vote is 1 pt — cast as many as you can to support me\n\nI deeply appreciate your support and hope it helps me emerge as Classic Queen International 2026.",
+    "representing": ", representing {country}"
+  },
+    "Dashboard": {
+    "title": "My Dashboard",
+    "signOut": "Sign Out",
+    "loading": "Loading dashboard…",
+    "notFound": "Profile not found.",
+    "editProfile": "Edit Profile",
+    "adminPanel": "Admin Panel",
+    "roles": {
+      "admin": "Admin",
+      "candidate": "Candidate",
+      "user": "User"
+    },
+    "stats": {
+      "title": "Your Candidate Stats",
+      "votes": "Votes",
+      "gifts": "Gifts",
+      "totalValue": "Total Value",
+      "convertible": "Convertible",
+      "seeGifts": "See Who Sent You Gifts",
+      "convertVotes": "Convert Gift Balance to Votes",
+      "noGiftBalance": "No Gift Balance Yet",
+      "viewHistory": "View Conversion History"
+    },
+    "guides": {
+      "title": "Need help? Quick guides",
+      "vote": "How to Vote",
+      "gift": "How to Gift",
+      "fund": "How to Buy Points",
+      "favorite": "Add Favorite"
+    },
+    "favorites": {
+      "title": "My Favorites",
+      "saved": "{count} candidate{count, plural, =1 {''} other {s}} saved",
+      "addBtn": "Add Favorite",
+      "emptyTitle": "No favorites yet",
+      "emptyText": "Search for a candidate and add her to your favorites.",
+      "voteBtn": "Vote",
+      "removeBtn": "Remove from favorites"
+    },
+    "termsOfUse": "Terms of Use"
+  }
+  
+}

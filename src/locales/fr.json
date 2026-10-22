@@ -1,0 +1,318 @@
+{
+  "Navigation": {
+    "home": "Accueil",
+    "register": "S'inscrire",
+    "candidates": "Candidates",
+    "gallery": "Galerie",
+    "news": "Actualités",
+    "about": "À propos",
+    "contact": "Contact",
+    "info": "Infos",
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "dashboard": "Mon Tableau de bord"
+  },
+  "VoteModal": {
+    "title": "Voter pour {name}",
+    "selectVotes": "Sélectionner des votes pour {name}",
+    "customAmount": "Ou entrez un montant personnalisé",
+    "votesLabel": "Votes :",
+    "totalLabel": "Total :",
+    "paymentMethod": "Choisir le mode de paiement",
+    "securePayment": "Paiement sécurisé · Cartes acceptées dans le monde entier",
+    "pay": "Cliquez pour payer {amount}",
+    "voteCount": "{count, plural, =1 {1 vote} other {# votes}}",
+    "insufficient": "Solde insuffisant — achetez des points depuis le tableau de bord.",
+    "continue": "Continuer",
+    "back": "Retour",
+    "wallet": "Portefeuille",
+    "card": "Carte"
+  },
+    "CandidatesPage": {
+    "voteQueen": "Votez pour votre Reine",
+    "title": "Classic Queen International",
+    "subtitle": "Candidates 2026",
+    "noCandidates": "Aucune candidate approuvée pour le moment. Revenez bientôt.",
+    "error": "Échec du chargement des candidates : {message}"
+  },
+    "HeroSection": {
+    "voteNow": "VOTEZ MAINTENANT",
+    "loading": "Chargement du contenu principal...",
+    "errorTitle": "Contenu principal indisponible",
+    "errorDescription": "Vérifiez votre connexion à la base de données ou ajoutez du contenu via le gestionnaire de héros",
+    "noContentTitle": "Aucun contenu principal",
+    "noContentDescription": "Ajoutez des images ou des vidéos principales via le gestionnaire de héros",
+    "goToManager": "Aller au gestionnaire de héros",
+    "unmute": "Activer le son de la vidéo",
+    "mute": "Désactiver le son de la vidéo",
+    "pause": "Pause",
+    "play": "Lecture",
+    "previous": "Précédent",
+    "next": "Suivant"
+  },
+    "FeaturedCandidates": {
+    "title": "Candidats en vedette",
+    "subtitle": "Rencontrez nos meilleurs candidats qui mènent la compétition avec leur grâce, leur talent et leur engagement à faire une différence.",
+    "voteNow": "Votez maintenant",
+    "viewProfile": "Voir le profil",
+    "viewAll": "Voir tous les candidats"
+  },
+    "Footer": {
+    "about": "À propos",
+    "contact": "Contact",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "followUs": "Suivez-nous"
+  },
+    "FeaturedPost": {
+    "title": "Reines Passées",
+    "noPosts": "Aucun article en vedette disponible.",
+    "resumeScroll": "Le défilement automatique reprend dans quelques secondes…",
+    "aboutTitle": "À propos du Concours",
+    "aboutText": "Le Concours International de la Reine Classique célèbre l'élégance, l'intelligence et les femmes motivées par un but. Notre plateforme permet aux reines de mettre en valeur leurs talents uniques, de défendre des causes importantes et d'inspirer un changement positif dans leurs communautés.",
+    "missionTitle": "Notre Mission",
+    "missionText": "Pour inspirer les femmes à travers une plateforme de beauté mondiale prestigieuse qui nourrit la confiance, l'intelligence, le leadership et la responsabilité sociale, transformant les reines en ambassadrices influentes du changement positif.",
+    "valuesTitle": "Nos Valeurs",
+    "valuesText": "La Reine Classique Internationale représente l'élégance, la classe et l'intégrité, en cultivant des reines qui sont assurées, expressives et socialement conscientes.",
+    "learnMore": "En savoir plus",
+    "shareText": "Découvrez ce {type} de la Reine Classique",
+    "copied": "Lien copié dans le presse-papiers !"
+  },
+    "GalleryPage": {
+    "title": "Galerie",
+    "subtitle": "Explorez notre galerie captivante de reines passées, mettant en valeur leur élégance, leur talent et leurs moments mémorables du Concours International de la Reine Classique.",
+    "noImages": "Aucune image disponible dans la galerie.",
+    "error": "Échec du chargement des images de la galerie : {message}"
+  },
+    "NextQueenSection": {
+    "title": "QUI DEVIENT LA PROCHAINE REINE?",
+    "ctaButton": "Cliquez ici pour voter",
+    "ctaSubtitle": "Votre vote décide qui porte la couronne. Soutenez votre reine aujourd'hui."
+  },
+    "NewsPage": {
+    "title": "Actualités",
+    "subtitle": "Restez informés des dernières nouvelles, annonces et highlights du Concours International de la Reine Classique.",
+    "noArticles": "Aucun article d'actualité disponible pour le moment.",
+    "error": "Échec du chargement des articles d'actualité : {message}"
+  },
+    "SponsorsSection": {
+    "title": "NOS SPONSORS ET PARTENAIRES PRÉCIEUX",
+    "subtitle": "Ceci est un espace pour les marques visionnaires prêtes à se tenir à la pointe de l'expérience de pageant la plus raffinée en Afrique.",
+    "becomeSponsor": "Devenez Sponsor",
+    "becomeSponsorSubtitle": "Partenariat avec nous et atteindre un public de qualité",
+    "contactButton": "Contact pour le Sponsorship"
+  },
+    
+    "Stats": {
+    "titles": {
+      "candidates": "Candidates",
+      "hostCountry": "Pays hôte",
+      "starPrize": "Prix vedette",
+      "crown": "Couronne"
+    },
+    "values": {
+      "global": "Mondial",
+      "ghana": "Ghana",
+      "5000": "5 000 $",
+      "top3": "Top 3"
+    }
+  },
+      "TopNews": {
+    "title": "Actualités principales",
+    "subtitle": "Dernières mises à jour, exclusivités et histoires dans les coulisses.",
+    "readMore": "Lire la suite",
+    "moreUpdates": "Plus d'actualités"
+  },
+    "AboutPage": {
+    "heroTitle": "Classic Queen International",
+    "heroSubtitle": "Célébrer la beauté avec un but, l'intelligence et l'excellence culturelle",
+    "essenceTitle": "Notre Essence",
+    "essenceText": "Classic Queen International est une plateforme mondiale prestigieuse créée pour célébrer la beauté avec un but, l'intelligence et l'excellence culturelle. Au-delà du glamour et de la couronne, nous nous engageons à autonomiser les jeunes femmes pour qu'elles deviennent des leaders confiantes, des voix influentes et des agents de changement positif dans leurs communautés et à travers le monde. Ce projet est propulsé par stargate studios Africa.",
+    "quote": "\"Nous ne couronnons pas seulement des gagnantes — nous créons des icônes, des leaders et des reines intemporelles.\"",
+    "platformTitle": "Notre Plateforme",
+    "platformText": "Nous promouvons la grâce, la confiance, la discipline, la responsabilité sociale et la sororité internationale. Notre plateforme offre aux candidates des opportunités de développement personnel, de formation au leadership, d'exposition médiatique et de plaidoyer humanitaire, garantissant que chaque reine représente non seulement la beauté, mais aussi la substance et l'impact.",
+    "standForTitle": "Ce Que Nous Défendons",
+    "standForText": "Classic Queen International défend l'élégance, la classe et l'intégrité, en formant des reines qui sont posées, articulées et socialement conscientes. Grâce à des projets significatifs, des partenariats et une représentation mondiale, nos reines utilisent leur influence pour inspirer l'espoir, promouvoir l'unité et créer un changement durable.",
+    "guidingPrinciplesTitle": "Nos Principes Directeurs",
+    "guidingPrinciplesSubtitle": "La fondation sur laquelle nous bâtissons notre héritage",
+    "missionTitle": "Déclaration de Mission",
+    "missionText": "Autonomiser les femmes grâce à une plateforme de beauté mondiale prestigieuse qui nourrit la confiance, l'intelligence, le leadership et la responsabilité sociale, transformant les reines en ambassadrices influentes du changement positif.",
+    "visionTitle": "Déclaration de Vision",
+    "visionText": "Être un concours de beauté international de classe mondiale reconnu pour son excellence, son intégrité et son impact — produisant des reines intemporelles qui inspirent, dirigent et élèvent les communautés à l'échelle mondiale.",
+    "pillarsTitle": "Nos Quatre Piliers d'Excellence",
+    "pillarsSubtitle": "Les pierres angulaires qui définissent l'expérience Classic Queen International",
+    "valuesTitle": "Nos Valeurs Fondamentales",
+    "valuesSubtitle": "Les principes qui guident chaque décision et interaction chez Classic Queen International",
+    "impactTitle": "Créer un Impact Durable",
+    "impactSubtitle": "Comment Classic Queen International transforme des vies et des communautés",
+    "differenceTitle": "La Différence Classic Queen",
+    "ctaTitle": "Devenez une Classic Queen",
+    "ctaSubtitle": "Rejoignez notre plateforme prestigieuse et commencez votre voyage pour devenir une reine intemporelle qui dirige avec grâce, intelligence et détermination.",
+    "ctaButton": "Commencez Votre Voyage",
+    "values": {
+      "v1Title": "Élégance et Classe",
+      "v1Desc": "Célébrer la beauté intemporelle, la grâce et la sophistication dans chaque aspect de notre concours.",
+      "v2Title": "But et Impact",
+      "v2Desc": "Autonomiser les femmes pour qu'elles réalisent leurs rêves et aient un impact positif dans leurs communautés.",
+      "v3Title": "Excellence Mondiale",
+      "v3Desc": "Embrasser la diversité et créer des opportunités pour les femmes de tous horizons à travers le monde.",
+      "v4Title": "Responsabilité Sociale",
+      "v4Desc": "Favoriser la compassion, le leadership et le service communautaire comme valeurs fondamentales.",
+      "v5Title": "Sororité",
+      "v5Desc": "Construire des liens durables et des réseaux de soutien parmi nos reines.",
+      "v6Title": "Bâtir un Héritage",
+      "v6Desc": "Créer un impact durable et inspirer les générations futures de femmes leaders."
+    },
+    "pillars": {
+      "p1Title": "La Beauté avec un But",
+      "p1Desc": "Au-delà de l'apparence physique, nous célébrons l'intelligence, le caractère et les contributions significatives à la société.",
+      "p2Title": "Développement du Leadership",
+      "p2Desc": "Offrir des formations, du mentorat et des plateformes pour que nos reines deviennent des leaders et influenceuses confiantes.",
+      "p3Title": "Excellence Culturelle",
+      "p3Desc": "Promouvoir la compréhension culturelle, la diplomatie internationale et la sororité mondiale.",
+      "p4Title": "Plaidoyer Humanitaire",
+      "p4Desc": "Soutenir des causes caritatives et autonomiser les reines pour qu'elles deviennent des agents de changement positif."
+    },
+    "impact": {
+      "i1Title": "Transformation Personnelle",
+      "i1Desc": "Grâce à nos programmes de formation complets, les candidates développent leur confiance, leurs compétences en communication et leurs capacités de leadership qui leur servent longtemps après la fin du concours.",
+      "i2Title": "Influence Mondiale",
+      "i2Desc": "Nos reines deviennent des ambassadrices du changement positif, représentant leur pays avec fierté et travaillant sur des initiatives internationales qui répondent aux défis mondiaux pressants.",
+      "i3Title": "Engagement Communautaire",
+      "i3Desc": "Chaque candidate développe et met en œuvre un projet d'impact social, créant des avantages tangibles pour sa communauté et inspirant les autres à faire la différence."
+    },
+    "diff": {
+      "d1Title": "Développement Holistique",
+      "d1Desc": "Nous nous concentrons sur l'esprit, le corps et l'âme — développant des femmes complètes prêtes à diriger.",
+      "d2Title": "Réseau à Vie",
+      "d2Desc": "Rejoignez une sororité mondiale de femmes autonomes qui soutiennent la croissance les unes des autres.",
+      "d3Title": "Avancement de Carrière",
+      "d3Desc": "Exposition médiatique, opportunités de réseautage et partenariats de marque pour la croissance de carrière.",
+      "d4Title": "Plateforme Internationale",
+      "d4Desc": "Représentez votre pays sur une scène mondiale et faites entendre votre voix à l'international."
+    }
+
+  },
+    "ContactPage": {
+    "heroTitle1": "Contactez",
+    "heroTitle2": "Nous",
+    "heroSubtitle": "Contactez-nous pour toute question sur la participation, les partenariats ou toute autre demande. Nous sommes là pour vous accompagner.",
+    "quickContact": "Contact",
+    "quickContactAccent": "Rapide",
+    "emailTitle": "Adresse E-mail",
+    "emailDesc": "Pour toutes demandes et informations",
+    "phoneTitle": "Numéro de Téléphone",
+    "phoneDesc": "Appel ou WhatsApp disponible",
+    "socialTitle": "Suivez-nous",
+    "inquiryTypesTitle": "Types de Demandes",
+    "sendMessageTab": "Envoyer un Message",
+    "formTitle1": "Envoyez Votre",
+    "formTitle2": "Demande",
+    "formSubtitle": "Remplissez le formulaire ci-dessous et nous vous répondrons rapidement.",
+    "successTitle": "Message Envoyé avec Succès !",
+    "successText": "Merci d'avoir contacté Classic Queen International. Notre équipe vous répondra dans les 24 à 48 heures.",
+    "sendAnother": "Envoyer un Autre Message",
+    "formLabels": {
+      "fullName": "Nom Complet *",
+      "email": "Adresse E-mail *",
+      "phone": "Numéro de Téléphone",
+      "subject": "Sujet",
+      "inquiryType": "Type de Demande",
+      "message": "Message *",
+      "attachment": "Pièce Jointe (Optionnel)",
+      "clickUpload": "Cliquez pour télécharger un fichier",
+      "uploadHint": "PDF, DOC, JPG, PNG, WebP, TXT jusqu'à 10MB",
+      "uploading": "Téléchargement du Fichier...",
+      "sending": "Envoi du Message...",
+      "sendBtn": "Envoyer le Message",
+      "privacy": "En soumettant ce formulaire, vous acceptez notre Politique de Confidentialité et consentez à être contacté par Classic Queen International."
+    },
+    "placeholders": {
+      "name": "Entrez votre nom complet",
+      "email": "Entrez votre adresse e-mail",
+      "phone": "Entrez votre numéro de téléphone",
+      "subject": "Sujet de votre demande",
+      "message": "Veuillez fournir des détails sur votre demande..."
+    },
+    "errors": {
+      "nameRequired": "Le nom est requis",
+      "emailRequired": "L'e-mail est requis",
+      "emailInvalid": "Veuillez entrer une adresse e-mail valide",
+      "messageRequired": "Le message est requis",
+      "messageMin": "Le message doit comporter au moins 10 caractères"
+    },
+    "types": {
+      "general": "Demande Générale",
+      "participation": "Candidature",
+      "sponsorship": "Parrainage",
+      "media": "Médias & Presse",
+      "volunteer": "Bénévolat",
+      "partnership": "Partenariat"
+    }
+  },
+    "VoteProfile": {
+    "loading": "Chargement de la candidate…",
+    "notFoundTitle": "Candidate Introuvable",
+    "notFoundText": "Nous n'avons pas pu trouver la candidate pour laquelle vous essayez de voter.",
+    "browseCandidates": "Parcourir les candidates",
+    "voteButton": "Cliquez pour voter",
+    "giftButton": "M'offrir un cadeau",
+    "shareTitle": "Partager",
+    "copied": "Copié !",
+    "copyLink": "Copier le lien",
+    "viewMyPage": "Voir ma page",
+    "viewMyPageSubtitle": "Profil complet, galerie et trophée",
+    "howToVoteCardTitle": "Vous voulez voir comment voter pour votre favorite ?",
+    "howToVoteCardText": "Un guide rapide sur la façon de voter pour {name}.",
+    "clickHere": "Cliquez ici",
+    "howToVoteModalTitle": "Comment voter",
+    "howToVoteModalSubtitle": "pour {name}",
+    "step1": "Cliquez sur le bouton <strong>Cliquez pour voter</strong> sur le profil de {name}.",
+    "step2": "Choisissez combien de votes vous voulez voter. Chaque vote vaut <strong>1 pt</strong>.",
+    "step3": "Entrez votre e-mail, complétez le paiement et vos votes comptent immédiatement.",
+    "step4": "Partagez le profil de {name} avec vos amis et votre famille pour multiplier le soutien.",
+    "shareMessage": "Bonjour, je participe au concours Classic Queen International 2026{country}.\nAidez-moi à voter pour moi — j'ai besoin de vos votes pour me qualifier.\n\nCOMMENT VOTER :\n1. Cliquez sur ce lien pour voter : {url}\n2. Cliquez sur le bouton VOTER\n3. Chaque vote vaut 1 pt — votez autant que vous le pouvez pour me soutenir\n\nJ'apprécie profondément votre soutien et j'espère qu'il m'aidera à devenir Classic Queen International 2026.",
+    "representing": ", représentant {country}"
+  },
+    "Dashboard": {
+    "title": "Mon Tableau de bord",
+    "signOut": "Déconnexion",
+    "loading": "Chargement du tableau de bord…",
+    "notFound": "Profil introuvable.",
+    "editProfile": "Modifier le profil",
+    "adminPanel": "Panneau d'administration",
+    "roles": {
+      "admin": "Admin",
+      "candidate": "Candidate",
+      "user": "Utilisateur"
+    },
+    "stats": {
+      "title": "Vos statistiques de candidate",
+      "votes": "Votes",
+      "gifts": "Cadeaux",
+      "totalValue": "Valeur totale",
+      "convertible": "Convertible",
+      "seeGifts": "Voir qui vous a envoyé des cadeaux",
+      "convertVotes": "Convertir le solde de cadeaux en votes",
+      "noGiftBalance": "Aucun solde de cadeaux",
+      "viewHistory": "Voir l'historique des conversions"
+    },
+    "guides": {
+      "title": "Besoin d'aide ? Guides rapides",
+      "vote": "Comment voter",
+      "gift": "Comment offrir",
+      "fund": "Comment acheter des points",
+      "favorite": "Ajouter aux favoris"
+    },
+    "favorites": {
+      "title": "Mes Favoris",
+      "saved": "{count} candidate{count, plural, =1 {''} other {s}} enregistrée(s)",
+      "addBtn": "Ajouter un favori",
+      "emptyTitle": "Aucun favori pour le moment",
+      "emptyText": "Recherchez une candidate et ajoutez-la à vos favoris.",
+      "voteBtn": "Voter",
+      "removeBtn": "Retirer des favoris"
+    },
+    "termsOfUse": "Conditions d'utilisation"
+  }
+}

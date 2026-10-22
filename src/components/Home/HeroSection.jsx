@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Pause, Play, Volume2, VolumeX } from 'lucide
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
+import { useTranslations } from 'next-intl'
 
 // Create Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -13,31 +14,34 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false }
 })
 
-// Default fallback hero items from public folder
-const DEFAULT_FALLBACK_ITEMS = [
-  {
-    cta: { href: "/candidates", label: "VOTE NOW" },
-    src: "/hero1.mp4",
-    type: "video"
-  },
-  {
-    cta: { href: "/candidates", label: "VOTE NOW" },
-    src: "/hero2.mp4",
-    type: "video"
-  },
-  {
-    cta: { href: "/candidates", label: "VOTE NOW" },
-    src: "/hero3.mp4",
-    type: "video"
-  },
-  {
-    cta: { href: "/candidates", label: "VOTE NOW" },
-    src: "/hero4.jpg",
-    type: "image"
-  }
-]
-
 const HeroSection = () => {
+  const t = useTranslations('HeroSection')
+
+  // Default fallback hero items from public folder
+  // Note: We use a function to generate these so the translation updates when language changes
+  const getFallbackItems = () => [
+    {
+      cta: { href: "/candidates", label: t('voteNow') },
+      src: "/hero1.mp4",
+      type: "video"
+    },
+    {
+      cta: { href: "/candidates", label: t('voteNow') },
+      src: "/hero2.mp4",
+      type: "video"
+    },
+    {
+      cta: { href: "/candidates", label: t('voteNow') },
+      src: "/hero3.mp4",
+      type: "video"
+    },
+    {
+      cta: { href: "/candidates", label: t('voteNow') },
+      src: "/hero4.jpg",
+      type: "image"
+    }
+  ]
+
   const [heroItems, setHeroItems] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
@@ -77,12 +81,12 @@ const HeroSection = () => {
           }
           
           if (itemsArray.length > 0) {
-            // Add label to CTA if not present
+            // Add label to CTA if not present. If it's missing, use translated fallback.
             const formattedItems = itemsArray.map(item => ({
               ...item,
               cta: {
                 href: item.cta?.href || '/candidates',
-                label: item.cta?.label || 'VOTE NOW'
+                label: item.cta?.label || t('voteNow') 
               }
             }))
             
@@ -95,12 +99,12 @@ const HeroSection = () => {
 
         // Fallback: Use default files from public folder
         console.log('Supabase failed or empty, using default hero files...')
-        setHeroItems(DEFAULT_FALLBACK_ITEMS)
+        setHeroItems(getFallbackItems())
         
       } catch (error) {
         console.error('Error fetching hero:', error)
         // Final fallback: Use default files
-        setHeroItems(DEFAULT_FALLBACK_ITEMS)
+        setHeroItems(getFallbackItems())
         setError('Using default hero content')
       } finally {
         setIsLoading(false)
@@ -108,7 +112,7 @@ const HeroSection = () => {
     }
 
     fetchHeroContent()
-  }, [])
+  }, [t]) // Added 't' to dependency array so it refetches if language changes
 
   // Handle video ended event
   const handleVideoEnded = () => {
@@ -233,7 +237,7 @@ const HeroSection = () => {
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gold-500 mx-auto"></div>
-            <p className="mt-4 text-gray-300">Loading hero content...</p>
+            <p className="mt-4 text-gray-300">{t('loading')}</p>
           </div>
         </div>
       </div>
@@ -248,9 +252,9 @@ const HeroSection = () => {
             <div className="h-16 w-16 mx-auto bg-brown-800 rounded-full flex items-center justify-center mb-4">
               <span className="text-gold-500 text-2xl">⚠️</span>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Hero Content Unavailable</h3>
+            <h3 className="text-xl font-bold text-white mb-2">{t('errorTitle')}</h3>
             <p className="text-gray-300 mb-6 max-w-md">{error}</p>
-            <p className="text-sm text-gray-400">Check your database connection or add content via Hero Manager</p>
+            <p className="text-sm text-gray-400">{t('errorDescription')}</p>
           </div>
         </div>
       </div>
@@ -265,13 +269,13 @@ const HeroSection = () => {
             <div className="h-16 w-16 mx-auto bg-brown-800 rounded-full flex items-center justify-center mb-4">
               <span className="text-gold-500 text-2xl">📷</span>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">No Hero Content</h3>
-            <p className="text-gray-300 mb-6">Add hero images or videos via the Hero Manager</p>
+            <h3 className="text-xl font-bold text-white mb-2">{t('noContentTitle')}</h3>
+            <p className="text-gray-300 mb-6">{t('noContentDescription')}</p>
             <Link
               href="/admin"
               className="inline-flex items-center bg-gold-500 hover:bg-gold-600 text-brown-900 font-bold py-2 px-6 rounded-lg transition-colors"
             >
-              Go to Hero Manager
+              {t('goToManager')}
             </Link>
           </div>
         </div>
@@ -355,7 +359,7 @@ const HeroSection = () => {
           href={currentItem.cta?.href || '/candidates'}
           className="inline-flex items-center justify-center bg-gold-500 hover:bg-gold-600 text-brown-900 font-bold py-1.5 md:py-3 px-3 md:px-8 rounded-lg text-xs md:text-lg transition-all duration-300 hover:scale-105 shadow-2xl scale-90 md:scale-100"
         >
-          {currentItem.cta?.label || 'VOTE NOW'}
+          {currentItem.cta?.label || t('voteNow')}
         </Link>
       </div>
 
@@ -364,7 +368,7 @@ const HeroSection = () => {
         <button
           onClick={toggleMute}
           className="absolute bottom-4 md:bottom-6 right-4 md:right-6 z-30 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-300 hover:scale-110"
-          aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+          aria-label={isMuted ? t('unmute') : t('mute')}
         >
           {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
         </button>
@@ -376,7 +380,7 @@ const HeroSection = () => {
           <button
             onClick={togglePlayPause}
             className="text-white hover:text-gold-300 transition-colors"
-            aria-label={isPlaying ? 'Pause' : 'Play'}
+            aria-label={isPlaying ? t('pause') : t('play')}
           >
             {isPlaying ? <Pause size={20} /> : <Play size={20} />}
           </button>
@@ -384,7 +388,7 @@ const HeroSection = () => {
           <button
             onClick={prevSlide}
             className="text-white hover:text-gold-300 transition-colors"
-            aria-label="Previous"
+            aria-label={t('previous')}
             disabled={isTransitioning}
           >
             <ChevronLeft size={20} />
@@ -419,7 +423,7 @@ const HeroSection = () => {
           <button
             onClick={nextSlide}
             className="text-white hover:text-gold-300 transition-colors"
-            aria-label="Next"
+            aria-label={t('next')}
             disabled={isTransitioning}
           >
             <ChevronRight size={20} />

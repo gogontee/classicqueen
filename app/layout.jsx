@@ -1,3 +1,5 @@
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages } from 'next-intl/server'
 import Header from '../src/components/Layout/Header'
 import MobileBottomTab from '../src/components/Layout/MobileBottomTab'
 import Footer from '../src/components/Layout/Footer'
@@ -65,18 +67,27 @@ export const viewport = {
   themeColor: '#D2B48C',
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // 1. Get the current language from the cookie (via request.ts)
+  const locale = await getLocale()
+  
+  // 2. Get the translation dictionary for that language
+  const messages = await getMessages()
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className="flex flex-col min-h-screen bg-brown-50">
         <NetworkErrorProvider>
-          <Header />
-          <main className="flex-grow pb-16 lg:pb-0">{children}</main>
-          {/* Footer — desktop only, hidden on mobile */}
-          <div className="hidden lg:block">
-            <Footer />
-          </div>
-          <MobileBottomTab />
+          {/* 3. Wrap the app so Client Components can access translations */}
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            <Header />
+            <main className="flex-grow pb-16 lg:pb-0">{children}</main>
+            {/* Footer — desktop only, hidden on mobile */}
+            <div className="hidden lg:block">
+              <Footer />
+            </div>
+            <MobileBottomTab />
+          </NextIntlClientProvider>
         </NetworkErrorProvider>
       </body>
     </html>
