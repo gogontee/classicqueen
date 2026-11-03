@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import FundWalletModal from "./FundWalletModal";
 import TransactionList from "./TransactionList";
 import { formatPoints } from "@/lib/points";
+import { useTranslations } from "next-intl";
 
 export default function WalletCard({
   balance,
@@ -14,6 +15,7 @@ export default function WalletCard({
   name,
   onFunded,
 }) {
+  const t = useTranslations("WalletCard");
   const [fundOpen, setFundOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
 
@@ -22,7 +24,7 @@ export default function WalletCard({
       <div className="bg-gradient-to-br from-[#2E1503] to-[#6b4423] rounded-2xl p-5 text-white">
         <div className="flex items-center gap-3 mb-3">
           <Wallet size={20} />
-          <span className="text-sm opacity-80">Points Balance</span>
+          <span className="text-sm opacity-80">{t("balanceLabel")}</span>
         </div>
         <p className="text-3xl font-bold">{formatPoints(balance)}</p>
 
@@ -32,7 +34,7 @@ export default function WalletCard({
             onClick={() => setFundOpen(true)}
             className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/30 text-sm font-semibold flex items-center justify-center gap-2 transition"
           >
-            <Plus size={14} /> Buy Points
+            <Plus size={14} /> {t("buyPoints")}
           </button>
 
           {/* Mobile-only: view transactions */}
@@ -40,7 +42,7 @@ export default function WalletCard({
             onClick={() => setTxOpen(true)}
             className="md:hidden flex-1 py-2.5 rounded-xl bg-[#c9a227] hover:brightness-110 text-[#1a0d02] text-sm font-bold flex items-center justify-center gap-2 transition"
           >
-            <ListOrdered size={14} /> View Transactions
+            <ListOrdered size={14} /> {t("viewTx")}
           </button>
         </div>
       </div>
@@ -90,7 +92,7 @@ export default function WalletCard({
               >
                 <div className="flex items-center gap-2 text-white">
                   <ListOrdered size={16} />
-                  <span className="text-sm font-bold">Transactions</span>
+                  <span className="text-sm font-bold">{t("txTitle")}</span>
                 </div>
                 <button
                   onClick={() => setTxOpen(false)}

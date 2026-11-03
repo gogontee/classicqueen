@@ -14,28 +14,120 @@
   },
   "VoteModal": {
     "title": "Vote for {name}",
+    "loading": "Checking voting schedule…",
+    "successTitle": "Vote Cast Successfully!",
+    "successText": "You've cast {count} votes for {name}",
+    "total": "Total: {amount}",
+    "processing": "Verifying payment…",
+    "doNotClose": "Please do not close this window.",
+    "cancel": "Cancel",
     "selectVotes": "Select votes for {name}",
+    "voteBtn": "{count} vote",
+    "ptBtn": "{count} pt",
     "customAmount": "Or enter a custom amount",
+    "customPlaceholder": "Enter number of votes",
+    "conversionHint": "1 vote = 1 pt",
     "votesLabel": "Votes:",
     "totalLabel": "Total:",
+    "guestInfoTitle": "Your Information",
+    "guestInfoText": "We need these to send your vote receipt and confirm your payment.",
+    "emailPlaceholder": "Email address *",
+    "namePlaceholder": "Your name (optional)",
+    "votingForLabel": "You're voting:",
     "paymentMethod": "Choose payment method",
-    "securePayment": "Secure payment · Cards accepted worldwide",
-    "pay": "Click to Pay {amount}",
-    "voteCount": "{count, plural, =1 {1 vote} other {# votes}}",
-    "insufficient": "Insufficient balance — buy points from the dashboard.",
-    "continue": "Continue",
+    "fetchingRate": "Fetching exchange rate…",
+    "chargedAmountPrefix": "You'll be charged",
+    "fallbackChargePrefix": "Local pricing unavailable — you'll be charged",
+    "fallbackChargeSuffix": "on your card.",
+    "securedPaymentPrefix": "Secured card payment, powered by",
+    "secureBadge": "Secure payment · Cards accepted worldwide",
+    "payBtn": "Click to Pay {amount}",
+    "processingBtn": "Processing…",
     "back": "Back",
-    "wallet": "Wallet",
-    "card": "Card"
+    "continue": "Continue",
+    "errorSelect": "Please select or enter a valid number of votes.",
+    "errorEmail": "Please enter a valid email address.",
+    "errorWallet": "Please sign in to use your wallet.",
+    "errorMethod": "Please choose a payment method.",
+    "errorVotingClosed": "Voting is not currently open.",
+    "errorRate": "Exchange rate not ready. Please wait a moment.",
+    "errorPaymentCancelled": "Payment cancelled.",
+    "emailPromptTitle": "Email Required",
+    "emailPromptText": "Please enter your email address in the",
+    "emailPromptText2": "section before proceeding to payment.",
+    "gotIt": "Got it",
+    "walletPromptTitle": "Sign Up to Use Your Wallet",
+    "walletPromptText": "Sign up free, buy points once, and vote in one tap — no cards or transfers needed.",
+    "fastEasySecure": "Fast. Easy. Secure.",
+    "signUpNow": "Sign Up Now",
+    "changeMethod": "Change Payment Method",
+    "paymentFailed": "Payment Failed",
+    "tryAgain": "Try Again",
+    "blocked": {
+      "closedTitle": "Voting Line Closed",
+      "closedText": "The voting line is currently closed. Watch out for announcements about when it will be reopened.",
+      "closedBadge": "Keep an eye on this page — voting dates will be posted soon.",
+      "notStartedTitle": "Voting Starts Soon",
+      "notStartedText": "The voting line hasn't opened yet. Get ready — it starts on:",
+      "comeBack": "Come back on that date to cast your vote.",
+      "endedTitle": "Voting Line Closed",
+      "endedText": "The voting line has closed. Voting ended on:",
+      "thanks": "Thanks to everyone who voted. Stay tuned for results."
+    }
   },
-    "CandidatesPage": {
+  "GiftModal": {
+    "title": "Send a Gift to {name}",
+    "successTitle": "Gift Sent Successfully!",
+    "successText": "You sent {gift} to {name}",
+    "processing": "Verifying payment…",
+    "doNotClose": "Please do not close this window.",
+    "cancel": "Cancel",
+    "chooseGift": "Choose a gift for {name}",
+    "amountPts": "Amount: {amount} pts",
+    "sending": "You're sending:",
+    "guestInfoTitle": "Your Information",
+    "guestInfoText": "We need these to send your gift receipt and confirm your payment.",
+    "emailPlaceholder": "Email address *",
+    "namePlaceholder": "Your name (optional)",
+    "paymentMethod": "Choose payment method",
+    "fetchingRate": "Fetching exchange rate…",
+    "chargedAmount": "You'll be charged {amount} {currency}",
+    "fallbackCharge": "Local pricing unavailable — you'll be charged ${amount} USD on your card.",
+    "securedPayment": "Secured card payment, powered by Flutterwave.",
+    "sendBtn": "Send Gift · {amount}",
+    "selectBtn": "Select a Gift",
+    "termsText": "By proceeding, you agree to our Terms of Service",
+    "back": "Back",
+    "continue": "Continue",
+    "errorSelect": "Please select a gift.",
+    "errorEmail": "Please enter a valid email address.",
+    "errorWallet": "Please sign in to use your wallet.",
+    "errorMethod": "Please choose a payment method.",
+    "paymentFailed": "Payment Failed",
+    "tryAgain": "Try Again",
+    "gifts": {
+      "rose": "Royal Rose",
+      "hot_kisses": "Hot Kisses",
+      "heart_of_gold": "Heart of Gold",
+      "gold_crown": "Gold Crown",
+      "sapphire_gem": "Sapphire Gem",
+      "golden_throne": "Golden Throne",
+      "royal_scepter": "Royal Scepter",
+      "royal_ruby": "Royal Ruby",
+      "queen_dragon": "Queen Dragon",
+      "crystal_chalice": "Crystal Chalice",
+      "eternal_crown": "Eternal Crown",
+      "star_of_court": "Star of the Court"
+    }
+  },
+  "CandidatesPage": {
     "voteQueen": "Vote your Queen",
     "title": "Classic Queen International",
     "subtitle": "Candidates 2026",
     "noCandidates": "No approved candidates yet. Check back soon.",
     "error": "Failed to load candidates: {message}"
   },
-    "HeroSection": {
+  "HeroSection": {
     "voteNow": "VOTE NOW",
     "loading": "Loading hero content...",
     "errorTitle": "Hero Content Unavailable",
@@ -50,21 +142,21 @@
     "previous": "Previous",
     "next": "Next"
   },
-    "FeaturedCandidates": {
+  "FeaturedCandidates": {
     "title": "Featured Contestants",
     "subtitle": "Meet our top contestants who are leading the competition with their grace, talent, and commitment to making a difference.",
     "voteNow": "Vote Now",
     "viewProfile": "View Profile",
     "viewAll": "View All Contestants"
   },
-    "Footer": {
+  "Footer": {
     "about": "About",
     "contact": "Contact",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "followUs": "Follow Us"
   },
-    "FeaturedPost": {
+  "FeaturedPost": {
     "title": "Past Queens",
     "noPosts": "No featured posts available.",
     "resumeScroll": "Auto-scroll resumes in a few seconds…",
@@ -78,32 +170,31 @@
     "shareText": "Check out this {type} from Classic Queen",
     "copied": "Link copied to clipboard!"
   },
-    "GalleryPage": {
+  "GalleryPage": {
     "title": "Gallery",
     "subtitle": "Explore our captivating gallery of past queens, showcasing their elegance, talent, and memorable moments from the Classic Queen International Pageant.",
-    "noImages": "No images available in the gallery.",
+    "noImages": "No gallery images available.",
     "error": "Failed to load gallery images: {message}"
   },
-    "NextQueenSection": {
+  "NextQueenSection": {
     "title": "WHO BECOMES THE NEXT QUEEN?",
     "ctaButton": "Click Here to Vote",
     "ctaSubtitle": "Your vote decides who wears the crown. Support your Queen today."
   },
-    "NewsPage": {
+  "NewsPage": {
     "title": "News",
-    "subtitle": "Stay updated with the latest news, announcements, and highlights from the Classic Queen International Pageant.",
+    "subtitle": "Stay informed with the latest news, announcements, and highlights from the Classic Queen International Pageant.",
     "noArticles": "No news articles available at the moment.",
     "error": "Failed to load news articles: {message}"
   },
-    "SponsorsSection": {
+  "SponsorsSection": {
     "title": "OUR VALUED SPONSORS & PARTNERS",
     "subtitle": "This is a space for visionary brands ready to stand at the forefront of Africa's most refined pageant experience.",
     "becomeSponsor": "Become a Sponsor",
     "becomeSponsorSubtitle": "Partner with us and reach a premium audience",
     "contactButton": "Contact for Sponsorship"
   },
-    
-    "Stats": {
+  "Stats": {
     "titles": {
       "candidates": "Candidates",
       "hostCountry": "Host Country",
@@ -117,13 +208,13 @@
       "top3": "Top 3"
     }
   },
-    "TopNews": {
+  "TopNews": {
     "title": "Top News",
     "subtitle": "Latest updates, exclusives, and behind-the-scenes stories.",
     "readMore": "Read More",
     "moreUpdates": "More Updates"
   },
-    "AboutPage": {
+  "AboutPage": {
     "heroTitle": "Classic Queen International",
     "heroSubtitle": "Celebrating beauty with purpose, intelligence, and cultural excellence",
     "essenceTitle": "Our Essence",
@@ -192,7 +283,7 @@
       "d4Desc": "Represent your country on a world stage and make your voice heard globally."
     }
   },
-    "ContactPage": {
+  "ContactPage": {
     "heroTitle1": "Connect With",
     "heroTitle2": "Us",
     "heroSubtitle": "Reach out to us for inquiries about participation, partnerships, or any questions. We're here to support your journey.",
@@ -249,7 +340,7 @@
       "partnership": "Partnership"
     }
   },
-    "VoteProfile": {
+  "VoteProfile": {
     "loading": "Loading candidate…",
     "notFoundTitle": "Candidate Not Found",
     "notFoundText": "We couldn't find the candidate you're trying to vote for.",
@@ -273,7 +364,7 @@
     "shareMessage": "Hello, I am participating in the Classic Queen International 2026 pageant{country}.\nPlease help vote for me — I need your votes to qualify.\n\nHOW TO VOTE:\n1. Click this link to vote: {url}\n2. Click on the VOTE button\n3. Each vote is 1 pt — cast as many as you can to support me\n\nI deeply appreciate your support and hope it helps me emerge as Classic Queen International 2026.",
     "representing": ", representing {country}"
   },
-    "Dashboard": {
+  "Dashboard": {
     "title": "My Dashboard",
     "signOut": "Sign Out",
     "loading": "Loading dashboard…",
@@ -313,6 +404,62 @@
       "removeBtn": "Remove from favorites"
     },
     "termsOfUse": "Terms of Use"
+  },
+    "AddFavoriteModal": {
+    "title": "Add Favorite",
+    "subtitle": "Search by name or username",
+    "placeholder": "Type a candidate's name or username…",
+    "searchHint": "Type at least 2 characters to search.",
+    "noResults": "No candidates found for “{query}”.",
+    "added": "Added",
+    "fav": "Fav",
+    "vote": "Vote",
+    "voteTitle": "Vote for {name}",
+    "addTitle": "Add {name} to favorites",
+    "alreadyAdded": "Already in your favorites"
+  },
+    "WalletCard": {
+    "balanceLabel": "Points Balance",
+    "buyPoints": "Buy Points",
+    "viewTx": "View Transactions",
+    "txTitle": "Transactions"
+  },
+    "TransactionList": {
+    "title": "Recent Activity",
+    "filters": {
+      "all": "All",
+      "inflow": "Inflow",
+      "outflow": "Outflow"
+    },
+    "noTransactions": "No transactions yet",
+    "noFilteredTransactions": "No {filter} transactions",
+    "labels": {
+      "pointsPurchased": "Points Purchased",
+      "giftSent": "Gift Sent",
+      "sentGift": "Sent {gift}",
+      "giftToVotes": "Gift to Votes",
+      "voteCast": "Vote Cast",
+      "giftSentTo": "Gift Sent to {name}",
+      "giftSentBoth": "{gift} to {name}",
+      "giftToVotesFor": "Gift to Votes for {name}",
+      "voteCastFor": "Vote Cast for {name}"
+    }
+  },
+    "Footer": {
+    "brandDescription": "Celebrating beauty, grace, and empowerment through premier international pageantry. Join us in crowning excellence and fostering global sisterhood.",
+    "quickLinks": "Quick Links",
+    "links": {
+      "contestants": "Contestants",
+      "voting": "Voting",
+      "gallery": "Gallery",
+      "news": "News",
+      "about": "About",
+      "terms": "Terms",
+      "registration": "Registration"
+    },
+    "contactUs": "Contact Us",
+    "followUs": "Follow us on:",
+    "copyright": "© 2024 Stargate Studios. All rights reserved.",
+    "termsOfService": "Terms of Service"
   }
-  
 }

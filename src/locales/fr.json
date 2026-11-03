@@ -14,28 +14,115 @@
   },
   "VoteModal": {
     "title": "Voter pour {name}",
+    "loading": "Vérification du calendrier de vote…",
+    "successTitle": "Vote enregistré avec succès !",
+    "successText": "Vous avez voté {count} fois pour {name}",
+    "total": "Total : {amount}",
+    "processing": "Vérification du paiement…",
+    "doNotClose": "Veuillez ne pas fermer cette fenêtre.",
+    "cancel": "Annuler",
     "selectVotes": "Sélectionner des votes pour {name}",
+    "voteBtn": "{count} vote",
+    "ptBtn": "{count} pt",
     "customAmount": "Ou entrez un montant personnalisé",
+    "customPlaceholder": "Entrez le nombre de votes",
+    "conversionHint": "1 vote = 1 pt",
     "votesLabel": "Votes :",
     "totalLabel": "Total :",
+    "guestInfoTitle": "Vos informations",
+    "guestInfoText": "Nous en avons besoin pour envoyer votre reçu de vote et confirmer votre paiement.",
+    "emailPlaceholder": "Adresse e-mail *",
+    "namePlaceholder": "Votre nom (optionnel)",
+    "votingForLabel": "Vous votez :",
     "paymentMethod": "Choisir le mode de paiement",
-    "securePayment": "Paiement sécurisé · Cartes acceptées dans le monde entier",
-    "pay": "Cliquez pour payer {amount}",
-    "voteCount": "{count, plural, =1 {1 vote} other {# votes}}",
-    "insufficient": "Solde insuffisant — achetez des points depuis le tableau de bord.",
-    "continue": "Continuer",
+    "fetchingRate": "Récupération du taux de change…",
+    "chargedAmountPrefix": "Vous serez facturé",
+    "fallbackChargePrefix": "Tarification locale indisponible — vous serez facturé",
+    "fallbackChargeSuffix": "sur votre carte.",
+    "securedPaymentPrefix": "Paiement par carte sécurisé, propulsé par",
+    "secureBadge": "Paiement sécurisé · Cartes acceptées dans le monde entier",
+    "payBtn": "Cliquez pour payer {amount}",
+    "processingBtn": "Traitement…",
     "back": "Retour",
-    "wallet": "Portefeuille",
-    "card": "Carte"
+    "continue": "Continuer",
+    "errorSelect": "Veuillez sélectionner ou entrer un nombre de votes valide.",
+    "errorEmail": "Veuillez entrer une adresse e-mail valide.",
+    "errorWallet": "Veuillez vous connecter pour utiliser votre portefeuille.",
+    "errorMethod": "Veuillez choisir un mode de paiement.",
+    "errorVotingClosed": "Le vote n'est pas ouvert actuellement.",
+    "errorRate": "Le taux de change n'est pas prêt. Veuillez patienter un instant.",
+    "errorPaymentCancelled": "Paiement annulé.",
+    "emailPromptTitle": "E-mail requis",
+    "emailPromptText": "Veuillez entrer votre adresse e-mail dans la section",
+    "emailPromptText2": "avant de procéder au paiement.",
+    "gotIt": "Compris",
+    "walletPromptTitle": "Inscrivez-vous pour utiliser votre portefeuille",
+    "walletPromptText": "Inscrivez-vous gratuitement, achetez des points une fois et votez en un seul clic — aucune carte ni virement nécessaire.",
+    "fastEasySecure": "Rapide. Facile. Sécurisé.",
+    "signUpNow": "S'inscrire maintenant",
+    "changeMethod": "Changer de mode de paiement",
+    "paymentFailed": "Échec du paiement",
+    "tryAgain": "Réessayer",
+    "blocked": {
+      "closedTitle": "Ligne de vote fermée",
+      "closedText": "La ligne de vote est actuellement fermée. Surveillez les annonces concernant sa réouverture.",
+      "closedBadge": "Gardez un œil sur cette page — les dates de vote seront bientôt publiées.",
+      "notStartedTitle": "Le vote commence bientôt",
+      "notStartedText": "La ligne de vote n'est pas encore ouverte. Préparez-vous — elle commence le :",
+      "comeBack": "Revenez à cette date pour voter.",
+      "endedTitle": "Ligne de vote fermée",
+      "endedText": "La ligne de vote a fermé. Le vote s'est terminé le :",
+      "thanks": "Merci à tous ceux qui ont voté. Restez à l'écoute pour les résultats."
+    }
   },
-    "CandidatesPage": {
+  "AddFavoriteModal": {
+    "title": "Ajouter aux favoris",
+    "subtitle": "Rechercher par nom ou nom d'utilisateur",
+    "placeholder": "Tapez le nom ou le pseudo d'une candidate…",
+    "searchHint": "Tapez au moins 2 caractères pour rechercher.",
+    "noResults": "Aucune candidate trouvée pour « {query} ».",
+    "added": "Ajouté",
+    "fav": "Favori",
+    "vote": "Voter",
+    "voteTitle": "Voter pour {name}",
+    "addTitle": "Ajouter {name} aux favoris",
+    "alreadyAdded": "Déjà dans vos favoris"
+  },
+  "WalletCard": {
+    "balanceLabel": "Solde de points",
+    "buyPoints": "Acheter des points",
+    "viewTx": "Voir les transactions",
+    "txTitle": "Transactions"
+  },
+  "TransactionList": {
+    "title": "Activité récente",
+    "filters": {
+      "all": "Tout",
+      "inflow": "Entrées",
+      "outflow": "Sorties"
+    },
+    "noTransactions": "Aucune transaction pour le moment",
+    "noFilteredTransactions": "Aucune transaction {filter}",
+    "labels": {
+      "pointsPurchased": "Points achetés",
+      "giftSent": "Cadeau envoyé",
+      "sentGift": "Envoyé : {gift}",
+      "giftToVotes": "Cadeau en votes",
+      "voteCast": "Vote enregistré",
+      "giftSentTo": "Cadeau envoyé à {name}",
+      "giftSentBoth": "{gift} à {name}",
+      "giftToVotesFor": "Cadeau en votes pour {name}",
+      "voteCastFor": "Vote pour {name}"
+    }
+  },
+  "CandidatesPage": {
     "voteQueen": "Votez pour votre Reine",
     "title": "Classic Queen International",
     "subtitle": "Candidates 2026",
     "noCandidates": "Aucune candidate approuvée pour le moment. Revenez bientôt.",
     "error": "Échec du chargement des candidates : {message}"
   },
-    "HeroSection": {
+  "HeroSection": {
     "voteNow": "VOTEZ MAINTENANT",
     "loading": "Chargement du contenu principal...",
     "errorTitle": "Contenu principal indisponible",
@@ -50,21 +137,14 @@
     "previous": "Précédent",
     "next": "Suivant"
   },
-    "FeaturedCandidates": {
+  "FeaturedCandidates": {
     "title": "Candidats en vedette",
     "subtitle": "Rencontrez nos meilleurs candidats qui mènent la compétition avec leur grâce, leur talent et leur engagement à faire une différence.",
     "voteNow": "Votez maintenant",
     "viewProfile": "Voir le profil",
     "viewAll": "Voir tous les candidats"
   },
-    "Footer": {
-    "about": "À propos",
-    "contact": "Contact",
-    "privacyPolicy": "Politique de confidentialité",
-    "termsOfService": "Conditions d'utilisation",
-    "followUs": "Suivez-nous"
-  },
-    "FeaturedPost": {
+  "FeaturedPost": {
     "title": "Reines Passées",
     "noPosts": "Aucun article en vedette disponible.",
     "resumeScroll": "Le défilement automatique reprend dans quelques secondes…",
@@ -78,32 +158,31 @@
     "shareText": "Découvrez ce {type} de la Reine Classique",
     "copied": "Lien copié dans le presse-papiers !"
   },
-    "GalleryPage": {
+  "GalleryPage": {
     "title": "Galerie",
     "subtitle": "Explorez notre galerie captivante de reines passées, mettant en valeur leur élégance, leur talent et leurs moments mémorables du Concours International de la Reine Classique.",
     "noImages": "Aucune image disponible dans la galerie.",
     "error": "Échec du chargement des images de la galerie : {message}"
   },
-    "NextQueenSection": {
+  "NextQueenSection": {
     "title": "QUI DEVIENT LA PROCHAINE REINE?",
     "ctaButton": "Cliquez ici pour voter",
     "ctaSubtitle": "Votre vote décide qui porte la couronne. Soutenez votre reine aujourd'hui."
   },
-    "NewsPage": {
+  "NewsPage": {
     "title": "Actualités",
     "subtitle": "Restez informés des dernières nouvelles, annonces et highlights du Concours International de la Reine Classique.",
     "noArticles": "Aucun article d'actualité disponible pour le moment.",
     "error": "Échec du chargement des articles d'actualité : {message}"
   },
-    "SponsorsSection": {
+  "SponsorsSection": {
     "title": "NOS SPONSORS ET PARTENAIRES PRÉCIEUX",
     "subtitle": "Ceci est un espace pour les marques visionnaires prêtes à se tenir à la pointe de l'expérience de pageant la plus raffinée en Afrique.",
     "becomeSponsor": "Devenez Sponsor",
     "becomeSponsorSubtitle": "Partenariat avec nous et atteindre un public de qualité",
     "contactButton": "Contact pour le Sponsorship"
   },
-    
-    "Stats": {
+  "Stats": {
     "titles": {
       "candidates": "Candidates",
       "hostCountry": "Pays hôte",
@@ -117,13 +196,13 @@
       "top3": "Top 3"
     }
   },
-      "TopNews": {
+  "TopNews": {
     "title": "Actualités principales",
     "subtitle": "Dernières mises à jour, exclusivités et histoires dans les coulisses.",
     "readMore": "Lire la suite",
     "moreUpdates": "Plus d'actualités"
   },
-    "AboutPage": {
+  "AboutPage": {
     "heroTitle": "Classic Queen International",
     "heroSubtitle": "Célébrer la beauté avec un but, l'intelligence et l'excellence culturelle",
     "essenceTitle": "Notre Essence",
@@ -191,9 +270,8 @@
       "d4Title": "Plateforme Internationale",
       "d4Desc": "Représentez votre pays sur une scène mondiale et faites entendre votre voix à l'international."
     }
-
   },
-    "ContactPage": {
+  "ContactPage": {
     "heroTitle1": "Contactez",
     "heroTitle2": "Nous",
     "heroSubtitle": "Contactez-nous pour toute question sur la participation, les partenariats ou toute autre demande. Nous sommes là pour vous accompagner.",
@@ -250,7 +328,7 @@
       "partnership": "Partenariat"
     }
   },
-    "VoteProfile": {
+  "VoteProfile": {
     "loading": "Chargement de la candidate…",
     "notFoundTitle": "Candidate Introuvable",
     "notFoundText": "Nous n'avons pas pu trouver la candidate pour laquelle vous essayez de voter.",
@@ -274,7 +352,7 @@
     "shareMessage": "Bonjour, je participe au concours Classic Queen International 2026{country}.\nAidez-moi à voter pour moi — j'ai besoin de vos votes pour me qualifier.\n\nCOMMENT VOTER :\n1. Cliquez sur ce lien pour voter : {url}\n2. Cliquez sur le bouton VOTER\n3. Chaque vote vaut 1 pt — votez autant que vous le pouvez pour me soutenir\n\nJ'apprécie profondément votre soutien et j'espère qu'il m'aidera à devenir Classic Queen International 2026.",
     "representing": ", représentant {country}"
   },
-    "Dashboard": {
+  "Dashboard": {
     "title": "Mon Tableau de bord",
     "signOut": "Déconnexion",
     "loading": "Chargement du tableau de bord…",
@@ -314,5 +392,67 @@
       "removeBtn": "Retirer des favoris"
     },
     "termsOfUse": "Conditions d'utilisation"
+  },
+  "GiftModal": {
+    "title": "Envoyer un cadeau à {name}",
+    "successTitle": "Cadeau envoyé avec succès !",
+    "successText": "Vous avez envoyé {gift} à {name}",
+    "processing": "Vérification du paiement…",
+    "doNotClose": "Veuillez ne pas fermer cette fenêtre.",
+    "cancel": "Annuler",
+    "chooseGift": "Choisissez un cadeau pour {name}",
+    "amountPts": "Montant : {amount} pts",
+    "sending": "Vous envoyez :",
+    "guestInfoTitle": "Vos informations",
+    "guestInfoText": "Nous en avons besoin pour envoyer votre reçu de cadeau et confirmer votre paiement.",
+    "emailPlaceholder": "Adresse e-mail *",
+    "namePlaceholder": "Votre nom (optionnel)",
+    "paymentMethod": "Choisir le mode de paiement",
+    "fetchingRate": "Récupération du taux de change…",
+    "chargedAmount": "Vous serez facturé {amount} {currency}",
+    "fallbackCharge": "Tarification locale indisponible — vous serez facturé ${amount} USD sur votre carte.",
+    "securedPayment": "Paiement par carte sécurisé, propulsé par Flutterwave.",
+    "sendBtn": "Envoyer le cadeau · {amount}",
+    "selectBtn": "Sélectionner un cadeau",
+    "termsText": "En continuant, vous acceptez nos Conditions d'utilisation",
+    "back": "Retour",
+    "continue": "Continuer",
+    "errorSelect": "Veuillez sélectionner un cadeau.",
+    "errorEmail": "Veuillez entrer une adresse e-mail valide.",
+    "errorWallet": "Veuillez vous connecter pour utiliser votre portefeuille.",
+    "errorMethod": "Veuillez choisir un mode de paiement.",
+    "paymentFailed": "Échec du paiement",
+    "tryAgain": "Réessayer",
+    "gifts": {
+      "rose": "Rose Royale",
+      "hot_kisses": "Baisers Brûlants",
+      "heart_of_gold": "Cœur d'Or",
+      "gold_crown": "Couronne d'Or",
+      "sapphire_gem": "Gemme Saphir",
+      "golden_throne": "Trône Doré",
+      "royal_scepter": "Sceptre Royal",
+      "royal_ruby": "Rubis Royal",
+      "queen_dragon": "Dragon Reine",
+      "crystal_chalice": "Calice de Cristal",
+      "eternal_crown": "Couronne Éternelle",
+      "star_of_court": "Étoile de la Cour"
+    }
+  },
+  "Footer": {
+    "brandDescription": "Célébrer la beauté, la grâce et l'autonomisation à travers un concours international de premier plan. Rejoignez-nous pour couronner l'excellence et favoriser la sororité mondiale.",
+    "quickLinks": "Liens Rapides",
+    "links": {
+      "contestants": "Candidates",
+      "voting": "Vote",
+      "gallery": "Galerie",
+      "news": "Actualités",
+      "about": "À propos",
+      "terms": "Conditions",
+      "registration": "Inscription"
+    },
+    "contactUs": "Contactez-nous",
+    "followUs": "Suivez-nous sur :",
+    "copyright": "© 2024 Stargate Studios. Tous droits réservés.",
+    "termsOfService": "Conditions d'utilisation"
   }
 }

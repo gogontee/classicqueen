@@ -5,8 +5,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 const Footer = () => {
+  const t = useTranslations('Footer')
   const [logoError, setLogoError] = useState(false)
   const router = useRouter()
 
@@ -21,6 +23,15 @@ const Footer = () => {
     setLogoError(true)
     console.log('Failed to load logo from Supabase, using fallback')
   }
+
+  const quickLinks = [
+    { name: t('links.contestants'), path: '/candidates' },
+    { name: t('links.voting'), path: '/candidates' },
+    { name: t('links.gallery'), path: '/gallery' },
+    { name: t('links.news'), path: '/news' },
+    { name: t('links.about'), path: '/about' },
+    { name: t('links.terms'), path: '/terms' },
+  ]
 
   return (
     <footer className="bg-brown-900 text-white mt-auto border-t border-gold-600/20">
@@ -41,8 +52,7 @@ const Footer = () => {
               </div>
             </div>
             <p className="text-brown-200 leading-relaxed max-w-xl text-lg text-center md:text-left">
-              Celebrating beauty, grace, and empowerment through premier international pageantry. 
-              Join us in crowning excellence and fostering global sisterhood.
+              {t('brandDescription')}
             </p>
             <div className="flex space-x-3 pt-4 justify-center md:justify-start">
               <a 
@@ -72,17 +82,12 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="md:col-span-1">
-            <h3 className="text-lg font-bold mb-6 text-gold-400 border-b border-gold-600/30 pb-2 text-center md:text-left">Quick Links</h3>
+            <h3 className="text-lg font-bold mb-6 text-gold-400 border-b border-gold-600/30 pb-2 text-center md:text-left">
+              {t('quickLinks')}
+            </h3>
             <div className="grid grid-cols-3 md:grid-cols-1 gap-4 md:gap-4">
-              {[
-                { name: 'Contestants', path: '/candidates' },
-                { name: 'Voting', path: '/candidates' },
-                { name: 'Gallery', path: '/gallery' },
-                { name: 'News', path: '/news' },
-                { name: 'About', path: '/about' },
-                { name: 'Terms', path: '/terms' },
-              ].map((item) => (
-                <div key={item.path} className="text-center md:text-left">
+              {quickLinks.map((item) => (
+                <div key={item.name} className="text-center md:text-left">
                   <Link 
                     href={item.path} 
                     className="text-brown-200 hover:text-gold-300 transition-colors duration-300 inline-block py-1 md:py-0"
@@ -96,7 +101,7 @@ const Footer = () => {
                   onClick={handleRegistrationClick}
                   className="text-brown-200 hover:text-gold-300 transition-colors duration-300 inline-block py-1 md:py-0"
                 >
-                  <span className="text-sm md:text-base">Registration</span>
+                  <span className="text-sm md:text-base">{t('links.registration')}</span>
                 </button>
               </div>
             </div>
@@ -104,7 +109,9 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div className="md:col-span-1 flex flex-col items-center md:items-start">
-            <h3 className="text-lg font-bold mb-6 text-gold-400 border-b border-gold-600/30 pb-2 text-center md:text-left">Contact Us</h3>
+            <h3 className="text-lg font-bold mb-6 text-gold-400 border-b border-gold-600/30 pb-2 text-center md:text-left">
+              {t('contactUs')}
+            </h3>
             <div className="space-y-5 w-full max-w-xs md:max-w-none">
               <div className="flex items-center space-x-4 justify-center md:justify-start">
                 <Phone className="text-gold-500 flex-shrink-0" size={20} />
@@ -127,7 +134,7 @@ const Footer = () => {
                 </a>
               </div>
               <div className="pt-2">
-                <p className="text-brown-300 text-sm mb-2 text-center md:text-left">Follow us on:</p>
+                <p className="text-brown-300 text-sm mb-2 text-center md:text-left">{t('followUs')}</p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 md:gap-3 items-center">
                   <a 
                     href="https://instagram.com/classicqueeninternational" 
@@ -166,12 +173,14 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-center md:text-left">
               <p className="text-brown-300 text-sm">
-                © 2024 Stargate Studios. All rights reserved.
+                {t('copyright')}
               </p>
               
             </div>
             <div className="text-brown-300 text-sm flex flex-wrap justify-center gap-4 items-center">
-              <Link href="/terms" className="hover:text-gold-300 transition-colors">Terms of Service</Link>
+              <Link href="/terms" className="hover:text-gold-300 transition-colors">
+                {t('termsOfService')}
+              </Link>
             </div>
           </div>
         </div>

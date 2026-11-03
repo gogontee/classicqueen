@@ -5,12 +5,9 @@ import { ArrowDownLeft, ArrowUpRight, Loader } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useNetworkError, isNetworkError } from "@/contexts/NetworkErrorContext";
 import { formatPoints } from "@/lib/points";
+import { useTranslations } from "next-intl";
 
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "inflow", label: "Inflow" },
-  { key: "outflow", label: "Outflow" },
-];
+const FILTER_KEYS = ["all", "inflow", "outflow"];
 
 /**
  * TransactionList
@@ -27,6 +24,7 @@ export default function TransactionList({
   showFilters = true,
   onTransactionsLoaded,
 }) {
+  const t = useTranslations("TransactionList");
   const supabase = createClient();
   const { reportNetworkError } = useNetworkError();
 
@@ -57,8 +55,8 @@ export default function TransactionList({
       // ---- Resolve candidate names for rows that don't have them inline ----
       // Collect every candidate_id referenced in metadata
       const idsToFetch = new Set();
-      for (const t of rows) {
-        const meta = t.metadata || {};
+      for (const tx of rows) {
+        const meta = tx.metadata || {};
         const id = meta.candidate_id || meta.target_candidate_id;
         // Skip if we already have a stored name for this row
         const hasInlineName = !!meta.candidate_name;
@@ -100,10 +98,10 @@ export default function TransactionList({
   // Filter
   const filtered = useMemo(
     () =>
-      transactions.filter((t) => {
+      transactions.filter((tx) => {
         if (filter === "all") return true;
-        if (filter === "inflow") return t.type === "credit";
-        if (filter === "outflow") return t.type === "debit";
+        if (filter === "inflow") return tx.type === "credit";
+        if (filter === "outflow") return tx.type === "debit";
         return true;
       }),
     [transactions, filter]
@@ -122,21 +120,21 @@ export default function TransactionList({
     <div className={wrapperClass}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-bold text-[#2E1503]">Recent Activity</h4>
+        <h4 className="text-sm font-bold text-[#2E1503]">{t("title")}</h4>
         {showFilters && (
           <div className="flex items-center gap-1 p-0.5 rounded-full bg-[#faf6ee] border border-[#9A7B4F]/20">
-            {FILTERS.map((f) => (
+            {FILTER_KEYS.map((key) => (
               <button
-                key={f.key}
+                key={key}
                 type="button"
-                onClick={() => setFilter(f.key)}
+                onClick={() => setFilter(key)}
                 className={`px-2 py-[3px] rounded-full text-[10px] font-semibold transition ${
-                  filter === f.key
+                  filter === key
                     ? "bg-[#9A7B4F] text-white shadow-sm"
                     : "text-[#6b4423] hover:bg-white"
                 }`}
               >
-                {f.label}
+                {t(`filters.${key}`)}
               </button>
             ))}
           </div>
@@ -151,19 +149,20 @@ export default function TransactionList({
       ) : filtered.length === 0 ? (
         <p className="text-xs text-[#6b4423]/60 text-center py-6">
           {filter === "all"
-            ? "No transactions yet"
-            : `No ${filter} transactions`}
+            ? t("noTransactions")
+            : t("noFilteredTransactions", { filter: t(`filters.${filter}`).toLowerCase() })}
         </p>
       ) : (
         <div
           className="space-y-1.5 overflow-y-auto pr-1 transactions-scroll"
           style={{ maxHeight }}
         >
-          {filtered.map((t) => (
+          {filtered.map((tx) => (
             <TransactionRow
-              key={t.id}
-              t={t}
+              key={tx.id}
+              t={tx}
               candidateNames={candidateNames}
+              translate={t}
             />
           ))}
         </div>
@@ -189,7 +188,7 @@ export default function TransactionList({
   );
 }
 
-function TransactionRow({ t, candidateNames = {} }) {
+function TransactionRow({ t, candidateNames = {}, translate }) {
   const isCredit = t.type === "credit";
   const meta = t.metadata || {};
   const source = meta.source || t.payment_method;
@@ -209,28 +208,30 @@ function TransactionRow({ t, candidateNames = {} }) {
   let sublabel = null;
 
   if (isCredit) {
-    label = "Points Purchased";
+    label = translate("labels.pointsPurchased");
   } else if (source === "gift") {
     // Gift Sent — show recipient AND gift name
     const giftName = meta.gift_name;
     if (recipientName && giftName) {
-      label = `Gift Sent`;
-      sublabel = `${giftName} to ${recipientName}`;
+      label = translate("labels.giftSent");
+      sublabel = translate("labels.giftSentBoth", { gift: giftName, name: recipientName });
     } else if (recipientName) {
-      label = `Gift Sent to ${recipientName}`;
+      label = translate("labels.giftSentTo", { name: recipientName });
     } else if (giftName) {
-      label = `Sent ${giftName}`;
+      label = translate("labels.sentGift", { gift: giftName });
     } else {
-      label = "Gift Sent";
+      label = translate("labels.giftSent");
     }
   } else if (source === "conversion") {
     // Gift to Votes
     label = recipientName
-      ? `Gift to Votes for ${recipientName}`
-      : "Gift to Votes";
+      ? translate("labels.giftToVotesFor", { name: recipientName })
+      : translate("labels.giftToVotes");
   } else {
     // Vote Cast
-    label = recipientName ? `Vote Cast for ${recipientName}` : "Vote Cast";
+    label = recipientName 
+      ? translate("labels.voteCastFor", { name: recipientName }) 
+      : translate("labels.voteCast");
   }
 
   return (

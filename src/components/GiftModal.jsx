@@ -26,6 +26,7 @@ import { normalizePaymentMethod } from '@/lib/paymentMethods';
 import { getUserCurrency } from '@/lib/currency';
 import { formatPoints } from '@/lib/points';
 import PaymentMethodSelector from '@/components/vote/PaymentMethodSelector';
+import { useTranslations } from 'next-intl';
 
 const FLW_PUBLIC_KEY = process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY;
 
@@ -71,6 +72,7 @@ export default function GiftModal({
   onGiftSuccess,
   onGiftError,
 }) {
+  const t = useTranslations('GiftModal');
   const supabase = createClient();
   const { reportNetworkError } = useNetworkError();
 
@@ -86,7 +88,6 @@ export default function GiftModal({
   const [walletBalance, setWalletBalance] = useState(0);
   const [walletLoading, setWalletLoading] = useState(true);
 
-  // ---- Currency detection ----
   const [userCurrency, setUserCurrency] = useState('USD');
   const [chargeAmount, setChargeAmount] = useState(null);
   const [fetchingRate, setFetchingRate] = useState(false);
@@ -98,18 +99,15 @@ export default function GiftModal({
     suggestion: '',
   });
 
-  // ---- Wizard stage ----
   const [stage, setStage] = useState(1);
   const [direction, setDirection] = useState(1);
 
-  // ---- Auto-scroll triggers ----
   const [scrollToContinue, setScrollToContinue] = useState(false);
   const [scrollToPay, setScrollToPay] = useState(false);
 
   const continueButtonRef = useRef(null);
   const payButtonRef = useRef(null);
 
-  // ----- Auth + wallet balance -----
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
@@ -156,7 +154,6 @@ export default function GiftModal({
     };
   }, [isOpen, supabase, reportNetworkError]);
 
-  // ----- Load Flutterwave script -----
   useEffect(() => {
     if (!isOpen || flutterwaveLoaded) return;
     if (window.FlutterwaveCheckout) {
@@ -172,7 +169,6 @@ export default function GiftModal({
     document.head.appendChild(script);
   }, [isOpen, flutterwaveLoaded]);
 
-  // ----- Reset on close -----
   useEffect(() => {
     if (!isOpen) {
       setSelectedGift(null);
@@ -193,33 +189,30 @@ export default function GiftModal({
     }
   }, [isOpen]);
 
-  // ----- Auto-scroll to Continue (Stage 1) after a gift is picked -----
   useEffect(() => {
     if (!scrollToContinue || !continueButtonRef.current) return;
-    const t = setTimeout(() => {
+    const timeout = setTimeout(() => {
       continueButtonRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       });
       setScrollToContinue(false);
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timeout);
   }, [scrollToContinue]);
 
-  // ----- Auto-scroll to Send (Stage 3) after a payment method is picked -----
   useEffect(() => {
     if (!scrollToPay || !payButtonRef.current) return;
-    const t = setTimeout(() => {
+    const timeout = setTimeout(() => {
       payButtonRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
       });
       setScrollToPay(false);
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timeout);
   }, [scrollToPay]);
 
-  // ----- Fetch rate whenever gift + currency + method changes -----
   useEffect(() => {
     if (!selectedGift) {
       setChargeAmount(null);
@@ -265,12 +258,9 @@ export default function GiftModal({
           '[gift-modal] rate fetch failed, falling back to USD:',
           err?.message
         );
-        // Fallback: charge in USD. Flutterwave supports USD globally,
-        // so the user is never blocked by a rate lookup failure.
         setUserCurrency('USD');
         setChargeAmount(selectedGift.amount);
         setRateFallback(true);
-        // Don't set error — the user can still complete the payment.
       } finally {
         if (!cancelled) setFetchingRate(false);
       }
@@ -281,17 +271,15 @@ export default function GiftModal({
     };
   }, [selectedGift, paymentMethod]);
 
-  // ----- Gift pick handler (Stage 1) -----
   const handleGiftSelect = (gift) => {
     setSelectedGift(gift);
     setError('');
     setScrollToContinue(true);
   };
 
-  // ----- Payment method pick handler (Stage 3) -----
   const handlePaymentMethodSelect = (m) => {
     if (m === 'wallet' && !currentUser) {
-      setError('Please sign in to use your wallet.');
+      setError(t('errorWallet'));
       return;
     }
     setPaymentMethod(m);
@@ -299,11 +287,10 @@ export default function GiftModal({
     setScrollToPay(true);
   };
 
-  // ----- Stage navigation -----
   const goNext = () => {
     if (stage === 1) {
       if (!selectedGift) {
-        setError('Please select a gift.');
+        setError(t('errorSelect'));
         return;
       }
       setError('');
@@ -322,7 +309,7 @@ export default function GiftModal({
     if (stage === 2) {
       const email = guestInfo.email.trim();
       if (!email || !/\S+@\S+\.\S+/.test(email)) {
-        setError('Please enter a valid email address.');
+        setError(t('errorEmail'));
         return;
       }
       setError('');
@@ -353,7 +340,6 @@ export default function GiftModal({
     }
   };
 
-  // ----- Wallet payment -----
   const processWalletPayment = async () => {
     const amount = selectedGift.amount;
 
@@ -420,8 +406,7 @@ export default function GiftModal({
     }
   };
 
-  // ----- Flutterwave (Card) payment -----
-  const processCardPayment = () => {
+  const processCardPayment = async () => {
     if (!window.FlutterwaveCheckout) {
       setError('Card payment system not loaded. Please try again.');
       setProcessing(false);
@@ -434,7 +419,7 @@ export default function GiftModal({
       currentUser?.user_metadata?.full_name || guestInfo.name || 'Supporter';
 
     if (!email) {
-      setError('Email is required.');
+      setError(t('errorEmail'));
       setProcessing(false);
       setPaymentStep('selection');
       return;
@@ -452,6 +437,29 @@ export default function GiftModal({
       .substring(2, 10)}`;
 
     try {
+      // 1. Save the pending intent to the database
+      const { error: pendingErr } = await supabase.from("pending_gift_transactions").insert({
+        reference,
+        user_id: currentUser?.id ?? null,
+        guest_email: currentUser ? null : email,
+        guest_name: currentUser ? null : name,
+        candidate_id: candidate.id,
+        gift_id: selectedGift.id,
+        gift_name: t(`gifts.${selectedGift.id}`), 
+        gift_emoji: selectedGift.emoji,
+        amount: selectedGift.amount,
+        currency: userCurrency,
+      });
+
+      if (pendingErr) {
+        console.error("Failed to save pending gift:", pendingErr);
+        setError("Could not start payment. Please try again.");
+        setProcessing(false); 
+        setPaymentStep('selection');
+        return;
+      }
+
+      // 2. Open Flutterwave
       window.FlutterwaveCheckout({
         public_key: FLW_PUBLIC_KEY,
         tx_ref: reference,
@@ -461,7 +469,7 @@ export default function GiftModal({
         customer: { email, name },
         customizations: {
           title: 'Classic Queen — Send a Gift',
-          description: `${selectedGift.name} for ${
+          description: `${t(`gifts.${selectedGift.id}`)} for ${
             candidate?.full_name || candidate?.username
           }`,
           logo: '/cqi.png',
@@ -498,7 +506,6 @@ export default function GiftModal({
     }
   };
 
-  // ----- Shared success handler -----
   const handleGiftSuccess = async ({
     reference,
     paymentId,
@@ -522,7 +529,7 @@ export default function GiftModal({
             guest_name: currentUser ? null : name,
             candidate_id: candidate.id,
             gift_type: selectedGift.id,
-            gift_name: selectedGift.name,
+            gift_name: t(`gifts.${selectedGift.id}`), 
             gift_emoji: selectedGift.emoji,
             amount,
             currency: currency || 'USD',
@@ -569,22 +576,21 @@ export default function GiftModal({
     }
   };
 
-  // ----- Entry point -----
   const handleProceed = () => {
     if (!selectedGift) {
-      setError('Please select a gift.');
+      setError(t('errorSelect'));
       return;
     }
     if (!paymentMethod) {
-      setError('Please choose a payment method.');
+      setError(t('errorMethod'));
       return;
     }
     if (paymentMethod !== 'wallet' && !currentUser && !guestInfo.email) {
-      setError('Please enter your email address.');
+      setError(t('errorEmail'));
       return;
     }
     if (paymentMethod === 'wallet' && !currentUser) {
-      setError('Please sign in to use your wallet.');
+      setError(t('errorWallet'));
       return;
     }
 
@@ -673,7 +679,7 @@ export default function GiftModal({
               <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2 min-w-0">
                 <Gift className="w-4 h-4 text-[#f5d76e]" />
                 <span className="truncate">
-                  Send a Gift to {candidate?.full_name || candidate?.username}
+                  {t('title', { name: candidate?.full_name || candidate?.username })}
                 </span>
               </h2>
 
@@ -732,11 +738,13 @@ export default function GiftModal({
                     <Check className="w-8 h-8 text-white" />
                   </motion.div>
                   <h3 className="text-lg font-bold text-white mb-1">
-                    Gift Sent Successfully!
+                    {t('successTitle')}
                   </h3>
                   <p className="text-white/60 text-xs mb-3">
-                    You sent {selectedGift?.emoji} {selectedGift?.name} to{' '}
-                    {candidate?.full_name || `@${candidate?.username}`}
+                    {t('successText', {
+                      gift: `${selectedGift?.emoji} ${t(`gifts.${selectedGift?.id}`)}`,
+                      name: candidate?.full_name || `@${candidate?.username}`,
+                    })}
                   </p>
                   <div className="bg-white/5 rounded-lg p-3">
                     <p className="text-[#f5d76e] font-semibold text-base">
@@ -750,10 +758,10 @@ export default function GiftModal({
                 <div className="p-10 text-center">
                   <Loader className="w-8 h-8 text-[#c9a227] animate-spin mx-auto mb-3" />
                   <p className="text-white text-sm font-medium">
-                    Verifying payment…
+                    {t('processing')}
                   </p>
                   <p className="text-white/40 text-xs mt-1">
-                    Please do not close this window.
+                    {t('doNotClose')}
                   </p>
                   <button
                     type="button"
@@ -764,7 +772,7 @@ export default function GiftModal({
                     }}
                     className="mt-6 text-[11px] text-white/40 hover:text-white/70 underline transition"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                 </div>
               )}
@@ -784,8 +792,7 @@ export default function GiftModal({
                     >
                       <div className="p-3 border-b border-[#c9a227]/20">
                         <label className="block text-xs font-medium text-white/80 mb-2">
-                          Choose a gift for{' '}
-                          {candidate?.full_name || `@${candidate?.username}`}
+                          {t('chooseGift', { name: candidate?.full_name || `@${candidate?.username}` })}
                         </label>
                         <div className="grid grid-cols-3 gap-1.5">
                           {GIFTS.map((gift) => {
@@ -810,7 +817,7 @@ export default function GiftModal({
                                   {gift.emoji}
                                 </div>
                                 <div className="text-[10px] font-semibold text-white leading-tight">
-                                  {gift.name}
+                                  {t(`gifts.${gift.id}`)}
                                 </div>
                                 <div
                                   className="text-[9px] font-bold mt-0.5"
@@ -844,10 +851,10 @@ export default function GiftModal({
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold text-white truncate">
-                                  {selectedGift.name}
+                                  {t(`gifts.${selectedGift.id}`)}
                                 </p>
                                 <p className="text-xs text-white/60">
-                                  Amount: {selectedGift.amount} pts
+                                  {t('amountPts', { amount: selectedGift.amount })}
                                 </p>
                               </div>
                             </div>
@@ -884,7 +891,7 @@ export default function GiftModal({
                               'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)';
                           }}
                         >
-                          Continue
+                          {t('continue')}
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -909,23 +916,22 @@ export default function GiftModal({
                           className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-white transition-colors"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
-                          Back
+                          {t('back')}
                         </button>
                       </div>
 
                       <div className="p-3 space-y-3">
                         <div>
                           <label className="block text-sm font-semibold text-white mb-1">
-                            Your Information
+                            {t('guestInfoTitle')}
                           </label>
                           <p className="text-[11px] text-white/50 leading-relaxed">
-                            We need these to send your gift receipt and confirm
-                            your payment.
+                            {t('guestInfoText')}
                           </p>
                         </div>
                         <input
                           type="email"
-                          placeholder="Email address *"
+                          placeholder={t('emailPlaceholder')}
                           value={guestInfo.email}
                           onChange={(e) =>
                             setGuestInfo({
@@ -937,7 +943,7 @@ export default function GiftModal({
                         />
                         <input
                           type="text"
-                          placeholder="Your name (optional)"
+                          placeholder={t('namePlaceholder')}
                           value={guestInfo.name}
                           onChange={(e) =>
                             setGuestInfo({
@@ -953,10 +959,10 @@ export default function GiftModal({
                         <div className="p-3 border-t border-[#c9a227]/20">
                           <div className="bg-white/5 rounded-lg p-2.5 border border-[#c9a227]/20 flex items-center justify-between">
                             <span className="text-[11px] text-white/60">
-                              You&apos;re sending:
+                              {t('sending')}
                             </span>
                             <span className="text-[11px] font-bold text-[#f5d76e]">
-                              {selectedGift.emoji} {selectedGift.name} ·{' '}
+                              {selectedGift.emoji} {t(`gifts.${selectedGift.id}`)} ·{' '}
                               {formatPoints(totalUSD)}
                             </span>
                           </div>
@@ -989,7 +995,7 @@ export default function GiftModal({
                               'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)';
                           }}
                         >
-                          Continue
+                          {t('continue')}
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
@@ -1014,7 +1020,7 @@ export default function GiftModal({
                           className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-white transition-colors"
                         >
                           <ChevronLeft className="w-3.5 h-3.5" />
-                          Back
+                          {t('back')}
                         </button>
                       </div>
 
@@ -1022,10 +1028,10 @@ export default function GiftModal({
                         <div className="p-3 border-b border-[#c9a227]/20">
                           <div className="bg-white/5 rounded-lg p-2.5 border border-[#c9a227]/20 flex items-center justify-between">
                             <span className="text-[11px] text-white/60">
-                              You&apos;re sending:
+                              {t('sending')}
                             </span>
                             <span className="text-[11px] font-bold text-[#f5d76e]">
-                              {selectedGift.emoji} {selectedGift.name} ·{' '}
+                              {selectedGift.emoji} {t(`gifts.${selectedGift.id}`)} ·{' '}
                               {formatPoints(totalUSD)}
                             </span>
                           </div>
@@ -1034,7 +1040,7 @@ export default function GiftModal({
 
                       <div className="p-3 border-b border-[#c9a227]/20">
                         <label className="block text-xs font-medium text-white/80 mb-2">
-                          Choose payment method
+                          {t('paymentMethod')}
                         </label>
 
                         <PaymentMethodSelector
@@ -1055,27 +1061,27 @@ export default function GiftModal({
                                   size={10}
                                   className="animate-spin text-[#fb923c]"
                                 />
-                                Fetching exchange rate…
+                                {t('fetchingRate')}
                               </p>
                             ) : chargeAmount != null &&
                               userCurrency !== 'USD' ? (
                               <p className="text-[10px] text-white/75 leading-snug">
-                                You&apos;ll be charged{' '}
+                                {t('chargedAmount', { amount: chargeAmount.toLocaleString(), currency: userCurrency }).split(' {')[0]}
                                 <span className="font-semibold text-[#fb923c]">
                                   {chargeAmount.toLocaleString()} {userCurrency}
                                 </span>
                               </p>
                             ) : rateFallback ? (
                               <p className="text-[10px] text-white/75 leading-snug">
-                                Local pricing unavailable — you&apos;ll be charged{' '}
+                                {t('fallbackCharge', { amount: Number(chargeAmount ?? 0).toFixed(2) }).split('$')[0]}
                                 <span className="font-semibold text-[#fb923c]">
                                   ${Number(chargeAmount ?? 0).toFixed(2)} USD
                                 </span>{' '}
-                                on your card.
+                                {t('fallbackCharge', { amount: Number(chargeAmount ?? 0).toFixed(2) }).split('USD')[1]}
                               </p>
                             ) : (
                               <p className="text-[10px] text-white/75 leading-snug">
-                                Secured card payment, powered by{' '}
+                                {t('securedPayment').split('Flutterwave')[0]}
                                 <span className="font-semibold text-white/90">
                                   Flutterwave
                                 </span>
@@ -1133,17 +1139,17 @@ export default function GiftModal({
                           ) : paymentMethod === 'card' && fetchingRate ? (
                             <>
                               <Loader className="w-4 h-4 animate-spin" />
-                              Fetching rate…
+                              {t('fetchingRate')}
                             </>
                           ) : selectedGift ? (
-                            `Send Gift · ${formatPoints(totalUSD)}`
+                            t('sendBtn', { amount: formatPoints(totalUSD) })
                           ) : (
-                            'Select a Gift'
+                            t('selectBtn')
                           )}
                         </button>
 
                         <p className="text-[10px] text-white/40 text-center mt-2">
-                          By proceeding, you agree to our Terms of Service
+                          {t('termsText')}
                         </p>
                       </div>
                     </motion.div>
@@ -1178,7 +1184,7 @@ export default function GiftModal({
                     </div>
                   </div>
                   <h3 className="text-lg font-bold text-white text-center mb-2">
-                    Payment Failed
+                    {t('paymentFailed')}
                   </h3>
                   <p className="text-white/80 text-center mb-4">
                     {paymentError.message}
@@ -1198,7 +1204,7 @@ export default function GiftModal({
                         'linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)',
                     }}
                   >
-                    Try Again
+                    {t('tryAgain')}
                   </button>
                 </motion.div>
               </motion.div>

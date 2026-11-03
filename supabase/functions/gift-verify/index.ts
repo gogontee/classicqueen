@@ -10,11 +10,7 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  console.log("[gift-verify] invoked", { method: req.method });
-
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const FLW_SECRET_KEY = Deno.env.get("FLUTTERWAVE_SECRET_KEY");
@@ -22,165 +18,66 @@ serve(async (req: Request) => {
     const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!FLW_SECRET_KEY) throw new Error("Missing FLUTTERWAVE_SECRET_KEY");
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY)
-      throw new Error("Missing Supabase service credentials");
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) throw new Error("Missing Supabase service credentials");
 
     const body = await req.json();
-    console.log("[gift-verify] body:", JSON.stringify(body));
-
     const {
-      user_id,
-      guest_email,
-      guest_name,
-      candidate_id,
-      gift_type,
-      gift_name,
-      gift_emoji,
-      amount,
-      currency,
-      tx_ref,
-      transaction_id,
-      payment_method,
-      raw_payment_method,
-      raw_gateway_response,
-      skip_verification,
+      user_id, guest_email, guest_name, candidate_id, gift_type, gift_name, gift_emoji,
+      amount, currency, tx_ref, transaction_id, payment_method, raw_payment_method, raw_gateway_response, skip_verification,
     } = body;
 
     const skipVerification = skip_verification === true;
-
-    if (!candidate_id || !amount || !tx_ref || !transaction_id) {
-      throw new Error("Missing required fields");
-    }
+    if (!candidate_id || !amount || !tx_ref || !transaction_id) throw new Error("Missing required fields");
 
     const expectedCurrency = currency || "USD";
     const amountUSD = Number(amount);
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    // 1. Idempotency check
-    const { data: existing } = await supabase
-      .from("gift_transactions")
-      .select("id")
-      .eq("reference", tx_ref)
-      .maybeSingle();
+    // Idempotency check
+    const { data: existing } = await supabase.from("gift_transactions").select("id").eq("reference", tx_ref).maybeSingle();
+    if (existing) return new Response(JSON.stringify({ success: true, message: "Already processed" }), { status: 200, headers: corsHeaders });
 
-    if (existing) {
-      console.log("[gift-verify] already processed:", tx_ref);
-      return new Response(
-        JSON.stringify({ success: true, message: "Already processed" }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // ---- Flutterwave verification block (skipped for wallet payments) ----
     if (!skipVerification) {
-      console.log("[gift-verify] verifying with FLW:", transaction_id);
-      const verifyRes = await fetch(
-        `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`,
-        { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } }
-      );
+      const verifyRes = await fetch(`https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`, { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } });
       const verifyData = await verifyRes.json();
-
+      
+      const flwStatus = verifyData?.data?.status;
       const flwAmount = Number(verifyData?.data?.amount);
       const flwCurrency = verifyData?.data?.currency;
 
-      console.log("[gift-verify] FLW status:", verifyData?.status);
-      console.log("[gift-verify] FLW currency:", flwCurrency);
-      console.log("[gift-verify] FLW amount:", flwAmount);
-      console.log("[gift-verify] expected currency:", expectedCurrency);
-      console.log("[gift-verify] expected USD:", amountUSD);
-
-      if (
-        verifyData.status !== "success" ||
-        verifyData.data?.status !== "successful"
-      ) {
-        throw new Error("Payment verification failed");
+      // HANDLE PENDING PAYMENTS (Bank Transfers)
+      if (flwStatus === "pending" || flwStatus === "success-pending-validation") {
+        return new Response(JSON.stringify({ success: true, message: "Payment pending, awaiting bank confirmation" }), { status: 200, headers: corsHeaders });
       }
 
-      // Currency match
-      if (flwCurrency && flwCurrency !== expectedCurrency) {
-        throw new Error(
-          `Currency mismatch. Client sent ${expectedCurrency}, FLW returned ${flwCurrency}.`
-        );
-      }
+      if (verifyData.status !== "success" || flwStatus !== "successful") throw new Error(`Payment verification failed. FLW status: ${flwStatus}`);
+      if (flwCurrency && flwCurrency !== expectedCurrency) throw new Error(`Currency mismatch.`);
 
-      // Amount verification
       if (expectedCurrency === "USD") {
-        if (flwAmount < amountUSD - 0.01) {
-          throw new Error(
-            `Amount too low. Expected $${amountUSD.toFixed(
-              2
-            )}, got $${flwAmount.toFixed(2)}`
-          );
-        }
+        if (flwAmount < amountUSD - 0.01) throw new Error(`Amount too low.`);
       } else {
-        const rateRes = await fetch(
-          `https://api.flutterwave.com/v3/transfers/rates?amount=${amountUSD}&destination_currency=USD&source_currency=${expectedCurrency}`,
-          { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } }
-        );
+        const rateRes = await fetch(`https://api.flutterwave.com/v3/transfers/rates?amount=${amountUSD}&destination_currency=USD&source_currency=${expectedCurrency}`, { headers: { Authorization: `Bearer ${FLW_SECRET_KEY}` } });
         const rateData = await rateRes.json();
         const expectedLocalAmount = Number(rateData?.data?.source?.amount);
-
-        if (!expectedLocalAmount || Number.isNaN(expectedLocalAmount)) {
-          throw new Error(`Could not verify rate for ${expectedCurrency}`);
-        }
-
-        if (flwAmount < expectedLocalAmount - 1) {
-          throw new Error(
-            `Amount too low for ${expectedCurrency}. Expected ${expectedLocalAmount}, got ${flwAmount}`
-          );
-        }
+        if (!expectedLocalAmount || Number.isNaN(expectedLocalAmount)) throw new Error(`Could not verify rate.`);
+        if (flwAmount < expectedLocalAmount - 1) throw new Error(`Amount too low for ${expectedCurrency}.`);
       }
-    } else {
-      console.log("[gift-verify] skipping FLW verification (wallet payment)");
     }
 
-    // 2. Insert the gift transaction (triggers gift stats increment)
-    const { error: insertError } = await supabase
-      .from("gift_transactions")
-      .insert({
-        user_id: user_id || null,
-        guest_email: user_id ? null : guest_email || null,
-        guest_name: user_id ? null : guest_name || null,
-        candidate_id,
-        gift_type: gift_type || "custom",
-        gift_name: gift_name || "Gift",
-        gift_emoji: gift_emoji || "🎁",
-        amount: amountUSD,
-        currency: "USD",
-        payment_method: payment_method || "card",
-        payment_provider: skipVerification ? "wallet" : "flutterwave",
-        payment_id: String(transaction_id),
-        reference: tx_ref,
-        status: "completed",
-        metadata: {
-          amount_usd: amountUSD,
-          raw_payment_method: raw_payment_method || null,
-          raw_gateway_response: raw_gateway_response || null,
-          source: skipVerification ? "wallet" : "flutterwave",
-        },
-      });
+    const { error: insertError } = await supabase.from("gift_transactions").insert({
+        user_id: user_id || null, guest_email: user_id ? null : guest_email || null, guest_name: user_id ? null : guest_name || null,
+        candidate_id, gift_type: gift_type || "custom", gift_name: gift_name || "Gift", gift_emoji: gift_emoji || "🎁",
+        amount: amountUSD, currency: "USD", payment_method: payment_method || "card", payment_provider: skipVerification ? "wallet" : "flutterwave",
+        payment_id: String(transaction_id), reference: tx_ref, status: "completed",
+        metadata: { amount_usd: amountUSD, raw_payment_method, raw_gateway_response, source: skipVerification ? "wallet" : "flutterwave" },
+    });
 
     if (insertError) throw insertError;
-
-    console.log("[gift-verify] gift recorded for:", candidate_id);
-
-    return new Response(
-      JSON.stringify({ success: true }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[gift-verify] ERROR:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: message }), { status: 500, headers: corsHeaders });
   }
 });

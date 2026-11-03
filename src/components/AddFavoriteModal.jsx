@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Search, Loader2, Heart, Check, User as UserIcon } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import VoteModal from "@/components/VoteModal";
+import { useTranslations } from "next-intl";
 
 export default function AddFavoriteModal({
   isOpen,
@@ -13,7 +14,9 @@ export default function AddFavoriteModal({
   onAdded,
   onVoted,
 }) {
+  const t = useTranslations("AddFavoriteModal");
   const supabase = createClient();
+  
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -29,8 +32,8 @@ export default function AddFavoriteModal({
   // Focus on open
   useEffect(() => {
     if (isOpen) {
-      const t = setTimeout(() => inputRef.current?.focus(), 60);
-      return () => clearTimeout(t);
+      const timeout = setTimeout(() => inputRef.current?.focus(), 60);
+      return () => clearTimeout(timeout);
     }
   }, [isOpen]);
 
@@ -143,9 +146,9 @@ export default function AddFavoriteModal({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#9A7B4F]/20 shrink-0">
               <div>
-                <h2 className="text-base font-bold text-[#2E1503]">Add Favorite</h2>
+                <h2 className="text-base font-bold text-[#2E1503]">{t("title")}</h2>
                 <p className="text-[11px] text-[#6b4423]/70 mt-0.5">
-                  Search by name or username
+                  {t("subtitle")}
                 </p>
               </div>
               <button
@@ -169,7 +172,7 @@ export default function AddFavoriteModal({
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Type a candidate's name or username…"
+                  placeholder={t("placeholder")}
                   className="w-full pl-9 pr-9 py-2.5 bg-[#faf6ee] border border-[#9A7B4F]/35 rounded-xl text-sm text-[#2E1503] outline-none focus:border-[#6b4423]"
                 />
                 {searching && (
@@ -191,7 +194,7 @@ export default function AddFavoriteModal({
 
               {query.trim().length < 2 && (
                 <div className="text-center py-10 text-[#6b4423]/60 text-sm">
-                  Type at least 2 characters to search.
+                  {t("searchHint")}
                 </div>
               )}
 
@@ -199,7 +202,7 @@ export default function AddFavoriteModal({
                 !searching &&
                 results.length === 0 && (
                   <div className="text-center py-10 text-[#6b4423]/60 text-sm">
-                    No candidates found for “{query}”.
+                    {t("noResults", { query })}
                   </div>
                 )}
 
@@ -258,10 +261,10 @@ export default function AddFavoriteModal({
                                 background:
                                   "linear-gradient(135deg, #9A7B4F 0%, #6b4423 100%)",
                               }}
-                              title={`Vote for ${c.full_name}`}
+                              title={t("voteTitle", { name: c.full_name })}
                             >
                               <Heart size={11} />
-                              Vote
+                              {t("vote")}
                             </button>
 
                             <button
@@ -283,13 +286,13 @@ export default function AddFavoriteModal({
                               }
                               title={
                                 added
-                                  ? "Already in your favorites"
-                                  : `Add ${c.full_name} to favorites`
+                                  ? t("alreadyAdded")
+                                  : t("addTitle", { name: c.full_name })
                               }
                             >
                               {added ? (
                                 <>
-                                  <Check size={11} /> Added
+                                  <Check size={11} /> {t("added")}
                                 </>
                               ) : isAdding ? (
                                 <>
@@ -301,7 +304,7 @@ export default function AddFavoriteModal({
                                 </>
                               ) : (
                                 <>
-                                  <Heart size={11} /> Fav
+                                  <Heart size={11} /> {t("fav")}
                                 </>
                               )}
                             </button>
