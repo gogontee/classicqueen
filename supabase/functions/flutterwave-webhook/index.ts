@@ -13,31 +13,47 @@ serve(async (req) => {
     const FLW_WEBHOOK_HASH = Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH");
     const signature = req.headers.get("verif-hash");
 
+    console.log("[master-webhook] Invoked. Signature received:", !!signature);
+
+    // 1. Verify Signature
     if (!signature || signature !== FLW_WEBHOOK_HASH) {
+      console.error("[master-webhook] Forbidden: Invalid secret hash");
       return new Response("Forbidden", { status: 403 });
     }
 
     const payload = await req.json();
     const data = payload?.data;
     
-    // Only process successful charges
+    console.log("[master-webhook] Event:", payload?.event, "| Status:", data?.status);
+
+    // 2. Only process successful charges
     if (payload?.event !== "charge.completed" || data?.status !== "successful") {
+      console.log("[master-webhook] Ignored: Not a successful charge.completed");
       return new Response("Ignored", { status: 200 });
     }
 
-    const reference = data.tx_ref || "";
+    // 3. Get reference (fallback to txRef just in case)
+    const reference = data.tx_ref || data.txRef || "";
+    console.log("[master-webhook] Found reference:", reference);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // Route based on prefix
+    // 4. Route based on prefix (Now case-insensitive using toUpperCase)
+    const upperRef = reference.toUpperCase();
     let targetFunction = "";
-    if (reference.startsWith("VOTE_")) targetFunction = "vote-webhook";
-    else if (reference.startsWith("GIFT_")) targetFunction = "gift-webhook";
-    else if (reference.startsWith("WALLET_")) targetFunction = "wallet-webhook";
-    else return new Response("Ignored", { status: 200 });
+
+    if (upperRef.startsWith("VOTE_")) targetFunction = "vote-webhook";
+    else if (upperRef.startsWith("GIFT_")) targetFunction = "gift-webhook";
+    else if (upperRef.startsWith("WALLET_")) targetFunction = "wallet-webhook";
+    
+    if (!targetFunction) {
+      console.error("[master-webhook] Ignored: Unknown reference prefix", reference);
+      return new Response("Ignored", { status: 200 });
+    }
 
     console.log(`[master-webhook] Routing ${reference} to ${targetFunction}`);
 
-    // Forward the request
+    // 5. Forward the request
     const response = await fetch(`${supabaseUrl}/functions/v1/${targetFunction}`, {
       method: "POST",
       headers: {
@@ -48,12 +64,16 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      console.error(`[master-webhook] ${targetFunction} failed:`, await response.text());
+      const errorText = await response.text();
+      console.error(`[master-webhook] ${targetFunction} failed:`, errorText);
       return new Response("Internal Error", { status: 500 });
     }
 
+    console.log(`[master-webhook] Successfully routed to ${targetFunction}`);
     return new Response("OK", { status: 200 });
+
   } catch (err) {
+    console.error("[master-webhook] Error:", err);
     return new Response("Internal Error", { status: 500 });
   }
 });
