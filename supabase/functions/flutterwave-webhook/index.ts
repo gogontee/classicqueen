@@ -38,7 +38,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // 4. Route based on prefix (Now case-insensitive using toUpperCase)
+    // 4. Route based on prefix (Case-insensitive)
     const upperRef = reference.toUpperCase();
     let targetFunction = "";
 
@@ -63,10 +63,11 @@ serve(async (req) => {
       body: JSON.stringify(payload),
     });
 
+    // 6. Catch the error from the worker function and send it back
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[master-webhook] ${targetFunction} failed:`, errorText);
-      return new Response("Internal Error", { status: 500 });
+      console.error(`[master-webhook] ${targetFunction} failed with error: ${errorText}`);
+      return new Response(`Worker Error: ${errorText}`, { status: 500 });
     }
 
     console.log(`[master-webhook] Successfully routed to ${targetFunction}`);

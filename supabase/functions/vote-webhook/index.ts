@@ -17,7 +17,7 @@ serve(async (req) => {
 
     const payload = await req.json();
     const data = payload?.data;
-    const reference = data.tx_ref || "";
+    const reference = data.tx_ref || data.txRef || "";
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -74,7 +74,7 @@ serve(async (req) => {
     if (insertErr) {
       if (insertErr.code === '23505') return new Response("Already processed", { status: 200 });
       
-      // CRITICAL UPDATE: Print and return the exact Postgres error
+      // THIS WILL NOW CAPTURE THE EXACT POSTGRES ERROR
       console.error("[vote-webhook] Exact DB Error:", JSON.stringify(insertErr));
       return new Response(`Insert failed: ${insertErr.message} | Details: ${insertErr.details} | Hint: ${insertErr.hint}`, { status: 500 });
     }
