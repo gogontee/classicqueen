@@ -37,11 +37,16 @@ serve(async (req) => {
     }
 
     // 2. Find the pending record
-    const { data: pending } = await supabase
+    const { data: pending, error: pendingErr } = await supabase
       .from("pending_vote_transactions")
       .select("*")
       .eq("reference", reference)
       .maybeSingle();
+
+    if (pendingErr) {
+      console.error("[vote-webhook] Error finding pending:", pendingErr);
+      return new Response(`Pending lookup failed: ${pendingErr.message}`, { status: 500 });
+    }
 
     if (!pending) {
       console.error("[vote-webhook] No pending record for:", reference);
@@ -68,8 +73,10 @@ serve(async (req) => {
 
     if (insertErr) {
       if (insertErr.code === '23505') return new Response("Already processed", { status: 200 });
-      console.error("[vote-webhook] Insert failed:", insertErr);
-      return new Response("Insert failed", { status: 500 });
+      
+      // CRITICAL UPDATE: Print and return the exact Postgres error
+      console.error("[vote-webhook] Exact DB Error:", JSON.stringify(insertErr));
+      return new Response(`Insert failed: ${insertErr.message} | Details: ${insertErr.details} | Hint: ${insertErr.hint}`, { status: 500 });
     }
 
     // 4. Clean up
@@ -79,6 +86,6 @@ serve(async (req) => {
     return new Response("OK", { status: 200 });
   } catch (err) {
     console.error("[vote-webhook] Error:", err);
-    return new Response("Internal Error", { status: 500 });
+    return new Response(`Internal Error: ${err.message}`, { status: 500 });
   }
 });
